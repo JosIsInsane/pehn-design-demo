@@ -9,7 +9,7 @@ const CONFIG = {
   ordersEnabled: true,      // false = sin carrito, cada diseño se pide directo por WhatsApp
   whatsapp: '',             // TODO: número con código de país, ej. '50498765432'
   // Google Sheets: URL de la app web de Apps Script y el token de la hoja Config (Pehn › Ver URL y token)
-  sheetsUrl: 'https://script.google.com/macros/s/AKfycbyo9IZCqPLhRd8Ty83yVWJR7Qt9PaVxEpQUEMlul16GJWUWTFpcehgj326MKQDRZPHs/exec',
+  sheetsUrl: 'https://script.google.com/macros/s/AKfycbyZ0Z1nr735rQ9tn2YSaYUtXEyDUL7fBQiMF78JuiRdUnRtzCt6BALCHgane8wpnsO5/exec',
   sheetsToken: '5eadaaf740544df59772',
 };
 

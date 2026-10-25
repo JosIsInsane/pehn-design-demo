@@ -36,7 +36,7 @@ function crmHtml_(k) {
 
 // URL de la app web (Implementar › Gestionar implementaciones › App web).
 // Google a veces devuelve otra con getUrl(), por eso se fija aquí.
-const URL_APP = 'https://script.google.com/macros/s/AKfycbyo9IZCqPLhRd8Ty83yVWJR7Qt9PaVxEpQUEMlul16GJWUWTFpcehgj326MKQDRZPHs/exec';
+const URL_APP = 'https://script.google.com/macros/s/AKfycbyZ0Z1nr735rQ9tn2YSaYUtXEyDUL7fBQiMF78JuiRdUnRtzCt6BALCHgane8wpnsO5/exec';
 const urlApp_ = () => URL_APP || ScriptApp.getService().getUrl();
 
 // abre el CRM en otra pestaña (los navegadores piden un clic)
