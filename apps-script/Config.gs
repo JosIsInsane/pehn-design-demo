@@ -9,6 +9,7 @@ const SHEETS = {
   inventario: 'Inventario',
   recetas: 'Recetas',
   movimientos: 'Movimientos',
+  clientes: 'Clientes',
   config: 'Config',
 };
 
@@ -20,6 +21,7 @@ const HEADERS = {
   inventario: ['SKU', 'Pieza', 'Categoría', 'Stock', 'Mínimo', 'Unidad', 'Costo unitario', 'Proveedor', 'Estado', 'Actualizado'],
   recetas: ['Clave', 'SKU', 'Cantidad', 'Notas'],
   movimientos: ['Fecha', 'SKU', 'Pieza', 'Cantidad', 'Stock después', 'Motivo', 'Pedido', 'Usuario'],
+  clientes: ['WhatsApp', 'Nombre', 'Correo', 'Ciudad', 'Primer pedido', 'Último pedido', 'Etiquetas', 'Notas'],
   config: ['Ajuste', 'Valor', 'Para qué sirve'],
 };
 
@@ -29,9 +31,10 @@ const ESTADOS = ['Nuevo', 'Diseño enviado', 'Aprobado', 'En producción', 'List
 const CONFIG_DEFAULTS = [
   ['Nombre del negocio', 'Pehn Design', 'Aparece en los correos.'],
   ['Correo del negocio', '', 'Recibe el aviso de cada pedido y el resumen de stock bajo.'],
-  ['Admins', '', 'Correos que pueden abrir el panel como web app, separados por coma.'],
+  ['Admins', '', 'Correos que pueden abrir el CRM sin la clave, separados por coma.'],
   ['WhatsApp del negocio', '', 'Con código de país, ej. 50498765432.'],
   ['Token del sitio', '', 'Se genera solo. Cópialo en CONFIG.sheetsToken de app.js.'],
+  ['Clave del CRM', '', 'Se genera sola. Va en el enlace del CRM (?k=…). Cámbiala si el enlace se comparte de más.'],
   ['Estado que descuenta stock', 'En producción', 'Al llegar a este estado se descuentan las piezas.'],
   ['Confirmar al cliente por correo', 'Sí', 'Sí / No'],
   ['Aviso de stock bajo', 'Sí', 'Sí / No. Correo diario a las 8 am con lo que hay que reponer.'],

@@ -10,18 +10,19 @@ El sitio manda cada pedido a una hoja de Google con la foto del diseño. La hoja
 - **Aparta y avisa**: al llegar un pedido revisa si alcanza el stock, contando los pedidos activos que ya apartaron piezas.
 - **Descuenta stock** cuando el pedido pasa a *En producción*. Si se cancela, lo regresa. Todo queda en *Movimientos*.
 - **Correo diario (8 am)** con lo que está bajo el mínimo y lo que no alcanza para pedidos activos.
-- **Panel** con pedidos (con foto), cambio de estado, mensajes de WhatsApp listos por estado, inventario, recetas y resumen.
+- **CRM aparte** (se abre en otra pestaña): Inicio con pendientes del día, Pedidos en tablero o lista (con foto), Clientes con historial, etiquetas y notas, Inventario, Recetas y Movimientos. Buscador para todo. Google Sheets solo guarda la información.
 
 ## Hojas
 
 | Hoja | Para qué |
 |---|---|
-| Pedidos | Un renglón por pedido. Cambia el **Estado** aquí o en el panel. |
+| Pedidos | Un renglón por pedido. Cambia el **Estado** aquí o en el CRM. |
 | Partidas | Un renglón por producto del pedido, con su foto y opciones. |
 | Inventario | Tus piezas: stock, mínimo, costo. La columna *Estado* se calcula sola. |
 | Recetas | Qué pieza gasta cada opción del sitio. `*` sirve de comodín. |
 | Movimientos | Historial de cada entrada y salida de stock. |
-| Config | Correo del negocio, admins, estado que descuenta, avisos, token. |
+| Clientes | Una ficha por WhatsApp. Etiquetas y notas se editan en el CRM. |
+| Config | Correo del negocio, admins, estado que descuenta, avisos, token, clave del CRM. |
 
 ## Instalación (15 minutos)
 
@@ -41,13 +42,14 @@ El sitio manda cada pedido a una hoja de Google con la foto del diseño. La hoja
    ```
 6. Haz un pedido de prueba en el sitio. Debe aparecer en *Pedidos* con su foto.
 
-> Si cambias el código de Apps Script, vuelve a **Implementar › Gestionar implementaciones › Editar › Nueva versión**. La URL no cambia.
+> Si cambias el código de Apps Script, vuelve a **Implementar › Gestionar implementaciones › Editar (lápiz) › Versión: Nueva versión › Implementar**. La URL no cambia. Sin este paso el sitio y el CRM siguen usando el código viejo.
 
 ## Uso diario
 
-- **Panel**: menú **Pehn › Abrir panel**, o la URL de la app web, solo para los correos en *Config › Admins*.
+- **CRM**: menú **Pehn › Abrir CRM (pestaña nueva)**. Guarda ese enlace en favoritos: lleva la clave de *Config › Clave del CRM*. Compártelo solo con tu equipo; si se filtra, cambia la clave.
+- Si el CRM no carga, en el editor corre la función **probarCRM** (Ejecutar) y mira el registro.
 - **Estados**: Nuevo → Diseño enviado → Aprobado → **En producción** (descuenta) → Listo → Enviado → Entregado. Cancelado regresa stock.
-- **Entrada de mercancía**: en el panel, *Inventario › Entrada…*. También puedes editar el stock en la hoja: queda en *Movimientos*.
+- **Entrada de mercancía**: en el CRM, *Inventario › Entrada…*. También puedes editar el stock en la hoja: queda en *Movimientos*.
 - **Opciones nuevas**: cuando alguien pide algo que no tiene receta, aparece en *Recetas › Por mapear*. Asigna el SKU o déjalo vacío si no gasta inventario.
 
 ## Ajustar a tu inventario real

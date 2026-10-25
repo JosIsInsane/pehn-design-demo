@@ -5,7 +5,8 @@
 
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('Pehn')
-    .addItem('Abrir panel', 'abrirPanel')
+    .addItem('Abrir CRM (pestaña nueva)', 'abrirCRM')
+    .addItem('Abrir CRM aquí', 'abrirPanel')
     .addItem('Revisar stock ahora', 'revisarStockMenu')
     .addSeparator()
     .addItem('Configurar hojas', 'configurar')
@@ -14,6 +15,8 @@ function onOpen() {
 }
 
 function configurar() {
+  // la app web expone las funciones públicas: esta solo corre para quien abre la hoja
+  if (!Session.getActiveUser().getEmail()) throw new Error('Corre esto desde la hoja: Pehn › Configurar hojas.');
   const ss = ss_();
   Object.keys(SHEETS).forEach(key => {
     let sh = ss.getSheetByName(SHEETS[key]);
@@ -28,6 +31,7 @@ function configurar() {
   const cfg = config_();
   CONFIG_DEFAULTS.forEach(([k, v, note]) => { if (!(k in cfg)) sheet_('config').appendRow([k, v, note]); });
   if (!config_()['Token del sitio']) setConfig_('Token del sitio', Utilities.getUuid().replace(/-/g, '').slice(0, 20));
+  if (!config_()['Clave del CRM']) setConfig_('Clave del CRM', Utilities.getUuid().replace(/-/g, ''));
   if (!config_()['Correo del negocio']) setConfig_('Correo del negocio', Session.getEffectiveUser().getEmail());
   if (!config_()['Admins']) setConfig_('Admins', Session.getEffectiveUser().getEmail());
   folder_();

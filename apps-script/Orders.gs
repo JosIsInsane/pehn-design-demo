@@ -74,11 +74,25 @@ function recibirPedido_(d) {
 
     // claves nuevas que todavía no tienen pieza asignada
     registrarClavesNuevas_(d.items);
+    guardarCliente_(c, fecha);
 
     correos_(id, d, partidas, disp, cfg);
     return { id };
   } finally {
     lock.releaseLock();
+  }
+}
+
+// ficha del cliente (una por WhatsApp); las notas y etiquetas se editan en el CRM
+const telKey_ = t => { const n = String(t || '').replace(/\D/g, ''); return n.length === 8 ? '504' + n : n; };
+function guardarCliente_(c, fecha) {
+  const sh = ss_().getSheetByName(SHEETS.clientes); if (!sh) return;
+  const key = telKey_(c.phone), cur = rows_('clientes').find(r => telKey_(r.WhatsApp) === key);
+  if (cur) {
+    sh.getRange(cur._row, 2, 1, 3).setValues([[c.name || cur.Nombre, c.email || cur.Correo, c.city || cur.Ciudad]]);
+    sh.getRange(cur._row, COL.clientes['Último pedido']).setValue(fecha);
+  } else {
+    sh.appendRow(["'" + key, c.name, c.email || '', c.city || '', fecha, fecha, '', '']);
   }
 }
 

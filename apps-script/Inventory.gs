@@ -161,5 +161,5 @@ function resumenStockDiario_() {
 
 function revisarStockMenu() {
   const r = reporteStock_();
-  ss_().toast(`${r.faltantes.length} faltantes para pedidos activos · ${r.bajos.length} piezas por reponer. Detalle en Pehn › Abrir panel.`, 'Inventario', 8);
+  ss_().toast(`${r.faltantes.length} faltantes para pedidos activos · ${r.bajos.length} piezas por reponer. Detalle en Pehn › Abrir CRM.`, 'Inventario', 8);
 }
