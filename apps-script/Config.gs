@@ -89,7 +89,23 @@ function hojaClientes_() {
 }
 
 // filas como objetos {Encabezado: valor, _row: n}
+// Memo de lectura: dentro de conMemo_ cada hoja se lee una sola vez.
+// Solo se usa en funciones que no escriben (CRM y cálculo de apartados).
+let MEMO_ = null;
+function conMemo_(fn) {
+  if (MEMO_) return fn();
+  MEMO_ = {};
+  try { return fn(); } finally { MEMO_ = null; }
+}
+
 function rows_(key) {
+  if (MEMO_ && MEMO_[key]) return MEMO_[key];
+  const out = leerFilas_(key);
+  if (MEMO_) MEMO_[key] = out;
+  return out;
+}
+
+function leerFilas_(key) {
   const sh = sheet_(key), last = sh.getLastRow();
   if (last < 2) return [];
   const head = HEADERS[key];

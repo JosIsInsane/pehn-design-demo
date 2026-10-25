@@ -67,7 +67,9 @@ function probarCRM() {
 // ---------- datos ----------
 function crmDatosJson_() { return JSON.stringify(crmDatos_()); }
 
-function crmDatos_() {
+function crmDatos_() { return conMemo_(crmDatosLeer_); }
+
+function crmDatosLeer_() {
   const cfg = config_(), tz = Session.getScriptTimeZone();
   const txt = v => v instanceof Date ? Utilities.formatDate(v, tz, 'dd/MM/yyyy') : String(v == null ? '' : v);
   const iso = v => { const d = v instanceof Date ? v : (v ? new Date(v) : null); return d && !isNaN(d) ? d.toISOString() : ''; };
@@ -133,6 +135,13 @@ function crm(k, accion, args) {
     case 'imagen': {
       const b = DriveApp.getFileById(String(args.id)).getBlob();
       return JSON.stringify({ src: `data:${b.getContentType()};base64,${Utilities.base64Encode(b.getBytes())}` });
+    }
+    case 'imagenes': {
+      const srcs = {};
+      (args.ids || []).slice(0, 6).forEach(id => {
+        try { const b = DriveApp.getFileById(String(id)).getBlob(); srcs[id] = `data:${b.getContentType()};base64,${Utilities.base64Encode(b.getBytes())}`; } catch (e) { /* esa foto no se pudo leer */ }
+      });
+      return JSON.stringify({ srcs });
     }
     case 'estado': {
       if (!ESTADOS.includes(args.estado)) throw new Error('Estado inválido.');

@@ -40,14 +40,16 @@ function inventarioMap_() {
 
 // lo que ya está apartado por pedidos activos que aún no descuentan
 function reservado_(exceptId) {
-  const recs = recetas_(), acc = {};
-  rows_('pedidos').forEach(p => {
-    if (p.ID === exceptId || ['Cancelado', 'Entregado'].includes(p.Estado)) return;
-    const d = datos_(p);
-    if (d.descontado) return;
-    consumoDePedido_(d.items, recs).forEach(x => { acc[x.sku] = (acc[x.sku] || 0) + x.qty; });
+  return conMemo_(() => {
+    const recs = recetas_(), acc = {};
+    rows_('pedidos').forEach(p => {
+      if (p.ID === exceptId || ['Cancelado', 'Entregado'].includes(p.Estado)) return;
+      const d = datos_(p);
+      if (d.descontado) return;
+      consumoDePedido_(d.items, recs).forEach(x => { acc[x.sku] = (acc[x.sku] || 0) + x.qty; });
+    });
+    return acc;
   });
-  return acc;
 }
 
 function disponibilidad_(piezas, exceptId) {
