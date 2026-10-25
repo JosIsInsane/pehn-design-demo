@@ -8,7 +8,7 @@
 <link rel="icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Outfit:wght@400;500;600;700;800&family=Pacifico&family=Space+Mono:wght@700&family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Alfa+Slab+One&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Outfit:wght@400;500;600;700;800&family=Pacifico&family=Space+Mono:wght@700&family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Alfa+Slab+One&family=Great+Vibes&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body data-page="home">
@@ -76,11 +76,11 @@
     </div>
     <!-- Fotos: subir a /fotos con estos nombres -->
     <div class="works-grid">
-      <figure class="ph tall"><img src="fotos/cuadro-amor.jpg" alt="Cuadro Amor con minifiguras de Fer y Clau sobre corazón rosa" loading="lazy" data-ph="cuadro-amor.jpg"><figcaption>Fer & Clau · Cuadro “Amor”</figcaption></figure>
-      <figure class="ph"><img src="fotos/legos-proceso.jpg" alt="Minifiguras en proceso sostenidas en la mano" loading="lazy" data-ph="legos-proceso.jpg"><figcaption>Trabajando sus legos</figcaption></figure>
-      <figure class="ph"><img src="fotos/cuadro-cumple.jpg" alt="Cuadro Happy Birthday con corazón azul" loading="lazy" data-ph="cuadro-cumple.jpg"><figcaption>Alberto & Ángela · Cumpleaños</figcaption></figure>
-      <figure class="ph tall"><img src="fotos/cuadros-varios.jpg" alt="Varios cuadros con minifiguras y mascotas" loading="lazy" data-ph="cuadros-varios.jpg"><figcaption>Con mascotas y todo</figcaption></figure>
-      <figure class="ph wide"><img src="fotos/sudaderas.jpg" alt="Sudaderas para parejas con inicial y corazón en la manga" loading="lazy" data-ph="sudaderas.jpg"><figcaption>Sudaderas para parejas</figcaption></figure>
+      <a class="ph tall" href="catalogo.html?card=0"><img src="fotos/cuadro-amor.jpg" alt="Cuadro Amor con minifiguras de Fer y Clau sobre corazón rosa" loading="lazy" data-ph="cuadro-amor.jpg"><figcaption>Fer & Clau · “Amor”</figcaption><span class="ph-cta">Diseñar uno así →</span></a>
+      <a class="ph" href="catalogo.html?card=1"><img src="fotos/cuadro-cumple.jpg" alt="Cuadro Happy Birthday con corazón azul" loading="lazy" data-ph="cuadro-cumple.jpg"><figcaption>Alberto & Ángela · Cumpleaños</figcaption><span class="ph-cta">Diseñar uno así →</span></a>
+      <a class="ph" href="catalogo.html?card=3"><img src="fotos/cuadro-calendario.jpg" alt="Cuadro con calendario de mayo y minifiguras" loading="lazy" data-ph="cuadro-calendario.jpg"><figcaption>Jhonson & Odalis · Calendario</figcaption><span class="ph-cta">Diseñar uno así →</span></a>
+      <a class="ph tall" href="catalogo.html?card=4"><img src="fotos/cuadros-varios.jpg" alt="Cuadros con minifiguras, gato y perritos" loading="lazy" data-ph="cuadros-varios.jpg"><figcaption>Con mascotas y todo</figcaption><span class="ph-cta">Diseñar uno así →</span></a>
+      <a class="ph wide" href="catalogo.html?card=2"><img src="fotos/cuadro-cumple-rojo.jpg" alt="Cuadro Happy Birthday con corazón rojo de Dani y Vale" loading="lazy" data-ph="cuadro-cumple-rojo.jpg" style="object-position:50% 40%"><figcaption>Dani & Vale · Corazón rojo</figcaption><span class="ph-cta">Diseñar uno así →</span></a>
     </div>
   </section>
 
@@ -198,7 +198,7 @@
 <!-- CART -->
 <div class="drawer" id="drawer" aria-hidden="true">
   <div class="modal-bg" data-dclose></div>
-  <aside class="d-panel" role="dialog" aria-modal="true" aria-labelledby="dTitle">
+  <aside class="d-panel" role="dialog" aria-modal="true" aria-labelledby="dTitle" tabindex="-1">
     <div class="d-head"><h2 id="dTitle">Tu pedido</h2><button class="x" data-dclose aria-label="Cerrar">✕</button></div>
     <div class="d-body" id="dBody"></div>
     <div class="d-foot" id="dFoot"></div>
@@ -208,7 +208,7 @@
 <!-- CONFIRM -->
 <div class="modal" id="done" aria-hidden="true">
   <div class="modal-bg" data-xdone></div>
-  <div class="done-card" role="dialog" aria-modal="true">
+  <div class="done-card" role="dialog" aria-modal="true" tabindex="-1">
     <img src="logo.png" alt="" width="96" height="96">
     <h2>¡Pedido recibido!</h2>
     <p id="doneTxt"></p>

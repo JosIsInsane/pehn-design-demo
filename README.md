@@ -6,7 +6,7 @@ Landing + catálogo con personalizador para [@pehn.designn](https://www.instagra
 - `catalogo.html` — catálogo con personalizador, precio automático y carrito
 - `app.js` — productos, precios, vistas previas SVG, carrito y WhatsApp
 - `styles.css` — estilos
-- `fotos/` — fotos reales de pedidos (ver nombres en `index.html`)
+- `fotos/` — fotos reales de pedidos; cada cuadro del catálogo abre el diseño de su foto ya armado
 
 Sitio estático: abrir `index.html` o servir la carpeta (`python3 -m http.server`).
 

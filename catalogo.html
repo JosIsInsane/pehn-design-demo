@@ -8,7 +8,7 @@
 <link rel="icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Outfit:wght@400;500;600;700;800&family=Pacifico&family=Space+Mono:wght@700&family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Alfa+Slab+One&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Outfit:wght@400;500;600;700;800&family=Pacifico&family=Space+Mono:wght@700&family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Alfa+Slab+One&family=Great+Vibes&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body data-page="catalog">
@@ -80,22 +80,25 @@
 <!-- CUSTOMIZER -->
 <div class="modal" id="custom" aria-hidden="true">
   <div class="modal-bg" data-close></div>
-  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="cTitle">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="cTitle" tabindex="-1">
     <button class="x" data-close aria-label="Cerrar">✕</button>
-    <div class="c-preview">
+    <div class="c-preview" id="cPreview">
       <div class="c-stage" id="cStage"></div>
-      <button class="view-toggle" id="viewToggle" hidden>Ver foto real</button>
+      <button class="ref" id="refBtn" hidden aria-label="Comparar con la foto del pedido real"><img alt=""><span>Pedido real</span></button>
+      <p class="c-hint" id="cHint" hidden>Vista previa ilustrada · el producto final se arma a mano</p>
     </div>
     <div class="c-panel">
-      <p class="c-cat" id="cCat"></p>
-      <h2 id="cTitle"></h2>
-      <p class="c-desc" id="cDesc"></p>
+      <div class="c-head">
+        <p class="c-cat" id="cCat"></p>
+        <h2 id="cTitle"></h2>
+        <p class="c-desc" id="cDesc"></p>
+      </div>
       <form id="cForm" class="c-form" onsubmit="return false"></form>
       <div class="c-foot">
-        <div class="breakdown" id="cBreak"></div>
+        <div class="breakdown" id="cBreak" hidden></div>
         <div class="c-buy">
-          <div class="qty"><button type="button" id="qMinus" aria-label="Menos">−</button><span id="qVal">1</span><button type="button" id="qPlus" aria-label="Más">+</button></div>
-          <button class="btn btn-dark add" id="addBtn"><span id="addLabel">Agregar</span> · <b id="cTotal"></b></button>
+          <button type="button" class="c-price" id="brkBtn" aria-expanded="false" aria-controls="cBreak"><small>Total <span class="chev">▾</span></small><b id="cTotal"></b></button>
+          <button class="btn btn-dark add" id="addBtn"><span id="addLabel">Agregar</span></button>
         </div>
       </div>
     </div>
@@ -105,7 +108,7 @@
 <!-- CART -->
 <div class="drawer" id="drawer" aria-hidden="true">
   <div class="modal-bg" data-dclose></div>
-  <aside class="d-panel" role="dialog" aria-modal="true" aria-labelledby="dTitle">
+  <aside class="d-panel" role="dialog" aria-modal="true" aria-labelledby="dTitle" tabindex="-1">
     <div class="d-head"><h2 id="dTitle">Tu pedido</h2><button class="x" data-dclose aria-label="Cerrar">✕</button></div>
     <div class="d-body" id="dBody"></div>
     <div class="d-foot" id="dFoot"></div>
@@ -115,7 +118,7 @@
 <!-- CONFIRM -->
 <div class="modal" id="done" aria-hidden="true">
   <div class="modal-bg" data-xdone></div>
-  <div class="done-card" role="dialog" aria-modal="true">
+  <div class="done-card" role="dialog" aria-modal="true" tabindex="-1">
     <img src="logo.png" alt="" width="96" height="96">
     <h2>¡Pedido recibido!</h2>
     <p id="doneTxt"></p>
