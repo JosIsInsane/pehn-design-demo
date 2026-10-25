@@ -4,31 +4,45 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Pehn Design</title>
-<meta name="description" content="Cuadros con minifiguras personalizadas, sudaderas para parejas y regalos hechos a mano.">
+<meta name="description" content="Cuadros con minifiguras, sudaderas, bolsas, vasos y regalos personalizados hechos a mano. Diseña el tuyo y mira el precio al instante.">
+<meta name="theme-color" content="#FBF7F2">
 <link rel="icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Outfit:wght@400;500;600;700;800&family=Pacifico&family=Space+Mono:wght@700&family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Alfa+Slab+One&family=Great+Vibes&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,400..700,0..100,0..1;1,9..144,400..700,0..100,0..1&family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Great+Vibes&family=Bagel+Fat+One&family=Pacifico&family=Space+Mono:wght@700&family=Alfa+Slab+One&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body data-page="home">
 <a class="skip" href="#main">Saltar al contenido</a>
 
+<div class="announce">Vista previa de tu diseño antes de producir<span class="opt">·</span><span class="opt" style="opacity:1;margin:0">Envíos a todo el país</span></div>
+
 <header class="nav" id="top">
   <div class="wrap nav-in">
-    <a href="index.html" class="brand" aria-label="Pehn Design inicio"><img src="logo.png" alt="Pehn Design" width="52" height="52"></a>
+    <a href="index.html" class="brand" aria-label="Pehn Design, inicio"><img src="logo.png" alt="" width="44" height="44"><span class="brand-name">Pehn Design</span></a>
     <nav class="links" aria-label="Principal">
-      <a href="#trabajos">Trabajos</a>
+      <a href="catalogo.html">Catálogo</a>
+      <a href="#trabajos">Pedidos reales</a>
+      <a href="#como">Cómo funciona</a>
       <a href="#historia">Historia</a>
       <a href="#resenas">Reseñas</a>
       <a href="#blog">Blog</a>
-      <a href="#contacto">Contacto</a>
     </nav>
-    <a class="cart-btn" href="catalogo.html">
-      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg>
-      <span>Catálogo</span>
-    </a>
+    <div class="nav-actions">
+      <a class="icon-btn" href="catalogo.html#buscar" aria-label="Buscar en el catálogo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></a>
+      <a class="btn btn-primary btn-sm" href="catalogo.html?card=0">Diseñar el mío</a>
+      <button class="icon-btn menu-btn" id="menuBtn" aria-label="Abrir menú" aria-expanded="false" aria-controls="mNav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    </div>
   </div>
+  <nav class="m-nav" id="mNav" aria-label="Menú móvil">
+    <a href="catalogo.html">Catálogo</a>
+    <a href="#trabajos">Pedidos reales</a>
+    <a href="#como">Cómo funciona</a>
+    <a href="#historia">Historia</a>
+    <a href="#resenas">Reseñas</a>
+    <a href="#faq">Preguntas</a>
+    <a class="btn btn-primary" href="catalogo.html?card=0">Diseñar el mío</a>
+  </nav>
 </header>
 
 <main id="main">
@@ -36,83 +50,107 @@
   <section class="hero">
     <div class="wrap hero-in">
       <div class="hero-copy">
-        <span class="pill">✦ Hecho a mano · 100% a tu medida</span>
-        <h1>Su historia,<br><span class="hl">en bloques</span><br>y en un cuadro.</h1>
-        <p class="lead">Cuadros con minifiguras que se parecen a ustedes: su peinado, su ropa, sus mascotas, sus nombres y su frase. Ideal para aniversarios, cumpleaños y regalos que hacen llorar (de bonito).</p>
+        <span class="pill"><b>Nuevo</b> Cuadros con calendario y mascotas</span>
+        <h1 class="display">Regalos que cuentan <span class="it">su</span> historia.</h1>
+        <p class="lead">Cuadros con minifiguras que se parecen a ustedes, sudaderas, bolsas y vasos personalizados. Diseñas cada detalle, ves el precio al instante y nosotros lo armamos a mano.</p>
         <div class="cta-row">
-          <a href="catalogo.html" class="btn btn-dark">Ver catálogo</a>
-          <a href="catalogo.html?card=0" class="btn btn-ghost">Diseñar mi cuadro →</a>
+          <a href="catalogo.html?card=0" class="btn btn-primary">Diseñar mi cuadro <svg class="arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+          <a href="catalogo.html" class="btn btn-ghost">Ver catálogo</a>
         </div>
-        <ul class="trust">
-          <li><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.6c2.5.2 4.3 2 5 4.9"/></svg></span><span><b>1 a 4</b> figuras + mascotas</span></li>
-          <li><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9Z"/><circle cx="8" cy="8" r="1.5"/></svg></span><span><b>Precio</b> al instante</span></li>
-          <li><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 6h12v10H2zM14 10h4l3 3v3h-7"/><circle cx="6.5" cy="17.5" r="1.8"/><circle cx="17.5" cy="17.5" r="1.8"/></svg></span><span><b>Envío</b> a todo el país</span></li>
-        </ul>
+        <div class="hero-proof">
+          <div class="faces" id="faces" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+          <p><b>Cada figura se arma pieza por pieza</b><br>y te mandamos tu diseño para aprobarlo antes de producir.</p>
+        </div>
       </div>
-      <div class="hero-art" aria-hidden="true">
-        <div class="blob"></div>
-        <svg class="spark s1" viewBox="0 0 24 24"><path d="M12 0c1 7 5 11 12 12-7 1-11 5-12 12-1-7-5-11-12-12 7-1 11-5 12-12Z"/></svg>
-        <svg class="spark s2" viewBox="0 0 24 24"><path d="M12 0c1 7 5 11 12 12-7 1-11 5-12 12-1-7-5-11-12-12 7-1 11-5 12-12Z"/></svg>
-        <svg class="spark s3" viewBox="0 0 24 24"><path d="M12 0c1 7 5 11 12 12-7 1-11 5-12 12-1-7-5-11-12-12 7-1 11-5 12-12Z"/></svg>
-        <div class="hero-fig" id="heroFig"></div>
-        <div class="tag t1">Sus nombres ✦</div>
-        <div class="tag t2">+ mascotas</div>
-        <button class="shuffle" id="shuffle" aria-label="Ver otra combinación">⟳ Otra combinación</button>
+      <div class="hero-art">
+        <figure class="hero-photo" style="margin:0"><img src="fotos/cuadro-amor.jpg" alt="Cuadro real con las minifiguras de Fer y Clau sobre un corazón rosa" width="476" height="606"><figcaption>Pedido real · Fer & Clau</figcaption></figure>
+        <div class="hero-card"><div class="hero-fig" id="heroFig" aria-label="Ejemplos de cuadros personalizados" role="img"></div></div>
+        <div class="float-chip chip-a" aria-hidden="true"><span class="dot"></span><span>Vista previa en vivo<small>Cambia y míralo al momento</small></span></div>
+        <div class="float-chip chip-b" aria-hidden="true"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9Z"/><circle cx="8" cy="8" r="1.5"/></svg></span><span>Desde $770<small>Cuadro con 2 figuras</small></span></div>
+        <button class="shuffle" id="shuffle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>Otro diseño</button>
       </div>
     </div>
   </section>
 
-  <div class="marquee" aria-hidden="true"><div class="track">
-    <span>Cuadros con legos</span>✦<span>Aniversarios</span>✦<span>Cumpleaños</span>✦<span>Sudaderas para parejas</span>✦<span>Llaveros</span>✦<span>Regalos únicos</span>✦
-    <span>Cuadros con legos</span>✦<span>Aniversarios</span>✦<span>Cumpleaños</span>✦<span>Sudaderas para parejas</span>✦<span>Llaveros</span>✦<span>Regalos únicos</span>✦
-  </div></div>
-
-  <!-- TRABAJOS REALES -->
-  <section class="wrap works" id="trabajos">
-    <div class="sec-head">
-      <span class="eyebrow">Galería</span>
-      <h2 class="sec-title">Pedidos <span class="hl">reales</span></h2>
-      <p class="sec-sub">Cada cuadro se arma a mano, pieza por pieza, para una historia distinta.</p>
-    </div>
-    <!-- Fotos: subir a /fotos con estos nombres -->
-    <div class="works-grid">
-      <a class="ph tall" href="catalogo.html?card=0"><img src="fotos/cuadro-amor.jpg" alt="Cuadro Amor con minifiguras de Fer y Clau sobre corazón rosa" loading="lazy" data-ph="cuadro-amor.jpg"><figcaption>Fer & Clau · “Amor”</figcaption><span class="ph-cta">Diseñar uno así →</span></a>
-      <a class="ph" href="catalogo.html?card=1"><img src="fotos/cuadro-cumple.jpg" alt="Cuadro Happy Birthday con corazón azul" loading="lazy" data-ph="cuadro-cumple.jpg"><figcaption>Alberto & Ángela · Cumpleaños</figcaption><span class="ph-cta">Diseñar uno así →</span></a>
-      <a class="ph" href="catalogo.html?card=3"><img src="fotos/cuadro-calendario.jpg" alt="Cuadro con calendario de mayo y minifiguras" loading="lazy" data-ph="cuadro-calendario.jpg"><figcaption>Jhonson & Odalis · Calendario</figcaption><span class="ph-cta">Diseñar uno así →</span></a>
-      <a class="ph tall" href="catalogo.html?card=4"><img src="fotos/cuadros-varios.jpg" alt="Cuadros con minifiguras, gato y perritos" loading="lazy" data-ph="cuadros-varios.jpg"><figcaption>Con mascotas y todo</figcaption><span class="ph-cta">Diseñar uno así →</span></a>
-      <a class="ph wide" href="catalogo.html?card=2"><img src="fotos/cuadro-cumple-rojo.jpg" alt="Cuadro Happy Birthday con corazón rojo de Dani y Vale" loading="lazy" data-ph="cuadro-cumple-rojo.jpg" style="object-position:50% 40%"><figcaption>Dani & Vale · Corazón rojo</figcaption><span class="ph-cta">Diseñar uno así →</span></a>
+  <!-- CONFIANZA -->
+  <section class="trust" aria-label="Por qué Pehn Design">
+    <div class="wrap trust-in">
+      <div class="trust-item"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8Z"/></svg></span><div><b>Hecho a mano</b><span>Cada pieza se arma una por una</span></div></div>
+      <div class="trust-item"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></span><div><b>Apruebas antes</b><span>Vista previa antes de producir</span></div></div>
+      <div class="trust-item"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9Z"/><circle cx="8" cy="8" r="1.5"/></svg></span><div><b>Precio al instante</b><span>Sin cotizaciones eternas</span></div></div>
+      <div class="trust-item"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 6h12v10H2zM14 10h4l3 3v3h-7"/><circle cx="6.5" cy="17.5" r="1.8"/><circle cx="17.5" cy="17.5" r="1.8"/></svg></span><div><b>Envío nacional</b><span>Empacado listo para regalar</span></div></div>
     </div>
   </section>
 
-  <!-- HOW -->
-  <section class="how wrap" id="como">
-    <div class="sec-head"><span class="eyebrow">Cómo funciona</span>
-      <h2 class="sec-title">Así de fácil</h2></div>
-    <div class="steps">
-      <article class="step"><span class="num">1</span><h3>Elige tu producto</h3><p>Cuadro de amor, de cumpleaños, minifigura suelta, llavero o sudaderas para parejas.</p></article>
-      <article class="step"><span class="num">2</span><h3>Personaliza cada detalle</h3><p>Arma cada figura: piel, peinado, ropa y nombre. Elige color del corazón y la frase. El precio se ve al momento.</p></article>
-      <article class="step"><span class="num">3</span><h3>Pide por WhatsApp</h3><p>Nos llega tu diseño, te confirmamos, te mostramos el avance y lo producimos con cariño.</p></article>
+  <!-- CATEGORÍAS -->
+  <section class="sec">
+    <div class="wrap">
+      <div class="sec-head">
+        <div><span class="eyebrow">La colección</span><h2 class="h2">Todo se puede <span class="it">personalizar</span></h2></div>
+        <a class="link-arrow" href="catalogo.html">Ver todo el catálogo <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      </div>
+      <div class="cats" id="cats"></div>
     </div>
   </section>
 
-  <!-- DESTACADOS -->
-  <section class="wrap featured">
-    <div class="sec-head row">
-      <div><span class="eyebrow">Catálogo</span>
-      <h2 class="sec-title">Los favoritos</h2></div>
-      <a class="btn btn-dark" href="catalogo.html">Ver todo el catálogo →</a>
+  <!-- MÁS VENDIDOS -->
+  <section class="sec" style="padding-top:0">
+    <div class="wrap">
+      <div class="sec-head">
+        <div><span class="eyebrow">Favoritos</span><h2 class="h2">Los más pedidos</h2></div>
+        <a class="link-arrow" href="catalogo.html?cat=cuadros">Ver cuadros <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      </div>
+      <div class="grid" id="featured"></div>
     </div>
-    <div class="grid" id="featured"></div>
+  </section>
+
+  <!-- CÓMO FUNCIONA -->
+  <section class="sec" id="como" style="padding-top:0">
+    <div class="wrap">
+      <div class="how">
+        <div>
+          <span class="eyebrow">Cómo funciona</span>
+          <h2 class="h2" style="margin-top:14px">Lo diseñas en <span class="it">minutos</span></h2>
+          <div class="how-steps">
+            <div class="how-step"><span class="n">1</span><div><h3>Elige un diseño</h3><p>Parte de un pedido real o empieza desde cero. Cuadros, figuras, ropa, bolsas y vasos.</p></div></div>
+            <div class="how-step"><span class="n">2</span><div><h3>Hazlo suyo</h3><p>Peinado, ropa, mascotas, nombres, colores y frase. La vista previa y el precio cambian al momento.</p></div></div>
+            <div class="how-step"><span class="n">3</span><div><h3>Aprueba y recibe</h3><p>Te mandamos tu diseño por WhatsApp, lo apruebas y lo armamos a mano para enviártelo.</p></div></div>
+          </div>
+          <div class="cta-row"><a class="btn btn-primary" href="catalogo.html?card=0">Probar el personalizador <svg class="arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
+        </div>
+        <div class="how-visual" id="howFig" role="img" aria-label="Vista previa de un cuadro personalizado">
+          <div class="float-chip c1" aria-hidden="true"><span class="dot"></span><span>Fer · Suéter rayas<small>Cambio aplicado</small></span></div>
+          <div class="float-chip c2" aria-hidden="true"><span>Total $770<small>Precio al instante</small></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PEDIDOS REALES -->
+  <section class="sec" id="trabajos" style="padding-top:0">
+    <div class="wrap">
+      <div class="sec-head">
+        <div><span class="eyebrow">Galería</span><h2 class="h2">Pedidos <span class="it">reales</span></h2><p class="lead">Toca cualquiera y te lo dejamos listo para personalizar con sus nombres.</p></div>
+        <a class="link-arrow" href="https://www.instagram.com/pehn.designn/" target="_blank" rel="noopener">Más en Instagram <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+      </div>
+      <div class="works-grid">
+        <a class="ph tall" href="catalogo.html?card=0"><img src="fotos/cuadro-amor.jpg" alt="Cuadro Amor con minifiguras de Fer y Clau sobre corazón rosa" loading="lazy" data-ph="cuadro-amor.jpg"><figcaption>Fer & Clau · “Amor”</figcaption><span class="ph-cta">Diseñar uno así</span></a>
+        <a class="ph" href="catalogo.html?card=1"><img src="fotos/cuadro-cumple.jpg" alt="Cuadro Happy Birthday con corazón azul" loading="lazy" data-ph="cuadro-cumple.jpg"><figcaption>Alberto & Ángela</figcaption><span class="ph-cta">Diseñar uno así</span></a>
+        <a class="ph" href="catalogo.html?card=3"><img src="fotos/cuadro-calendario.jpg" alt="Cuadro con calendario de mayo y minifiguras" loading="lazy" data-ph="cuadro-calendario.jpg"><figcaption>Jhonson & Odalis</figcaption><span class="ph-cta">Diseñar uno así</span></a>
+        <a class="ph tall" href="catalogo.html?card=4"><img src="fotos/cuadros-varios.jpg" alt="Cuadros con minifiguras, gato y perritos" loading="lazy" data-ph="cuadros-varios.jpg"><figcaption>Con sus mascotas</figcaption><span class="ph-cta">Diseñar uno así</span></a>
+        <a class="ph wide" href="catalogo.html?card=2"><img src="fotos/cuadro-cumple-rojo.jpg" alt="Cuadro Happy Birthday con corazón rojo de Dani y Vale" loading="lazy" data-ph="cuadro-cumple-rojo.jpg" style="object-position:50% 40%"><figcaption>Dani & Vale · Corazón rojo</figcaption><span class="ph-cta">Diseñar uno así</span></a>
+      </div>
+    </div>
   </section>
 
   <!-- HISTORIA -->
   <section class="story" id="historia">
     <div class="wrap story-in">
-      <figure class="ph story-ph"><img src="fotos/historia.jpg" alt="Detrás de Pehn Design" loading="lazy" data-ph="historia.jpg"></figure>
+      <figure class="ph"><img src="fotos/historia.jpg" alt="Detrás de Pehn Design" loading="lazy" data-ph="historia.jpg"></figure>
       <div>
         <span class="eyebrow">Nuestra historia</span>
         <!-- TODO: texto real de la marca -->
-        <h2 class="sec-title">Detrás de cada pieza hay una persona</h2>
+        <h2 class="h2">Detrás de cada pieza hay una <span class="it" style="color:var(--brand)">persona</span></h2>
         <p>Pehn Design nació de las ganas de regalar algo que no se compra en cualquier tienda. Empezamos armando un cuadro para alguien especial y hoy cada pedido es una historia nueva: aniversarios, cumpleaños, familias completas y hasta mascotas.</p>
         <p>Cada figura se elige pieza por pieza para que se parezca a ti, y cada cuadro se arma, se pinta y se empaca a mano.</p>
         <p class="edit-note">✎ Espacio para la historia real: quién está detrás, cómo empezó, desde dónde envían.</p>
@@ -121,81 +159,82 @@
   </section>
 
   <!-- RESEÑAS -->
-  <section class="wrap reviews" id="resenas">
-    <div class="sec-head row">
-      <div><span class="eyebrow">Reseñas</span>
-      <h2 class="sec-title">Lo que dicen</h2></div>
-      <a class="btn btn-ghost" href="https://www.instagram.com/pehn.designn/" target="_blank" rel="noopener">Más en Instagram</a>
-    </div>
-    <!-- TODO: reemplazar con reseñas reales (captura de DM / historia + nombre con permiso) -->
-    <div class="rev-grid">
-      <article class="rev empty-rev"><div class="stars" role="img" aria-label="5 de 5 estrellas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8Z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8Z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8Z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8Z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8Z"/></svg></div><p>Espacio para reseña real de cliente.</p><footer><span class="av"></span><span><b>Nombre</b><small>Producto · Ciudad</small></span></footer></article>
-      <article class="rev empty-rev"><div class="stars" role="img" aria-label="5 de 5 estrellas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8Z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8Z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8Z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8Z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8Z"/></svg></div><p>Espacio para reseña real de cliente.</p><footer><span class="av"></span><span><b>Nombre</b><small>Producto · Ciudad</small></span></footer></article>
-      <article class="rev empty-rev"><div class="stars" role="img" aria-label="5 de 5 estrellas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8Z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8Z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8Z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8Z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8Z"/></svg></div><p>Espacio para reseña real de cliente.</p><footer><span class="av"></span><span><b>Nombre</b><small>Producto · Ciudad</small></span></footer></article>
+  <section class="sec" id="resenas">
+    <div class="wrap">
+      <div class="sec-head">
+        <div><span class="eyebrow">Reseñas</span><h2 class="h2">Lo que dicen</h2></div>
+      </div>
+      <!-- TODO: reemplazar con reseñas reales (con permiso del cliente) -->
+      <div class="rev-grid">
+        <article class="rev empty-rev"><div class="stars" role="img" aria-label="5 de 5 estrellas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8Z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8Z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8Z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8Z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8Z"/></svg></div><blockquote>Espacio para una reseña real de cliente.</blockquote><footer><span class="av"></span><span><b>Nombre</b><small>Producto · Ciudad</small></span></footer></article>
+        <article class="rev empty-rev"><div class="stars" role="img" aria-label="5 de 5 estrellas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8Z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8Z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8Z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8Z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8Z"/></svg></div><blockquote>Espacio para una reseña real de cliente.</blockquote><footer><span class="av"></span><span><b>Nombre</b><small>Producto · Ciudad</small></span></footer></article>
+        <article class="rev empty-rev"><div class="stars" role="img" aria-label="5 de 5 estrellas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8Z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8Z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8Z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8Z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8Z"/></svg></div><blockquote>Espacio para una reseña real de cliente.</blockquote><footer><span class="av"></span><span><b>Nombre</b><small>Producto · Ciudad</small></span></footer></article>
+      </div>
     </div>
   </section>
 
   <!-- BLOG -->
-  <section class="wrap blog" id="blog">
-    <div class="sec-head row">
-      <div><span class="eyebrow">Ideas y procesos</span>
-      <h2 class="sec-title">Blog</h2></div>
-      <span class="soon">Próximamente</span>
-    </div>
-    <div class="blog-grid">
-      <article class="post"><div class="post-art" style="background:#F48FB1" data-mini="0"></div><div class="post-b"><small>Ideas de regalo</small><h3>10 ideas de regalo para su aniversario</h3><p>Desde un cuadro con su historia hasta sudaderas a juego.</p><span class="more">Leer pronto →</span></div></article>
-      <article class="post"><div class="post-art" style="background:#8EC5F2" data-mini="1"></div><div class="post-b"><small>Detrás de cámaras</small><h3>Así armamos un cuadro, pieza por pieza</h3><p>Del pedido por WhatsApp a la caja lista para regalar.</p><span class="more">Leer pronto →</span></div></article>
-      <article class="post"><div class="post-art" style="background:#FFD23F" data-mini="2"></div><div class="post-b"><small>Guía</small><h3>Cómo elegir la frase perfecta para tu cuadro</h3><p>Definiciones, dedicatorias y fechas que no fallan.</p><span class="more">Leer pronto →</span></div></article>
+  <section class="sec" id="blog" style="padding-top:0">
+    <div class="wrap">
+      <div class="sec-head">
+        <div><span class="eyebrow">Ideas y procesos</span><h2 class="h2">Blog</h2></div>
+        <span class="soon">Próximamente</span>
+      </div>
+      <div class="blog-grid">
+        <article class="post"><div class="post-art" style="background:var(--blush)" data-mini="0"></div><div><small>Ideas de regalo</small><h3>10 ideas de regalo para su aniversario</h3><p>Desde un cuadro con su historia hasta sudaderas a juego.</p></div></article>
+        <article class="post"><div class="post-art" style="background:var(--sand)" data-mini="1"></div><div><small>Detrás de cámaras</small><h3>Así armamos un cuadro, pieza por pieza</h3><p>Del pedido por WhatsApp a la caja lista para regalar.</p></div></article>
+        <article class="post"><div class="post-art" style="background:var(--sky)" data-mini="2"></div><div><small>Guía</small><h3>Cómo elegir la frase perfecta</h3><p>Definiciones, dedicatorias y fechas que no fallan.</p></div></article>
+      </div>
     </div>
   </section>
 
   <!-- FAQ -->
-  <section class="wrap faq" id="faq">
-    <div class="sec-head"><span class="eyebrow">Dudas</span>
-      <h2 class="sec-title">Preguntas frecuentes</h2></div>
-    <details><summary>¿Cuánto tarda mi pedido?</summary><p>Producimos entre 5 y 8 días hábiles según el producto. Te confirmamos la fecha exacta al aprobar tu diseño.</p></details>
-    <details><summary>¿Cómo hacen que se parezcan a nosotros?</summary><p>Con el personalizador eliges lo básico y por WhatsApp puedes mandarnos fotos o detalles (lentes, tatuajes, peinado). Buscamos las piezas más parecidas.</p></details>
-    <details><summary>¿Veo el diseño antes de que lo hagan?</summary><p>Sí. Te mandamos una vista previa para aprobar antes de producir.</p></details>
-    <details><summary>¿Cómo pago?</summary><p>Te enviamos los datos de pago al confirmar. Aceptamos transferencia y tarjeta.</p></details>
-    <details><summary>¿Hacen envíos?</summary><p>Sí, enviamos a todo el país. El costo se calcula según tu ciudad.</p></details>
+  <section class="sec" id="faq" style="padding-top:0">
+    <div class="wrap faq">
+      <div>
+        <span class="eyebrow">Dudas</span>
+        <h2 class="h2" style="margin-top:14px">Preguntas frecuentes</h2>
+        <div class="faq-card"><b>¿Tienes otra idea?</b><p>Escríbenos y la armamos contigo. Pedidos de 5 piezas o más tienen 10% de descuento.</p><a class="btn btn-dark btn-sm wa-link" href="#" target="_blank" rel="noopener">Escribir por WhatsApp</a></div>
+      </div>
+      <div>
+        <details><summary>¿Cuánto tarda mi pedido?</summary><p>Producimos entre 5 y 8 días hábiles según el producto. Te confirmamos la fecha exacta al aprobar tu diseño.</p></details>
+        <details><summary>¿Cómo hacen que se parezcan a nosotros?</summary><p>En el personalizador eliges lo básico y por WhatsApp puedes mandarnos fotos o detalles (lentes, tatuajes, peinado). Buscamos las piezas más parecidas.</p></details>
+        <details><summary>¿Veo el diseño antes de que lo hagan?</summary><p>Sí. Te mandamos una vista previa para aprobar antes de producir.</p></details>
+        <details><summary>¿Cómo pago?</summary><p>Te enviamos los datos de pago al confirmar. Aceptamos transferencia y tarjeta.</p></details>
+        <details><summary>¿Hacen envíos?</summary><p>Sí, enviamos a todo el país. El costo se calcula según tu ciudad.</p></details>
+      </div>
+    </div>
   </section>
 
-  <!-- CONTACTO -->
-  <section class="wrap contact" id="contacto">
-    <div class="promo-card">
-      <div>
-        <h2>¿Tienes una idea?</h2>
-        <p>Escríbenos y la hacemos realidad. Bodas, XV años, equipos o empresas: <b>10% de descuento</b> desde 5 piezas.</p>
-      </div>
-      <div class="cta-row">
-        <a class="btn btn-dark wa-link" href="#" target="_blank" rel="noopener">WhatsApp</a>
-        <a class="btn btn-light" href="https://www.instagram.com/pehn.designn/" target="_blank" rel="noopener">Instagram</a>
-      </div>
+  <!-- CTA -->
+  <section class="wrap" id="contacto">
+    <div class="cta-band">
+      <div><h2 class="h2">¿Lo armamos juntos?</h2><p>Bodas, XV años, equipos o empresas: 10% de descuento automático desde 5 piezas del mismo producto.</p></div>
+      <div class="cta-row"><a class="btn btn-dark" href="catalogo.html">Empezar a diseñar</a><a class="btn btn-light wa-link" href="#" target="_blank" rel="noopener">WhatsApp</a></div>
     </div>
   </section>
 </main>
 
 <footer class="foot">
-  <div class="wrap foot-grid">
-    <div><img src="logo.png" alt="Pehn Design" width="84" height="84"><p>Cuadros con minifiguras y diseños personalizados hechos a mano.</p></div>
-    <nav aria-label="Pie"><b>Tienda</b><a href="catalogo.html">Catálogo</a><a href="catalogo.html?cat=cuadros">Cuadros</a><a href="catalogo.html?cat=ropa">Ropa</a></nav>
-    <nav aria-label="Marca"><b>Pehn</b><a href="#historia">Historia</a><a href="#resenas">Reseñas</a><a href="#blog">Blog</a><a href="#faq">Preguntas</a></nav>
-    <nav aria-label="Contacto"><b>Contacto</b><a class="wa-link" href="#" target="_blank" rel="noopener">WhatsApp</a><a href="https://www.instagram.com/pehn.designn/" target="_blank" rel="noopener">@pehn.designn</a></nav>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand"><a href="index.html" class="brand"><img src="logo.png" alt="" width="44" height="44"><span class="brand-name">Pehn Design</span></a><p>Cuadros con minifiguras y regalos personalizados, hechos a mano para historias únicas.</p></div>
+      <nav aria-label="Tienda"><b>Tienda</b><a href="catalogo.html">Catálogo</a><a href="catalogo.html?cat=cuadros">Cuadros</a><a href="catalogo.html?cat=ropa">Ropa</a><a href="catalogo.html?cat=vasos">Vasos y tazas</a></nav>
+      <nav aria-label="Pehn"><b>Pehn</b><a href="#historia">Historia</a><a href="#resenas">Reseñas</a><a href="#blog">Blog</a><a href="#faq">Preguntas</a></nav>
+      <nav aria-label="Contacto"><b>Contacto</b><a class="wa-link" href="#" target="_blank" rel="noopener">WhatsApp</a><a href="https://www.instagram.com/pehn.designn/" target="_blank" rel="noopener">Instagram</a></nav>
+    </div>
+    <div class="copy"><span>© <span id="yr"></span> Pehn Design</span><span>Hecho a mano con cariño</span></div>
   </div>
-  <small class="copy">© <span id="yr"></span> Pehn Design</small>
 </footer>
 
 <a class="wa-float wa-link" href="#" target="_blank" rel="noopener" aria-label="Escríbenos por WhatsApp">
-  <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><path fill="currentColor" d="M16 3a13 13 0 0 0-11.2 19.6L3 29l6.6-1.7A13 13 0 1 0 16 3Zm0 23.6c-2 0-4-.6-5.7-1.6l-.4-.2-3.9 1 1-3.8-.3-.4A10.6 10.6 0 1 1 16 26.6Zm5.8-7.9c-.3-.2-1.9-.9-2.2-1s-.5-.2-.7.2-.8 1-1 1.2-.4.2-.7 0a8.7 8.7 0 0 1-4.3-3.8c-.3-.6.3-.5 1-1.7.1-.2 0-.4 0-.5l-1-2.4c-.3-.6-.5-.5-.7-.5h-.6a1.2 1.2 0 0 0-.9.4 3.7 3.7 0 0 0-1.1 2.7 6.5 6.5 0 0 0 1.3 3.4 14.8 14.8 0 0 0 5.7 5c2.1.9 2.9 1 4 .8a3.4 3.4 0 0 0 2.2-1.6 2.8 2.8 0 0 0 .2-1.6c-.1-.2-.3-.3-.6-.4Z"/></svg>
+  <svg viewBox="0 0 32 32" aria-hidden="true"><path fill="currentColor" d="M16 3a13 13 0 0 0-11.2 19.6L3 29l6.6-1.7A13 13 0 1 0 16 3Zm0 23.6c-2 0-4-.6-5.7-1.6l-.4-.2-3.9 1 1-3.8-.3-.4A10.6 10.6 0 1 1 16 26.6Zm5.8-7.9c-.3-.2-1.9-.9-2.2-1s-.5-.2-.7.2-.8 1-1 1.2-.4.2-.7 0a8.7 8.7 0 0 1-4.3-3.8c-.3-.6.3-.5 1-1.7.1-.2 0-.4 0-.5l-1-2.4c-.3-.6-.5-.5-.7-.5h-.6a1.2 1.2 0 0 0-.9.4 3.7 3.7 0 0 0-1.1 2.7 6.5 6.5 0 0 0 1.3 3.4 14.8 14.8 0 0 0 5.7 5c2.1.9 2.9 1 4 .8a3.4 3.4 0 0 0 2.2-1.6 2.8 2.8 0 0 0 .2-1.6c-.1-.2-.3-.3-.6-.4Z"/></svg>
 </a>
-
-<button class="cart-fab" id="cartBtn" aria-label="Abrir pedido">
-  <svg class="ico-lock" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 1a5 5 0 0 0-5 5v3H5v14h14V9h-2V6a5 5 0 0 0-5-5Zm-3 5a3 3 0 0 1 6 0v3H9V6Z"/></svg>
-  <svg class="ico-cart" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM5.2 4l.4 2H21l-2.2 8.3a2 2 0 0 1-1.9 1.5H8.6a2 2 0 0 1-2-1.6L4.2 2H1V0h4.8l.4 2"/></svg>
+<button class="cart-fab" id="cartBtn" aria-label="Abrir mi pedido">
+  <svg class="ico-cart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l-1 13H7Z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>
   <span>Mi pedido</span><b id="cartCount">0</b>
 </button>
 
-<!-- CART -->
 <div class="drawer" id="drawer" aria-hidden="true">
   <div class="modal-bg" data-dclose></div>
   <aside class="d-panel" role="dialog" aria-modal="true" aria-labelledby="dTitle" tabindex="-1">
@@ -204,19 +243,16 @@
     <div class="d-foot" id="dFoot"></div>
   </aside>
 </div>
-
-<!-- CONFIRM -->
 <div class="modal" id="done" aria-hidden="true">
   <div class="modal-bg" data-xdone></div>
   <div class="done-card" role="dialog" aria-modal="true" tabindex="-1">
-    <img src="logo.png" alt="" width="96" height="96">
+    <img src="logo.png" alt="" width="88" height="88">
     <h2>¡Pedido recibido!</h2>
     <p id="doneTxt"></p>
     <button class="btn btn-dark" data-xdone>Seguir viendo</button>
   </div>
 </div>
-
-<div class="toast" id="toast" role="status"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="app.js"></script>
 </body>

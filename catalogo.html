@@ -4,86 +4,134 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Catálogo · Pehn Design</title>
-<meta name="description" content="Personaliza tu cuadro con minifiguras, sudaderas para parejas y más. Precio al instante.">
+<meta name="description" content="Personaliza cuadros con minifiguras, sudaderas, bolsas y vasos. Precio al instante y vista previa en vivo.">
+<meta name="theme-color" content="#FBF7F2">
 <link rel="icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Outfit:wght@400;500;600;700;800&family=Pacifico&family=Space+Mono:wght@700&family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Alfa+Slab+One&family=Great+Vibes&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,400..700,0..100,0..1;1,9..144,400..700,0..100,0..1&family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Great+Vibes&family=Bagel+Fat+One&family=Pacifico&family=Space+Mono:wght@700&family=Alfa+Slab+One&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body data-page="catalog">
 <a class="skip" href="#main">Saltar al contenido</a>
 
+<div class="announce">Vista previa de tu diseño antes de producir<span class="opt">·</span><span class="opt" style="opacity:1;margin:0">Envíos a todo el país</span></div>
+
 <header class="nav" id="top">
   <div class="wrap nav-in">
-    <a href="index.html" class="brand" aria-label="Pehn Design inicio"><img src="logo.png" alt="Pehn Design" width="52" height="52"></a>
+    <a href="index.html" class="brand" aria-label="Pehn Design, inicio"><img src="logo.png" alt="" width="44" height="44"><span class="brand-name">Pehn Design</span></a>
     <nav class="links" aria-label="Principal">
       <a href="index.html">Inicio</a>
       <a href="catalogo.html" aria-current="page">Catálogo</a>
+      <a href="index.html#trabajos">Pedidos reales</a>
+      <a href="index.html#como">Cómo funciona</a>
       <a href="index.html#historia">Historia</a>
-      <a href="index.html#resenas">Reseñas</a>
-      <a href="index.html#blog">Blog</a>
-      <a href="index.html#contacto">Contacto</a>
+      <a href="index.html#faq">Preguntas</a>
     </nav>
-    <a class="cart-btn" href="index.html#contacto">Contacto</a>
+    <div class="nav-actions">
+      <a class="btn btn-ghost btn-sm wa-link" href="#" target="_blank" rel="noopener">WhatsApp</a>
+      <button class="icon-btn menu-btn" id="menuBtn" aria-label="Abrir menú" aria-expanded="false" aria-controls="mNav"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+    </div>
   </div>
+  <nav class="m-nav" id="mNav" aria-label="Menú móvil">
+    <a href="index.html">Inicio</a>
+    <a href="catalogo.html">Catálogo</a>
+    <a href="index.html#trabajos">Pedidos reales</a>
+    <a href="index.html#como">Cómo funciona</a>
+    <a href="index.html#faq">Preguntas</a>
+    <a class="btn btn-primary wa-link" href="#" target="_blank" rel="noopener">Escribir por WhatsApp</a>
+  </nav>
 </header>
 
 <main id="main">
   <section class="cat-hero">
     <div class="wrap">
-      <nav class="crumbs" aria-label="Ruta"><a href="index.html">Inicio</a> / <span>Catálogo</span></nav>
-      <span class="eyebrow">Tienda</span>
-      <h1>Catálogo</h1>
-      <p class="lead">Elige un producto, arma cada detalle y mira el precio al momento. Tu diseño nos llega por WhatsApp para confirmarlo contigo.</p>
+      <nav class="crumbs" aria-label="Ruta"><a href="index.html">Inicio</a><span aria-hidden="true">/</span><span>Catálogo</span></nav>
+      <span class="eyebrow">La colección</span>
+      <h1 style="margin-top:14px">Diseña tu <span class="it">regalo</span></h1>
+      <p class="lead">Parte de un pedido real o empieza desde cero. Cambias cada detalle, ves el precio al momento y te lo confirmamos por WhatsApp.</p>
     </div>
   </section>
 
-  <section class="catalog" id="catalogo">
-    <div class="wrap">
-      <div class="filters" role="tablist" id="filters"></div>
-      <div class="grid" id="grid"></div>
-    </div>
-  </section>
-
-  <section class="wrap promo">
-    <div class="promo-card">
-      <div>
-        <h2>¿No ves lo que buscas?</h2>
-        <p>Cuéntanos tu idea por WhatsApp. Pedidos de 5 piezas o más tienen <b>10% de descuento</b> automático.</p>
+  <section id="catalogo">
+    <div class="toolbar" id="buscar">
+      <div class="wrap">
+        <div class="toolbar-in">
+          <label class="search">
+            <span class="sr" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Buscar productos</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+            <input type="search" id="q" placeholder="Busca cuadro, vaso, sudadera…" autocomplete="off" enterkeyhint="search">
+            <button type="button" class="clear" id="qClear" aria-label="Borrar búsqueda" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+          </label>
+          <div class="sort">
+            <label class="sr" for="sort" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Ordenar por</label>
+            <select id="sort">
+              <option value="feat">Destacados</option>
+              <option value="asc">Precio: menor a mayor</option>
+              <option value="desc">Precio: mayor a menor</option>
+              <option value="name">Nombre (A–Z)</option>
+            </select>
+          </div>
+        </div>
+        <div class="filters" role="tablist" aria-label="Categorías" id="filters"></div>
       </div>
-      <a class="btn btn-dark wa-link" href="#" target="_blank" rel="noopener">Escribir por WhatsApp</a>
+    </div>
+
+    <div class="wrap">
+      <div class="results-meta"><span id="resCount" aria-live="polite"></span><span>Precios en MXN</span></div>
+      <div class="grid" id="grid"></div>
+      <div class="load-more" id="loadMore" hidden>
+        <div class="bar"><i id="loadBar"></i></div>
+        <small id="loadTxt"></small>
+        <button class="btn btn-ghost" id="loadBtn">Mostrar más</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap sec" style="padding-bottom:0">
+    <div class="cta-band">
+      <div><h2 class="h2">¿No ves lo que buscas?</h2><p>Cuéntanos tu idea por WhatsApp. Pedidos de 5 piezas o más tienen 10% de descuento automático.</p></div>
+      <div class="cta-row"><a class="btn btn-dark wa-link" href="#" target="_blank" rel="noopener">Escribir por WhatsApp</a></div>
     </div>
   </section>
 </main>
 
 <footer class="foot">
-  <div class="wrap foot-grid">
-    <div><img src="logo.png" alt="Pehn Design" width="84" height="84"><p>Cuadros con minifiguras y diseños personalizados hechos a mano.</p></div>
-    <nav aria-label="Pie"><b>Tienda</b><a href="catalogo.html">Catálogo</a><a href="catalogo.html?cat=cuadros">Cuadros</a><a href="catalogo.html?cat=ropa">Ropa</a></nav>
-    <nav aria-label="Marca"><b>Pehn</b><a href="index.html#historia">Historia</a><a href="index.html#resenas">Reseñas</a><a href="index.html#blog">Blog</a><a href="index.html#faq">Preguntas</a></nav>
-    <nav aria-label="Contacto"><b>Contacto</b><a class="wa-link" href="#" target="_blank" rel="noopener">WhatsApp</a><a href="https://www.instagram.com/pehn.designn/" target="_blank" rel="noopener">@pehn.designn</a></nav>
+  <div class="wrap">
+    <div class="foot-grid">
+      <div class="foot-brand"><a href="index.html" class="brand"><img src="logo.png" alt="" width="44" height="44"><span class="brand-name">Pehn Design</span></a><p>Cuadros con minifiguras y regalos personalizados, hechos a mano para historias únicas.</p></div>
+      <nav aria-label="Tienda"><b>Tienda</b><a href="catalogo.html">Catálogo</a><a href="catalogo.html?cat=cuadros">Cuadros</a><a href="catalogo.html?cat=ropa">Ropa</a><a href="catalogo.html?cat=vasos">Vasos y tazas</a></nav>
+      <nav aria-label="Pehn"><b>Pehn</b><a href="index.html#historia">Historia</a><a href="index.html#resenas">Reseñas</a><a href="index.html#blog">Blog</a><a href="index.html#faq">Preguntas</a></nav>
+      <nav aria-label="Contacto"><b>Contacto</b><a class="wa-link" href="#" target="_blank" rel="noopener">WhatsApp</a><a href="https://www.instagram.com/pehn.designn/" target="_blank" rel="noopener">Instagram</a></nav>
+    </div>
+    <div class="copy"><span>© <span id="yr"></span> Pehn Design</span><span>Hecho a mano con cariño</span></div>
   </div>
-  <small class="copy">© <span id="yr"></span> Pehn Design</small>
 </footer>
 
 <a class="wa-float wa-link" href="#" target="_blank" rel="noopener" aria-label="Escríbenos por WhatsApp">
-  <svg viewBox="0 0 32 32" width="30" height="30" aria-hidden="true"><path fill="currentColor" d="M16 3a13 13 0 0 0-11.2 19.6L3 29l6.6-1.7A13 13 0 1 0 16 3Zm0 23.6c-2 0-4-.6-5.7-1.6l-.4-.2-3.9 1 1-3.8-.3-.4A10.6 10.6 0 1 1 16 26.6Zm5.8-7.9c-.3-.2-1.9-.9-2.2-1s-.5-.2-.7.2-.8 1-1 1.2-.4.2-.7 0a8.7 8.7 0 0 1-4.3-3.8c-.3-.6.3-.5 1-1.7.1-.2 0-.4 0-.5l-1-2.4c-.3-.6-.5-.5-.7-.5h-.6a1.2 1.2 0 0 0-.9.4 3.7 3.7 0 0 0-1.1 2.7 6.5 6.5 0 0 0 1.3 3.4 14.8 14.8 0 0 0 5.7 5c2.1.9 2.9 1 4 .8a3.4 3.4 0 0 0 2.2-1.6 2.8 2.8 0 0 0 .2-1.6c-.1-.2-.3-.3-.6-.4Z"/></svg>
+  <svg viewBox="0 0 32 32" aria-hidden="true"><path fill="currentColor" d="M16 3a13 13 0 0 0-11.2 19.6L3 29l6.6-1.7A13 13 0 1 0 16 3Zm0 23.6c-2 0-4-.6-5.7-1.6l-.4-.2-3.9 1 1-3.8-.3-.4A10.6 10.6 0 1 1 16 26.6Zm5.8-7.9c-.3-.2-1.9-.9-2.2-1s-.5-.2-.7.2-.8 1-1 1.2-.4.2-.7 0a8.7 8.7 0 0 1-4.3-3.8c-.3-.6.3-.5 1-1.7.1-.2 0-.4 0-.5l-1-2.4c-.3-.6-.5-.5-.7-.5h-.6a1.2 1.2 0 0 0-.9.4 3.7 3.7 0 0 0-1.1 2.7 6.5 6.5 0 0 0 1.3 3.4 14.8 14.8 0 0 0 5.7 5c2.1.9 2.9 1 4 .8a3.4 3.4 0 0 0 2.2-1.6 2.8 2.8 0 0 0 .2-1.6c-.1-.2-.3-.3-.6-.4Z"/></svg>
 </a>
-
-<button class="cart-fab" id="cartBtn" aria-label="Abrir pedido">
-  <svg class="ico-lock" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 1a5 5 0 0 0-5 5v3H5v14h14V9h-2V6a5 5 0 0 0-5-5Zm-3 5a3 3 0 0 1 6 0v3H9V6Z"/></svg>
-  <svg class="ico-cart" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path fill="currentColor" d="M7 18a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm10 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4ZM5.2 4l.4 2H21l-2.2 8.3a2 2 0 0 1-1.9 1.5H8.6a2 2 0 0 1-2-1.6L4.2 2H1V0h4.8l.4 2"/></svg>
+<button class="cart-fab" id="cartBtn" aria-label="Abrir mi pedido">
+  <svg class="ico-cart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l-1 13H7Z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>
   <span>Mi pedido</span><b id="cartCount">0</b>
 </button>
 
-<!-- CUSTOMIZER -->
+<!-- PERSONALIZADOR -->
 <div class="modal" id="custom" aria-hidden="true">
   <div class="modal-bg" data-close></div>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="cTitle" tabindex="-1">
     <button class="x" data-close aria-label="Cerrar">✕</button>
     <div class="c-preview" id="cPreview">
-      <div class="c-stage" id="cStage"></div>
+      <div class="c-stage" id="cZoomArea" aria-label="Vista previa. Pellizca o usa la rueda para acercar.">
+        <div class="zoom-layer" id="cStage"></div>
+      </div>
+      <p class="zoom-tip" id="zoomTip">Pellizca o usa la rueda para acercar</p>
+      <div class="zoom-ctl" role="group" aria-label="Zoom de la vista previa">
+        <button type="button" id="zOut" aria-label="Alejar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
+        <output id="zVal">100%</output>
+        <button type="button" id="zIn" aria-label="Acercar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+        <button type="button" id="zReset" aria-label="Restablecer zoom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 15v5h-5M4 4l6 6M20 20l-6-6"/></svg></button>
+      </div>
       <button class="ref" id="refBtn" hidden aria-label="Comparar con la foto del pedido real"><img alt=""><span>Pedido real</span></button>
       <p class="c-hint" id="cHint" hidden>Vista previa ilustrada · el producto final se arma a mano</p>
     </div>
@@ -105,7 +153,6 @@
   </div>
 </div>
 
-<!-- CART -->
 <div class="drawer" id="drawer" aria-hidden="true">
   <div class="modal-bg" data-dclose></div>
   <aside class="d-panel" role="dialog" aria-modal="true" aria-labelledby="dTitle" tabindex="-1">
@@ -114,19 +161,16 @@
     <div class="d-foot" id="dFoot"></div>
   </aside>
 </div>
-
-<!-- CONFIRM -->
 <div class="modal" id="done" aria-hidden="true">
   <div class="modal-bg" data-xdone></div>
   <div class="done-card" role="dialog" aria-modal="true" tabindex="-1">
-    <img src="logo.png" alt="" width="96" height="96">
+    <img src="logo.png" alt="" width="88" height="88">
     <h2>¡Pedido recibido!</h2>
     <p id="doneTxt"></p>
     <button class="btn btn-dark" data-xdone>Seguir viendo</button>
   </div>
 </div>
-
-<div class="toast" id="toast" role="status"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="app.js"></script>
 </body>

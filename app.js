@@ -180,7 +180,7 @@ const PRODUCTS = [
     ],
   },
   {
-    id: 'taza', name: 'Taza personalizada', cat: 'hogar', base: 190, bg: '#B9A2F0',
+    id: 'taza', name: 'Taza personalizada', cat: 'vasos', base: 190, bg: '#B9A2F0',
     desc: 'Cerámica 11 oz con nombre, frase o foto. Versión mágica que aparece con calor.',
     render: 'mug',
     groups: [
@@ -192,6 +192,52 @@ const PRODUCTS = [
         { v: 'script', label: 'Script', price: 0 }, { v: 'groovy', label: 'Groovy', price: 0 }, { v: 'serif', label: 'Elegante', price: 0 }] },
       { id: 'img', label: 'Foto o diseño', type: 'file', price: 40 },
     ],
+  },
+  {
+    id: 'vaso', name: 'Vaso con nombre', cat: 'vasos', base: 230, bg: '#8EC5F2',
+    desc: 'Vaso de doble pared con tapa, popote y tu nombre en vinil.',
+    render: 'cup',
+    groups: [
+      { id: 'cup', label: 'Color del vaso', type: 'swatch', options: sw([['#F4F1EC', 'Transparente'], ['#F7B6C8', 'Rosa'], ['#C9B8F0', 'Lila'], ['#B6E3D4', 'Menta'], ['#9CC6F2', 'Cielo'], ['#2A1A0E', 'Negro']]) },
+      { id: 'name', label: 'Nombre', type: 'text', max: 12, placeholder: 'Ej. Sofía' },
+      { id: 'font', label: 'Letra', type: 'choice', options: [
+        { v: 'firma', label: 'Manuscrita', price: 0 }, { v: 'groovy', label: 'Groovy', price: 0 }, { v: 'serif', label: 'Elegante', price: 0 }] },
+      { id: 'ink', label: 'Color del vinil', type: 'swatch', options: sw([['#FFFFFF', 'Blanco'], ['#1E1611', 'Negro'], ['#C9A44C', 'Dorado'], ['#E45A84', 'Rosa'], ['#3E6E8E', 'Azul']]) },
+      { id: 'size', label: 'Tamaño', type: 'choice', options: [
+        { v: '16', label: '16 oz', price: 0 }, { v: '24', label: '24 oz', price: 40 }] },
+    ],
+    init: c => { c.name = 'Sofía'; c.cup = '#F7B6C8'; },
+  },
+  {
+    id: 'termo', name: 'Termo grabado', cat: 'vasos', base: 380, bg: '#C9B8F0',
+    desc: 'Acero inoxidable, frío 24 h y caliente 12 h, con nombre grabado.',
+    render: 'tumbler',
+    groups: [
+      { id: 'color', label: 'Color', type: 'swatch', options: sw([['#1E1611', 'Negro'], ['#F08A1C', 'Naranja'], ['#F7F4EE', 'Blanco'], ['#F7B6C8', 'Rosa'], ['#3E6E8E', 'Azul'], ['#7FA88A', 'Salvia']]) },
+      { id: 'name', label: 'Nombre', type: 'text', max: 12, placeholder: 'Ej. Valeria' },
+      { id: 'font', label: 'Letra', type: 'choice', options: [
+        { v: 'firma', label: 'Manuscrita', price: 0 }, { v: 'groovy', label: 'Groovy', price: 0 }, { v: 'serif', label: 'Elegante', price: 0 }] },
+      { id: 'cap', label: 'Capacidad', type: 'choice', options: [
+        { v: '500', label: '500 ml', price: 0 }, { v: '750', label: '750 ml', price: 80 }] },
+    ],
+    init: c => { c.name = 'Valeria'; },
+  },
+  {
+    id: 'tote', name: 'Tote bag personalizada', cat: 'bolsas', base: 220, bg: '#E9D8B4',
+    desc: 'Manta resistente con tu frase, tus iniciales o tu propia imagen.',
+    render: 'tote',
+    groups: [
+      { id: 'color', label: 'Color de la bolsa', type: 'choice', options: [
+        { v: '#EFE3CC', label: 'Natural', price: 0 }, { v: '#1E1611', label: 'Negra', price: 20 }, { v: '#C9D6BE', label: 'Salvia', price: 20 }] },
+      { id: 'text', label: 'Texto', type: 'text', max: 18, placeholder: 'Ej. Plantas & café' },
+      { id: 'font', label: 'Letra', type: 'choice', options: [
+        { v: 'serif', label: 'Elegante', price: 0 }, { v: 'groovy', label: 'Groovy', price: 0 }, { v: 'firma', label: 'Manuscrita', price: 0 }] },
+      { id: 'ink', label: 'Color de tinta', type: 'swatch', options: sw([['#1E1611', 'Negro'], ['#F08A1C', 'Naranja'], ['#B3262E', 'Rojo'], ['#3E6E8E', 'Azul'], ['#FFFFFF', 'Blanco']]) },
+      { id: 'img', label: 'Tu imagen', type: 'file', price: 50 },
+      { id: 'size', label: 'Tamaño', type: 'choice', options: [
+        { v: 'm', label: 'Mediana', price: 0 }, { v: 'g', label: 'Grande con fuelle', price: 60 }] },
+    ],
+    init: c => { c.text = 'Plantas & café'; },
   },
 ];
 
@@ -217,10 +263,20 @@ const CARDS = [
     cfg: { tpl: 'amor', word: 'AMOR', body: TEXTS.amor, heart: '#F48FB1', deco: 'pride',
       figs: [{ name: '', skin: '#F6D3B3', hair: 'sombrero', hairColor: '#1F1712', face: 'feliz', outfit: 'playera', torso: '#FFFDF9', legs: '#1F1712' },
         { name: '', skin: '#F6D3B3', hair: 'sombrero', hairColor: '#1F1712', face: 'barba', outfit: 'playera', torso: '#FFFDF9', legs: '#1F1712' }] } },
-  { id: 'sudadera', photo: 'fotos/sudaderas.jpg' }, { id: 'minifig' }, { id: 'llavero' }, { id: 'playera' }, { id: 'taza' },
+  { id: 'sudadera', photo: 'fotos/sudaderas.jpg' }, { id: 'vaso', badge: 'Nuevo' }, { id: 'tote' }, { id: 'minifig' },
+  { id: 'termo' }, { id: 'llavero' }, { id: 'playera' }, { id: 'taza' },
 ];
 
-const CATS = [['todos', 'Todos'], ['cuadros', 'Cuadros'], ['figuras', 'Figuras'], ['ropa', 'Ropa'], ['hogar', 'Hogar']];
+const CATS = [['todos', 'Todos'], ['cuadros', 'Cuadros'], ['figuras', 'Figuras y llaveros'], ['ropa', 'Ropa'], ['bolsas', 'Bolsas'], ['vasos', 'Vasos y tazas']];
+const catName = id => CATS.find(c => c[0] === id)?.[1] || '';
+// mosaicos de categorías en la landing
+const CAT_TILES = [
+  { cat: 'cuadros', photo: 'fotos/cuadro-amor.jpg', tint: 'var(--blush)', note: 'Con sus figuras, nombres y frase' },
+  { cat: 'figuras', product: 'minifig', tint: 'var(--butter)', note: 'Minifiguras y llaveros' },
+  { cat: 'ropa', product: 'sudadera', tint: 'var(--sage)', note: 'Sudaderas y playeras' },
+  { cat: 'bolsas', product: 'tote', tint: 'var(--sand)', note: 'Totes de manta' },
+  { cat: 'vasos', product: 'vaso', tint: 'var(--sky)', note: 'Vasos, termos y tazas' },
+];
 
 function defaults(p) {
   const c = {};
@@ -570,7 +626,7 @@ function frameSVG(c) {
     <rect x="32" y="32" width="236" height="236" fill="url(#${k}cs)"/>
     <rect x="32" y="32" width="236" height="236" fill="url(#${k}cl)"/>
     ${heartSVG}${top}${petsSVG}${figsSVG}${deco}${text}
-    <text x="150" y="${base - 8}" text-anchor="middle" font-family="'Outfit'" font-style="italic" font-size="5" fill="#fff" opacity=".75">@pehn.designn</text>
+    <text x="150" y="${base - 8}" text-anchor="middle" font-family="'Inter'" font-style="italic" font-size="5" fill="#fff" opacity=".75">@pehn.designn</text>
     <rect x="16" y="16" width="268" height="268" fill="url(#${k}gl)"/>
   </svg>`;
 }
@@ -620,8 +676,8 @@ function shirtSVG(c) {
     <path d="M98 30L128 18Q150 ${back ? 26 : 44} 172 18L202 30L266 74L238 122L214 106V296H86V106L62 122L34 74Z" fill="${col}" stroke="${o}" stroke-width="3" stroke-linejoin="round"/>
     <path d="M128 18Q150 ${back ? 26 : 44} 172 18" fill="none" stroke="${o}" stroke-width="5"/>
     ${imgTag(c.img, 105, 80, 90, 120)}
-    ${t ? `<text x="150" y="${hasImg ? 232 : 165}" text-anchor="middle" font-family="${font}" font-size="${textFit(t, 9, 30)}" fill="${ink}">${esc(t)}</text>` : (hasImg ? '' : `<g opacity=".55"><rect x="100" y="110" width="100" height="90" rx="10" fill="none" stroke="${shade(col, isLight(col) ? -0.35 : 0.5)}" stroke-width="3" stroke-dasharray="8 7"/><text x="150" y="162" text-anchor="middle" font-family="'Outfit'" font-weight="700" font-size="14" fill="${shade(col, isLight(col) ? -0.45 : 0.6)}">Tu diseño</text></g>`)}
-    ${c.pos === 'ambos' || back ? `<text x="150" y="286" text-anchor="middle" font-family="'Outfit'" font-weight="700" font-size="12" fill="${shade(col, isLight(col) ? -0.45 : 0.6)}">${back ? 'VISTA ESPALDA' : 'FRENTE + ESPALDA'}</text>` : ''}
+    ${t ? `<text x="150" y="${hasImg ? 232 : 165}" text-anchor="middle" font-family="${font}" font-size="${textFit(t, 9, 30)}" fill="${ink}">${esc(t)}</text>` : (hasImg ? '' : `<g opacity=".55"><rect x="100" y="110" width="100" height="90" rx="10" fill="none" stroke="${shade(col, isLight(col) ? -0.35 : 0.5)}" stroke-width="3" stroke-dasharray="8 7"/><text x="150" y="162" text-anchor="middle" font-family="'Inter'" font-weight="700" font-size="14" fill="${shade(col, isLight(col) ? -0.45 : 0.6)}">Tu diseño</text></g>`)}
+    ${c.pos === 'ambos' || back ? `<text x="150" y="286" text-anchor="middle" font-family="'Inter'" font-weight="700" font-size="12" fill="${shade(col, isLight(col) ? -0.45 : 0.6)}">${back ? 'VISTA ESPALDA' : 'FRENTE + ESPALDA'}</text>` : ''}
   </svg>`;
 }
 
@@ -634,12 +690,67 @@ function mugSVG(c) {
     <ellipse cx="140" cy="70" rx="82" ry="14" fill="${inn}" stroke="#2A1A0E" stroke-width="3"/>
     ${imgTag(c.img, 86, 96, 108, 100)}
     ${t ? `<text x="140" y="${c.img ? 228 : 172}" text-anchor="middle" font-family="${font}" font-size="${textFit(t, 8, 28)}" fill="#2A1A0E">${esc(t)}</text>` : (c.img ? '' : `<text x="140" y="172" text-anchor="middle" font-family="'Pacifico'" font-size="26" fill="${inn}">tu frase</text>`)}
-    ${magic ? `<rect x="60" y="86" width="160" height="174" fill="#2A1A0E" opacity=".35"/><text x="140" y="250" text-anchor="middle" font-family="'Outfit'" font-weight="700" font-size="12" fill="#FFFDF9">✦ aparece con calor</text>` : ''}
+    ${magic ? `<rect x="60" y="86" width="160" height="174" fill="#2A1A0E" opacity=".35"/><text x="140" y="250" text-anchor="middle" font-family="'Inter'" font-weight="700" font-size="12" fill="#FFFDF9">✦ aparece con calor</text>` : ''}
     <path d="M70 92V230" stroke="#fff" stroke-width="8" stroke-linecap="round" opacity=".6"/>
   </svg>`;
 }
 
-const RENDER = { minifig: minifigSVG, frame: frameSVG, keychain: keychainSVG, hoodie: hoodieSVG, shirt: shirtSVG, mug: mugSVG };
+function cupSVG(c) {
+  const k = 'c' + (++UID), col = c.cup || '#F4F1EC', clear = col === '#F4F1EC', big = c.size === '24';
+  const t = String(c.name || '').trim(), ink = c.ink || '#FFFFFF', font = FONTS[c.font] || FONTS.firma;
+  const top = big ? 52 : 70, w0 = big ? 64 : 60, w1 = big ? 44 : 42;
+  const body = `M${150 - w0} ${top}L${150 - w1} 282Q150 290 ${150 + w1} 282L${150 + w0} ${top}Z`;
+  const inkFill = clear && ink === '#FFFFFF' ? '#1E1611' : ink;
+  return `<svg viewBox="0 0 300 320" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="${k}g" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".22" stop-color="#fff" stop-opacity=".08"/><stop offset=".7" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".18"/></linearGradient></defs>
+    <ellipse cx="150" cy="292" rx="58" ry="7" fill="#000" opacity=".14"/>
+    <rect x="164" y="${top - 58}" width="9" height="${big ? 110 : 96}" rx="4" transform="rotate(10 168 ${top})" fill="${clear ? '#F08A1C' : shade(col, -0.2)}"/>
+    <path d="${body}" fill="${col}" fill-opacity="${clear ? .55 : .95}" stroke="${shade(col, -0.25)}" stroke-width="1.5"/>
+    ${clear ? `<path d="M${150 - w0 + 12} ${top + 18}L${150 - w1 + 8} 272Q150 278 ${150 + w1 - 8} 272L${150 + w0 - 12} ${top + 18}Z" fill="#fff" opacity=".5"/>` : ''}
+    <path d="${body}" fill="url(#${k}g)"/>
+    <rect x="${150 - w0 - 4}" y="${top - 12}" width="${(w0 + 4) * 2}" height="16" rx="7" fill="${clear ? '#E9E3DA' : shade(col, -0.12)}" stroke="${shade(col, -0.3)}" stroke-width="1.2"/>
+    <path d="M${150 - w0 + 2} ${top - 12}Q150 ${top - 30} ${150 + w0 - 2} ${top - 12}Z" fill="${clear ? '#F4EFE7' : col}" stroke="${shade(col, -0.3)}" stroke-width="1.2"/>
+    ${t ? `<text x="150" y="${top + 96}" text-anchor="middle" font-family="${font}" font-size="${textFit(t, 7, c.font === 'firma' ? 40 : 30)}" fill="${inkFill}">${esc(t)}</text>` : ''}
+    <path d="M${150 - w0 + 8} ${top + 10}L${150 - w1 + 6} 270" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".55"/>
+  </svg>`;
+}
+
+function tumblerSVG(c) {
+  const k = 't' + (++UID), col = c.color || '#1E1611', t = String(c.name || '').trim() || 'Tu nombre';
+  const font = FONTS[c.font] || FONTS.firma, tall = c.cap === '750';
+  const h = tall ? 220 : 190, y0 = 290 - h;
+  const ink = isLight(col) ? '#5C4C41' : '#E9E3DA';
+  return `<svg viewBox="0 0 300 320" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="${k}g" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset=".3" stop-color="#fff" stop-opacity=".05"/><stop offset=".75" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/></linearGradient></defs>
+    <ellipse cx="150" cy="296" rx="56" ry="7" fill="#000" opacity=".15"/>
+    <rect x="108" y="${y0 - 30}" width="84" height="34" rx="9" fill="#2B2420"/><rect x="108" y="${y0 - 30}" width="84" height="34" rx="9" fill="url(#${k}g)"/>
+    <rect x="130" y="${y0 - 42}" width="40" height="14" rx="6" fill="#3A302A"/>
+    <rect x="102" y="${y0}" width="96" height="${h}" rx="20" fill="${col}"/>
+    <rect x="102" y="${y0}" width="96" height="${h}" rx="20" fill="url(#${k}g)"/>
+    <text transform="translate(154 ${y0 + h / 2}) rotate(-90)" text-anchor="middle" dominant-baseline="middle" font-family="${font}" font-size="${textFit(t, 7, c.font === 'firma' ? 38 : 30)}" fill="${ink}" opacity=".95">${esc(t)}</text>
+  </svg>`;
+}
+
+function toteSVG(c) {
+  const k = 'b' + (++UID), col = c.color || '#EFE3CC', ink = c.ink || '#1E1611', t = String(c.text || '').trim();
+  const font = FONTS[c.font] || FONTS.serif, big = c.size === 'g';
+  const inkFill = col === '#1E1611' && ink === '#1E1611' ? '#FFFFFF' : ink;
+  const x0 = big ? 56 : 66, x1 = big ? 244 : 234;
+  return `<svg viewBox="0 0 300 330" xmlns="http://www.w3.org/2000/svg">
+    <defs><pattern id="${k}p" width="4" height="4" patternUnits="userSpaceOnUse"><path d="M0 0h4M0 2h4" stroke="#000" stroke-opacity=".05"/><path d="M0 0v4M2 0v4" stroke="#fff" stroke-opacity=".06"/></pattern>
+      <linearGradient id="${k}g" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity=".2"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".14"/></linearGradient></defs>
+    <ellipse cx="150" cy="318" rx="92" ry="7" fill="#000" opacity=".12"/>
+    <path d="M110 112V70a40 40 0 0 1 80 0v42" fill="none" stroke="${shade(col, -0.18)}" stroke-width="11" stroke-linecap="round"/>
+    <path d="M${x0} 104H${x1}L${x1 + 8} 310H${x0 - 8}Z" fill="${col}"/>
+    <path d="M${x0} 104H${x1}L${x1 + 8} 310H${x0 - 8}Z" fill="url(#${k}p)"/>
+    <path d="M${x0} 104H${x1}L${x1 + 8} 310H${x0 - 8}Z" fill="url(#${k}g)"/>
+    <path d="M${x0} 116H${x1}" stroke="#000" stroke-opacity=".08" stroke-dasharray="3 3"/>
+    ${imgTag(c.img, 100, 140, 100, 90)}
+    ${t ? `<text x="150" y="${c.img ? 262 : 214}" text-anchor="middle" font-family="${font}" font-size="${textFit(t, 10, c.font === 'firma' ? 34 : 26)}" fill="${inkFill}">${esc(t)}</text>` : ''}
+  </svg>`;
+}
+
+const RENDER = { minifig: minifigSVG, frame: frameSVG, keychain: keychainSVG, hoodie: hoodieSVG, shirt: shirtSVG, mug: mugSVG, cup: cupSVG, tumbler: tumblerSVG, tote: toteSVG };
 const renderProduct = (p, cfg) => RENDER[p.render](cfg);
 
 // cara chiquita para las pestañas de figuras
@@ -648,38 +759,89 @@ function headSVG(f) {
 }
 
 /* ---------- catálogo ---------- */
-let filter = 'todos';
-function renderFilters() {
-  const count = id => CARDS.filter(c => id === 'todos' || PRODUCTS.find(p => p.id === c.id).cat === id).length;
-  $('#filters').innerHTML = CATS.map(([id, l]) => `<button role="tab" aria-selected="${id === filter}" data-f="${id}">${l}<b>${count(id)}</b></button>`).join('');
-}
+const PAGE = 8;
+const ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+const norm = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+const state = { cat: 'todos', q: '', sort: 'feat', shown: PAGE };
+
 function cardHTML(card, ci, href) {
   const p = PRODUCTS.find(x => x.id === card.id);
   const cfg = cardCfg(card);
+  const title = card.title || p.name;
   const badge = card.badge ?? (card.cfg ? '' : p.badge);
-  const open = href ? `href="${href}"` : `data-card="${ci}" role="button" tabindex="0" aria-label="Personalizar ${esc(card.title || p.name)}"`;
-  const tag = href ? 'a' : 'div';
   const hasPhoto = card.photo && photoOK[card.photo] !== false;
-  return `<article class="card${hasPhoto ? ' has-photo' : ''}">
-    <${tag} class="card-art" style="background:${card.bg || p.bg}" ${open}>${badge ? `<span class="badge">${badge}</span>` : ''}
+  const tint = `color-mix(in srgb, ${card.bg || p.bg} 26%, #FBF7F2)`;
+  const sg = p.groups.find(g => g.type === 'swatch');
+  const dots = sg ? `<span class="dots" aria-hidden="true">${sg.options.filter(o => o.v !== 'none').slice(0, 4).map(o => `<i style="background:${o.v}"></i>`).join('')}</span>` : '';
+  const open = href ? `href="${href}"` : `data-card="${ci}" role="button" tabindex="0"`;
+  const tag = href ? 'a' : 'article';
+  return `<${tag} class="card${hasPhoto ? ' has-photo' : ''}" ${open} aria-label="Personalizar ${esc(title)}">
+    <div class="card-media" style="--tint:${tint}">
+      ${badge ? `<span class="badge">${badge}</span>` : ''}
       <div class="art-illus">${renderProduct(p, cfg)}</div>
-      ${hasPhoto ? `<img class="real" src="${card.photo}" alt="Foto real: ${esc(card.title || p.name)}" loading="lazy" style="object-position:${card.photoPos || '50% 50%'}" onerror="this.closest('.card').classList.remove('has-photo');this.remove()"><span class="real-chip"><i></i>Pedido real</span>` : ''}</${tag}>
-    <div class="card-body"><h3>${card.title || p.name}</h3><p>${card.desc || p.desc}</p>
-      <div class="card-row"><span class="from">desde<b>${fmt(priceOf(p, cfg).unit)}</b></span>
-      ${href ? `<a class="btn btn-dark" href="${href}">Personalizar</a>` : `<button class="btn btn-dark" data-card="${ci}">Personalizar</button>`}</div></div>
-  </article>`;
+      ${hasPhoto ? `<img class="real" src="${card.photo}" alt="" loading="lazy" style="object-position:${card.photoPos || '50% 50%'}" onerror="this.closest('.card').classList.remove('has-photo');this.nextElementSibling.remove();this.remove()"><span class="real-chip"><i></i>Pedido real</span>` : ''}
+      <span class="card-cta">Personalizar ${ARROW}</span>
+    </div>
+    <div class="card-body">
+      <p class="card-cat">${catName(p.cat)}</p>
+      <h3>${esc(title)}</h3>
+      <p class="card-desc">${esc(card.desc || p.desc)}</p>
+      <div class="card-foot"><span class="price"><small>desde</small>${fmt(priceOf(p, cfg).unit)}</span>${dots}</div>
+    </div>
+  </${tag}>`;
 }
-function renderGrid() {
-  $('#grid').innerHTML = CARDS.map((card, ci) => {
+
+function results() {
+  const q = norm(state.q.trim());
+  let list = CARDS.map((card, ci) => {
     const p = PRODUCTS.find(x => x.id === card.id);
-    return filter !== 'todos' && p.cat !== filter ? '' : cardHTML(card, ci);
-  }).join('');
+    return { card, ci, p, price: priceOf(p, cardCfg(card)).unit, title: card.title || p.name };
+  }).filter(r => (state.cat === 'todos' || r.p.cat === state.cat)
+    && (!q || norm([r.title, r.card.desc || r.p.desc, catName(r.p.cat), r.p.name].join(' ')).includes(q)));
+  if (state.sort === 'asc') list.sort((x, y) => x.price - y.price);
+  if (state.sort === 'desc') list.sort((x, y) => y.price - x.price);
+  if (state.sort === 'name') list.sort((x, y) => x.title.localeCompare(y.title, 'es'));
+  return list;
 }
+
+function renderFilters() {
+  const count = id => CARDS.filter(c => id === 'todos' || PRODUCTS.find(p => p.id === c.id).cat === id).length;
+  $('#filters').innerHTML = CATS.map(([id, l]) => `<button role="tab" aria-selected="${id === state.cat}" data-f="${id}">${l}<b>${count(id)}</b></button>`).join('');
+}
+
+function renderGrid(append = false) {
+  const list = results(), grid = $('#grid');
+  const from = append ? grid.querySelectorAll('.card').length : 0;
+  const slice = list.slice(from, state.shown);
+  const html = slice.map(r => cardHTML(r.card, r.ci)).join('');
+  if (append) grid.insertAdjacentHTML('beforeend', html);
+  else grid.innerHTML = list.length ? html : `<div class="empty-search"><h3>Nada por aquí… todavía</h3><p>No encontramos “${esc(state.q)}”. Prueba otra palabra o escríbenos: lo hacemos a la medida.</p><button class="btn btn-dark" data-reset>Ver todo el catálogo</button></div>`;
+  const shown = Math.min(state.shown, list.length);
+  $('#resCount').textContent = list.length ? `${list.length} producto${list.length > 1 ? 's' : ''}${state.cat !== 'todos' ? ' en ' + catName(state.cat) : ''}` : 'Sin resultados';
+  const lm = $('#loadMore');
+  lm.hidden = shown >= list.length;
+  $('#loadTxt').textContent = `Mostrando ${shown} de ${list.length}`;
+  $('#loadBar').style.transform = `scaleX(${list.length ? shown / list.length : 0})`;
+  reveal(true);
+}
+
+function refresh() { state.shown = PAGE; swapContent($('#grid'), () => renderGrid()); }
+
 $('#filters')?.addEventListener('click', e => {
-  const b = e.target.closest('[data-f]'); if (!b || b.dataset.f === filter) return;
-  filter = b.dataset.f; renderFilters();
-  const g = $('#grid');
-  swapContent(g, () => { renderGrid(); reveal(true); });
+  const b = e.target.closest('[data-f]'); if (!b || b.dataset.f === state.cat) return;
+  state.cat = b.dataset.f; renderFilters(); refresh();
+});
+let qT;
+$('#q')?.addEventListener('input', e => {
+  state.q = e.target.value; $('#qClear').hidden = !state.q;
+  clearTimeout(qT); qT = setTimeout(refresh, 160);
+});
+$('#qClear')?.addEventListener('click', () => { $('#q').value = ''; state.q = ''; $('#qClear').hidden = true; $('#q').focus(); refresh(); });
+$('#sort')?.addEventListener('change', e => { state.sort = e.target.value; refresh(); });
+$('#loadBtn')?.addEventListener('click', () => { state.shown += PAGE; renderGrid(true); });
+document.addEventListener('click', e => {
+  if (!e.target.closest('[data-reset]')) return;
+  state.q = ''; state.cat = 'todos'; $('#q').value = ''; $('#qClear').hidden = true; renderFilters(); refresh();
 });
 
 // cambia contenido con un fundido corto (solo opacidad/transform)
@@ -687,6 +849,74 @@ function swapContent(el, fn) {
   el.classList.add('swap-out');
   setTimeout(() => { fn(); el.classList.remove('swap-out'); el.classList.add('swap-in'); requestAnimationFrame(() => requestAnimationFrame(() => el.classList.remove('swap-in'))); }, 140);
 }
+
+/* ---------- zoom de la vista previa ---------- */
+const Z = { s: 1, x: 0, y: 0, min: 1, max: 4 };
+const zArea = () => $('#cZoomArea'), zLayer = () => $('#cStage');
+function zApply(anim = false) {
+  const area = zArea(), layer = zLayer(); if (!area) return;
+  const W = area.clientWidth, H = area.clientHeight;
+  Z.s = Math.min(Z.max, Math.max(Z.min, Z.s));
+  Z.x = Math.min(0, Math.max(W - W * Z.s, Z.x));
+  Z.y = Math.min(0, Math.max(H - H * Z.s, Z.y));
+  layer.classList.toggle('anim', anim);
+  layer.style.transform = `translate(${Z.x}px, ${Z.y}px) scale(${Z.s})`;
+  area.classList.toggle('zoomed', Z.s > 1.01);
+  $('#zVal').textContent = Math.round(Z.s * 100) + '%';
+  $('#zOut').disabled = Z.s <= Z.min + .01; $('#zIn').disabled = Z.s >= Z.max - .01; $('#zReset').disabled = Z.s <= 1.01;
+}
+function zoomAt(cx, cy, ns, anim = false) {
+  ns = Math.min(Z.max, Math.max(Z.min, ns));
+  Z.x = cx - (cx - Z.x) * (ns / Z.s); Z.y = cy - (cy - Z.y) * (ns / Z.s); Z.s = ns;
+  zApply(anim); hideTip();
+}
+function zReset(anim = true) { Z.s = 1; Z.x = 0; Z.y = 0; zApply(anim); }
+const zCenter = () => { const a = zArea(); return [a.clientWidth / 2, a.clientHeight / 2]; };
+let tipT;
+function showTip() {
+  const t = $('#zoomTip'); if (!t) return;
+  t.textContent = matchMedia('(pointer: coarse)').matches ? 'Pellizca o toca dos veces para acercar' : 'Usa la rueda o doble clic para acercar';
+  t.classList.remove('hide'); clearTimeout(tipT); tipT = setTimeout(hideTip, 3200);
+}
+function hideTip() { $('#zoomTip')?.classList.add('hide'); }
+(function initZoom() {
+  const area = zArea(); if (!area) return;
+  const pts = new Map(); let last = null, pinch = null, lastTap = 0;
+  const rel = e => { const r = area.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  area.addEventListener('wheel', e => {
+    e.preventDefault();
+    const [cx, cy] = rel(e);
+    zoomAt(cx, cy, Z.s * Math.exp(-e.deltaY * (e.ctrlKey ? .01 : .0015)));
+  }, { passive: false });
+  area.addEventListener('pointerdown', e => {
+    area.setPointerCapture(e.pointerId); pts.set(e.pointerId, rel(e));
+    if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a[0] - b[0], a[1] - b[1]), s: Z.s }; }
+    last = rel(e);
+    // doble toque/clic: acerca al punto o regresa
+    const now = performance.now();
+    if (pts.size === 1 && now - lastTap < 300) { const [cx, cy] = rel(e); Z.s > 1.01 ? zReset() : zoomAt(cx, cy, 2.5, true); lastTap = 0; }
+    else lastTap = now;
+  });
+  area.addEventListener('pointermove', e => {
+    if (!pts.has(e.pointerId)) return;
+    pts.set(e.pointerId, rel(e));
+    if (pts.size === 2 && pinch) {
+      const [a, b] = [...pts.values()];
+      const d = Math.hypot(a[0] - b[0], a[1] - b[1]);
+      zoomAt((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, pinch.s * d / pinch.d);
+    } else if (pts.size === 1 && Z.s > 1.01 && last) {
+      const p = rel(e); Z.x += p[0] - last[0]; Z.y += p[1] - last[1]; last = p;
+      area.classList.add('dragging'); zApply();
+    }
+  });
+  const up = e => { pts.delete(e.pointerId); if (pts.size < 2) pinch = null; last = pts.size ? [...pts.values()][0] : null; area.classList.remove('dragging'); };
+  area.addEventListener('pointerup', up); area.addEventListener('pointercancel', up);
+  area.addEventListener('gesturestart', e => e.preventDefault());
+  $('#zIn').addEventListener('click', () => zoomAt(...zCenter(), Z.s * 1.5, true));
+  $('#zOut').addEventListener('click', () => zoomAt(...zCenter(), Z.s / 1.5, true));
+  $('#zReset').addEventListener('click', () => zReset());
+  addEventListener('resize', () => zApply());
+})();
 
 /* ---------- personalizador ---------- */
 let cur = null; // { p, cfg, qty, editIdx, fig, step, photo }
@@ -705,6 +935,7 @@ function openCustom(id, cfg, qty = 1, editIdx = null, photo = null, photoPos = n
   lastPrice = null;
   buildForm(); update(true);
   openModal('#custom');
+  requestAnimationFrame(() => { zReset(false); showTip(); });
   $('#cForm').scrollTop = 0;
 }
 
@@ -901,6 +1132,7 @@ $('#refBtn')?.addEventListener('click', () => {
   cur.showPhoto = !cur.showPhoto;
   $('#refBtn').classList.toggle('on', cur.showPhoto);
   $('#refBtn span').textContent = cur.showPhoto ? 'Mi diseño' : 'Pedido real';
+  zReset();
   $('#refBtn img').src = cur.showPhoto ? 'data:image/svg+xml,' + encodeURIComponent(renderProduct(cur.p, cur.cfg).replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ')) : cur.photo;
   update();
 });
@@ -1127,7 +1359,7 @@ document.addEventListener('click', e => {
   if (e.target.closest('[data-xdone]')) closeModal('#done');
 });
 document.addEventListener('keydown', e => {
-  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('.card-art[data-card]')) { e.preventDefault(); openCard(+e.target.dataset.card); }
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('.card[data-card]')) { e.preventDefault(); openCard(+e.target.dataset.card); }
   if (e.key !== 'Escape') return;
   ['#done', '#custom'].forEach(s => $(s)?.classList.contains('open') && closeModal(s));
   if ($('#drawer')?.classList.contains('open')) closeDrawer();
@@ -1187,7 +1419,23 @@ document.querySelectorAll('img[data-ph]').forEach(img => {
 const MINIS = [CARDS[0].cfg, CARDS[3].cfg, CARDS[1].cfg];
 document.querySelectorAll('[data-mini]').forEach(el => { el.innerHTML = frameSVG({ ...defaults(PRODUCTS[0]), ...clone(MINIS[+el.dataset.mini]) }); });
 
-if ($('#featured')) $('#featured').innerHTML = [0, 1, 3].map(i => cardHTML(CARDS[i], i, `catalogo.html?card=${i}`)).join('');
+if ($('#featured')) $('#featured').innerHTML = [0, 1, 3, 2].map(i => cardHTML(CARDS[i], i, `catalogo.html?card=${i}`)).join('');
+if ($('#cats')) $('#cats').innerHTML = CAT_TILES.map(t => {
+  const n = CARDS.filter(c => PRODUCTS.find(p => p.id === c.id).cat === t.cat).length;
+  const p = t.product && PRODUCTS.find(x => x.id === t.product);
+  const art = t.photo ? `<img src="${t.photo}" alt="" loading="lazy">` : renderProduct(p, defaults(p));
+  return `<a class="cat-tile" href="catalogo.html?cat=${t.cat}" style="--tint:${t.tint}"><div class="cat-art">${art}</div>
+    <div class="cat-label"><div><h3>${catName(t.cat)}</h3><small>${t.note} · ${n} diseño${n > 1 ? 's' : ''}</small></div><span class="cat-go">${ARROW}</span></div></a>`;
+}).join('');
+document.querySelectorAll('#faces span').forEach((s, i) => { s.innerHTML = headSVG(FIG_PRESETS[[0, 1, 4, 5][i]]); });
+$('#howFig')?.insertAdjacentHTML('afterbegin', frameSVG(cardCfg(CARDS[0])));
+
+// menú móvil
+$('#menuBtn')?.addEventListener('click', () => {
+  const m = $('#mNav'), open = !m.classList.contains('open');
+  m.classList.toggle('open', open); $('#menuBtn').setAttribute('aria-expanded', open);
+});
+document.querySelectorAll('#mNav a').forEach(l => l.addEventListener('click', () => { $('#mNav').classList.remove('open'); $('#menuBtn')?.setAttribute('aria-expanded', 'false'); }));
 
 /* ---------- movimiento y navegación ---------- */
 const io = 'IntersectionObserver' in window && new IntersectionObserver(es => es.forEach(e => {
@@ -1195,7 +1443,7 @@ const io = 'IntersectionObserver' in window && new IntersectionObserver(es => es
 }), { rootMargin: '0px 0px -8% 0px' });
 function reveal(fresh = false) {
   if (!io) return;
-  document.querySelectorAll('.sec-head,.step,.card,.ph,.rev,.post,.faq details,.promo-card,.story-in>*').forEach(el => {
+  document.querySelectorAll('.sec-head,.how,.cat-tile,.card,.ph,.rev,.post,.faq details,.cta-band,.trust-item,.story-in>*').forEach(el => {
     if (el.classList.contains('reveal')) return;
     el.classList.add('reveal');
     el.style.setProperty('--i', [...el.parentElement.children].indexOf(el) % 6);
@@ -1203,16 +1451,6 @@ function reveal(fresh = false) {
   });
 }
 reveal();
-
-// tarjetas: leve inclinación siguiendo el puntero (solo mouse)
-if (matchMedia('(hover: hover) and (pointer: fine)').matches && !REDUCED) {
-  document.addEventListener('pointermove', e => {
-    const art = e.target.closest?.('.card-art'); if (!art) return;
-    const r = art.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
-    art.style.setProperty('--rx', (-y * 5).toFixed(2) + 'deg'); art.style.setProperty('--ry', (x * 6).toFixed(2) + 'deg');
-  }, { passive: true });
-  document.addEventListener('pointerout', e => { const art = e.target.closest?.('.card-art'); if (art && !art.contains(e.relatedTarget)) { art.style.removeProperty('--rx'); art.style.removeProperty('--ry'); } });
-}
 
 const nav = $('.nav');
 const spy = [...document.querySelectorAll('.links a[href^="#"]')].map(a => [a, document.querySelector(a.getAttribute('href'))]).filter(x => x[1]);
@@ -1232,8 +1470,8 @@ if (!CONFIG.ordersEnabled) document.body.classList.add('locked');
 $('#yr').textContent = new Date().getFullYear();
 if ($('#grid')) {
   const q = new URLSearchParams(location.search);
-  if (CATS.some(c => c[0] === q.get('cat'))) filter = q.get('cat');
-  renderFilters(); renderGrid(); reveal();
+  if (CATS.some(c => c[0] === q.get('cat'))) state.cat = q.get('cat');
+  renderFilters(); renderGrid();
   if (q.has('card')) openCard(+q.get('card'));
   else if (q.has('edit')) editItem(+q.get('edit'));
 }
