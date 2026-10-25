@@ -13,6 +13,7 @@ const CONFIG = {
 const fmt = n => new Intl.NumberFormat(CONFIG.locale, { style: 'currency', currency: CONFIG.currency, maximumFractionDigits: 0 }).format(n);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const $ = s => document.querySelector(s);
+// con "menos movimiento" activo solo se quitan el vuelo al carrito y la inclinación; lo demás son fundidos cortos
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let UID = 0; // ids únicos para gradientes/filtros dentro de cada SVG
 
@@ -683,7 +684,6 @@ $('#filters')?.addEventListener('click', e => {
 
 // cambia contenido con un fundido corto (solo opacidad/transform)
 function swapContent(el, fn) {
-  if (REDUCED) return fn();
   el.classList.add('swap-out');
   setTimeout(() => { fn(); el.classList.remove('swap-out'); el.classList.add('swap-in'); requestAnimationFrame(() => requestAnimationFrame(() => el.classList.remove('swap-in'))); }, 140);
 }
@@ -776,7 +776,7 @@ function buildForm(dir = 0) {
       + `<div class="step-body">${p.groups.filter(g => (g.step || 0) === s).map(g => groupHTML(g, cur.cfg, 'p')).join('')}${isLast() ? qtyHTML() : ''}</div>`;
   }
   form.innerHTML = html;
-  if (dir && !REDUCED) {
+  if (dir) {
     const b = form.querySelector('.step-body');
     b && b.animate([{ opacity: 0, transform: `translateX(${dir * 24}px)` }, { opacity: 1, transform: 'none' }], { duration: 260, easing: 'cubic-bezier(.22,1,.36,1)' });
   }
@@ -796,7 +796,7 @@ const groupsOf = sc => sc === 'f' ? FIG_GROUPS : cur.p.groups;
 let lastPrice = null, priceRAF = 0;
 function animatePrice(to) {
   const el = $('#cTotal');
-  if (lastPrice === null || REDUCED || lastPrice === to) { el.textContent = fmt(to); lastPrice = to; return; }
+  if (lastPrice === null || lastPrice === to) { el.textContent = fmt(to); lastPrice = to; return; }
   const from = lastPrice, t0 = performance.now(), D = 380;
   cancelAnimationFrame(priceRAF);
   el.classList.remove('tick'); void el.offsetWidth; el.classList.add(to > from ? 'tick' : 'tick');
@@ -816,7 +816,7 @@ function update(first = false, quiet = false) {
   stageRAF = requestAnimationFrame(() => {
     const stage = $('#cStage');
     stage.innerHTML = cur.showPhoto ? `<img class="stage-photo" src="${cur.photo}" alt="Foto real del pedido" style="object-position:${cur.photoPos || '50% 50%'}">` : renderProduct(p, cfg);
-    if (!first && !quiet && !REDUCED) stage.firstElementChild?.animate([{ transform: 'scale(.985)', opacity: .7 }, { transform: 'none', opacity: 1 }], { duration: 240, easing: 'cubic-bezier(.22,1,.36,1)' });
+    if (!first && !quiet) stage.firstElementChild?.animate([{ transform: 'scale(.985)', opacity: .7 }, { transform: 'none', opacity: 1 }], { duration: 240, easing: 'cubic-bezier(.22,1,.36,1)' });
   });
   const { lines, unit } = priceOf(p, cfg);
   const t = lineTotal(unit, qty);
@@ -895,7 +895,7 @@ function shrinkImage(file, max) {
 $('#brkBtn')?.addEventListener('click', () => {
   const b = $('#cBreak'), open = b.hidden;
   b.hidden = !open; $('#brkBtn').setAttribute('aria-expanded', open);
-  if (open && !REDUCED) b.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: 'ease-out' });
+  if (open) b.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: 'ease-out' });
 });
 $('#refBtn')?.addEventListener('click', () => {
   cur.showPhoto = !cur.showPhoto;
@@ -1044,7 +1044,7 @@ $('#drawer')?.addEventListener('click', e => {
   if (t.dataset.del !== undefined) {
     const row = t.closest('.item');
     const go = () => { cart.splice(+t.dataset.del, 1); saveCart(); renderDrawer(); };
-    if (REDUCED || !row) go(); else row.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(40px)' }], { duration: 200, easing: 'ease-in' }).onfinish = go;
+    if (!row) go(); else row.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(40px)' }], { duration: 200, easing: 'ease-in' }).onfinish = go;
   }
   else if (t.dataset.edit !== undefined) { editItem(+t.dataset.edit); }
   else if (t.id === 'goCheckout') { view = 'checkout'; renderDrawer(); }
@@ -1113,7 +1113,6 @@ function closeModal(s) {
     if (!document.querySelector('.modal.open,.drawer.open')) document.body.style.overflow = '';
     lastFocus?.focus?.({ preventScroll: true });
   };
-  if (REDUCED) return done();
   m.classList.add('closing');
   setTimeout(done, 200);
 }
@@ -1163,15 +1162,15 @@ function hero(animate = true) {
   layer.innerHTML = frameSVG({ ...defaults(PRODUCTS[0]), ...clone(HERO[heroI % HERO.length]) });
   box.appendChild(layer);
   const old = [...box.children].slice(0, -1);
-  if (!animate || REDUCED) { old.forEach(o => o.remove()); return; }
-  layer.animate([{ opacity: 0, transform: 'translateY(14px) rotate(-1.5deg) scale(.97)' }, { opacity: 1, transform: 'none' }], { duration: 700, easing: 'cubic-bezier(.22,1,.36,1)' });
+  if (!animate) { old.forEach(o => o.remove()); return; }
+  layer.animate(REDUCED ? [{ opacity: 0 }, { opacity: 1 }] : [{ opacity: 0, transform: 'translateY(14px) rotate(-1.5deg) scale(.97)' }, { opacity: 1, transform: 'none' }], { duration: 700, easing: 'cubic-bezier(.22,1,.36,1)' });
   old.forEach(o => o.animate([{ opacity: 1 }, { opacity: 0, transform: 'translateY(-10px) scale(.98)' }], { duration: 450, easing: 'ease-in', fill: 'forwards' }).onfinish = () => o.remove());
 }
 if ($('#heroFig')) {
   hero(false);
   const next = () => { heroI++; hero(); };
   $('#shuffle').addEventListener('click', () => { next(); clearInterval(heroTimer); heroTimer = setInterval(() => !document.hidden && next(), 5000); });
-  if (!REDUCED) heroTimer = setInterval(() => !document.hidden && next(), 5000);
+  heroTimer = setInterval(() => !document.hidden && next(), 5000);
 }
 
 // huecos de fotos reales: si no existe el archivo se muestra el aviso

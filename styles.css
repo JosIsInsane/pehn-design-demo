@@ -351,7 +351,8 @@ body:not(.locked) .ico-lock{display:none}
   .c-panel>.c-cat,.c-panel>h2,.c-form{padding-left:16px!important;padding-right:16px}
   .c-foot{padding:12px 16px 14px}
 }
-@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* menos movimiento: solo se quitan bucles y movimientos grandes; fundidos y transiciones cortas se quedan */
+@media (prefers-reduced-motion:reduce){.track,.hero-fig,.tag,.spark,.done-card img{animation:none!important}.card-art img.real,.art-illus{transform:none!important}}
 
 /* ===================== polish (ui-ux pass) ===================== */
 :root{
@@ -520,7 +521,6 @@ a,button,[data-card],summary,label.file{cursor:pointer;touch-action:manipulation
   .steps-nav{margin:-6px -16px 4px;padding:8px 16px 10px}
 
 }
-@media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none}}
 .c-preview{overflow:hidden;min-height:0}
 .c-stage{min-height:0;height:100%}
 .c-stage svg{max-height:100%}
@@ -704,10 +704,7 @@ a.ph{display:block;text-decoration:none;color:inherit}
 @media (max-width:520px){
   .steps-nav button span{font-size:12px}
 }
-@media (prefers-reduced-motion:reduce){
-  .card.has-photo:hover .card-art img.real{opacity:1}
-  .hero-copy>*,.hero-art{animation:none}
-}
+
 .breakdown[hidden]{display:none}
 .sheet:focus{outline:none}
 @media (max-width:900px){.ref{left:10px;right:auto;bottom:28px}.ref img{width:48px;height:48px}}
