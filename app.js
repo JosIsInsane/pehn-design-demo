@@ -2,12 +2,15 @@
    Precios de ejemplo: ajustar en PRODUCTS. Envío del pedido: ver submitOrder(). */
 
 const CONFIG = {
-  currency: 'MXN',          // TODO: confirmar moneda / país con cliente
-  locale: 'es-MX',
+  currency: 'HNL',          // lempiras
+  locale: 'es-HN',
   bulkMin: 5,               // descuento por volumen desde N piezas
   bulkPct: 10,
   ordersEnabled: true,      // false = sin carrito, cada diseño se pide directo por WhatsApp
-  whatsapp: '',             // TODO: número con lada, ej. '5215512345678'
+  whatsapp: '',             // TODO: número con código de país, ej. '50498765432'
+  // Google Sheets: URL de la app web de Apps Script y el token de la hoja Config (Pehn › Ver URL y token)
+  sheetsUrl: '',
+  sheetsToken: '',
 };
 
 const fmt = n => new Intl.NumberFormat(CONFIG.locale, { style: 'currency', currency: CONFIG.currency, maximumFractionDigits: 0 }).format(n);
@@ -114,6 +117,7 @@ const PRODUCTS = [
     desc: 'Marco de profundidad con sus minifiguras, sus nombres, corazón en spray y su frase.',
     render: 'frame',
     steps: ['Figuras', 'Diseño', 'Texto', 'Marco'],
+    stockKeys: [['frame', 'size']],
     groups: [
       { step: 0, id: 'figs', label: 'Figuras', type: 'figs', min: 1, max: 4, pricePer: 180 },
       { step: 0, id: 'cats', label: 'Gatitos', type: 'stepper', min: 0, max: 3, pricePer: 70, note: 'c/u' },
@@ -127,7 +131,7 @@ const PRODUCTS = [
         { v: 'ninguno', label: 'Ninguno', price: 0 }, { v: 'brillos', label: 'Brillitos', price: 0 },
         { v: 'estrella', label: 'Estrella dorada', price: 0 }, { v: 'corazones', label: 'Corazones', price: 20 },
         { v: 'pride', label: 'Arcoíris', price: 20 }] },
-      { step: 1, id: 'nameFont', label: 'Letra de los nombres', type: 'choice', options: [
+      { step: 1, id: 'nameFont', label: 'Letra de los nombres', type: 'choice', noStock: true, options: [
         { v: 'serif', label: 'Elegante', price: 0 }, { v: 'firma', label: 'Manuscrita', price: 0 }] },
       { step: 2, id: 'word', label: 'Palabra', type: 'text', max: 12, placeholder: 'Amor…', showIf: c => c.tpl === 'amor' },
       { step: 2, id: 'top', label: 'Título arriba', type: 'text', max: 22, placeholder: 'Happy Birthday…', showIf: c => c.tpl === 'cumple' },
@@ -347,16 +351,24 @@ function lineTotal(unit, qty) {
   return { gross, disc, total: gross - disc };
 }
 
+// nombre del color de la paleta más parecido (para colores de pedidos reales fuera de la paleta)
+function colorName(g, v) {
+  const rgb = h => { const n = parseInt(String(h).slice(1), 16); return [n >> 16, (n >> 8) & 255, n & 255]; };
+  if (!/^#[0-9a-f]{6}$/i.test(v)) return v;
+  return g.options.filter(o => o.v.startsWith('#')).map(o => ({ o, d: rgb(o.v).reduce((s, c, i) => s + (c - rgb(v)[i]) ** 2, 0) })).sort((x, y) => x.d - y.d)[0]?.o.label || v;
+}
+const optLabel = (g, v) => g.options.find(o => o.v === v)?.label || (g.type === 'swatch' ? colorName(g, v) : v);
+
 function summaryOf(groups, cfg) {
   return groups.filter(g => visible(g, cfg)).flatMap(g => {
     const v = cfg[g.id];
-    if (g.type === 'swatch' || g.type === 'choice') return [[g.label, g.options.find(o => o.v === v)?.label]];
+    if (g.id === 'hat' && v === 'ninguno') return [];
+    if (g.type === 'swatch' || g.type === 'choice') return v ? [[g.label, optLabel(g, v)]] : [];
     if (g.type === 'file') return v ? [[g.label, cfg[g.id + 'Name'] || 'Imagen adjunta']] : [];
     if (g.type === 'stepper') return v ? [[g.label, v]] : [];
     if (g.type === 'figs') return v.map((f, i) => [`Figura ${i + 1}`, summaryOf(FIG_GROUPS, f).map(x => x[1]).join(', ')]);
     if (g.type === 'date') return v ? [[g.label, fmtDate(v)]] : [];
     if (g.type === 'multi') { const l = g.options.filter(o => (v || []).includes(o.v)).map(o => o.label); return l.length ? [[g.label, l.join(' + ')]] : []; }
-    if (g.id === 'hat' && v === 'ninguno') return [];
     return String(v || '').trim() ? [[g.label, v]] : [];
   });
 }
@@ -1349,7 +1361,7 @@ function renderCheckout(total) {
     <form class="co" id="coForm" novalidate>
       <label>Nombre completo<input name="name" autocomplete="name" required value="${esc(d.name)}"></label>
       <div class="row2">
-        <label>WhatsApp<input name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="10 dígitos, ej. 5512345678…" value="${esc(d.phone)}"></label>
+        <label>WhatsApp<input name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="8 dígitos, ej. 9876 5432…" value="${esc(d.phone)}"></label>
         <label>Correo<input name="email" type="email" inputmode="email" autocomplete="email" required value="${esc(d.email)}"></label>
       </div>
       <div class="row2">
@@ -1357,11 +1369,12 @@ function renderCheckout(total) {
         <label>¿Para cuándo?<input name="date" type="date"></label>
       </div>
       <label>Notas para el diseño<textarea name="notes" placeholder="Ej. él usa lentes redondos, ella tiene fleco…"></textarea></label>
+      <label class="hp" aria-hidden="true">No llenar<input name="website" tabindex="-1" autocomplete="off"></label>
       <div class="err" id="coErr" role="alert"></div>
     </form>`;
   $('#dFoot').innerHTML = `<div class="tot big"><span>Total estimado</span><span>${fmt(total)}</span></div>
     <button class="btn btn-dark" id="sendOrder">Enviar pedido ✦</button>
-    <p class="note">Recibirás confirmación por WhatsApp y correo.</p>`;
+    <p class="note">Te confirmamos por correo y te escribimos por WhatsApp con tu diseño.</p>`;
 }
 
 $('#drawer')?.addEventListener('click', e => {
@@ -1389,7 +1402,7 @@ async function handleSend(btn) {
   const data = Object.fromEntries(new FormData(f));
   const checks = {
     name: v => v.trim() ? '' : 'Escribe tu nombre.',
-    phone: v => v.replace(/\D/g, '').length >= 10 ? '' : 'Escribe un WhatsApp de 10 dígitos.',
+    phone: v => v.replace(/\D/g, '').replace(/^504/, '').length >= 8 ? '' : 'Escribe tu WhatsApp de 8 dígitos, ej. 9876 5432.',
     email: v => /^\S+@\S+\.\S+$/.test(v) ? '' : 'Revisa tu correo, ej. ana@correo.com.',
     city: v => v.trim() ? '' : 'Escribe tu ciudad.',
   };
@@ -1406,38 +1419,126 @@ async function handleSend(btn) {
   try { localStorage.setItem('pehn_contact', JSON.stringify({ name: data.name, phone: data.phone, email: data.email, city: data.city })); } catch { }
 
   const { rows, gross, disc, total } = cartTotals();
+  btn.disabled = true; btn.textContent = 'Preparando tu diseño…';
+  const previews = await Promise.all(rows.map(r => previewImage(r.p, r.i.cfg).catch(() => '')));
+  const { website, ...customer } = data;
   const order = {
     id: 'PEHN-' + Date.now().toString(36).toUpperCase().slice(-6),
     createdAt: new Date().toISOString(),
-    customer: data,
+    customer, website: website || '',
     currency: CONFIG.currency,
-    items: rows.map(r => ({
+    items: rows.map((r, i) => ({
       product: r.p.name, qty: r.i.qty, unitPrice: r.unit, discount: r.disc, total: r.total,
       options: summary(r.p, r.i.cfg),
       images: r.p.groups.filter(g => g.type === 'file' && r.i.cfg[g.id]).map(g => r.i.cfg[g.id]),
+      preview: previews[i],
+      bom: bomOf(r.p, r.i.cfg, r.i.qty),
     })),
     subtotal: gross, discount: disc, total,
   };
 
-  btn.disabled = true; btn.textContent = 'Enviando…';
+  btn.textContent = 'Enviando…';
   try {
-    await submitOrder(order);
+    const res = await submitOrder(order);
+    if (res.id) order.id = res.id;
     cart = []; saveCart(); view = 'cart'; closeDrawer();
     $('#doneTxt').innerHTML = `Tu número de pedido es <b>${order.id}</b>.<br>Total estimado <b>${fmt(total)}</b>.<br>Te escribimos a <b>${esc(data.phone)}</b> con tu diseño para aprobar.`;
     openModal('#done');
-  } catch {
-    $('#coErr').textContent = 'No se pudo enviar. Intenta de nuevo.';
+  } catch (e) {
+    $('#coErr').innerHTML = `No se pudo enviar (${esc(e.message || 'sin conexión')}). Intenta de nuevo o <a href="${waURL(waCartText())}" target="_blank" rel="noopener">mándalo por WhatsApp</a>.`;
   } finally { btn.disabled = false; btn.textContent = 'Enviar pedido ✦'; }
 }
 
-/* ===== ENVÍO DEL PEDIDO =====
-   PENDIENTE (requiere autorización): conectar a Google Sheets / CRM
-   y disparar mensaje de confirmación al cliente.
-   Por ahora solo simula el envío y deja el pedido en consola. */
+/* ===== ENVÍO DEL PEDIDO A GOOGLE SHEETS =====
+   Apps Script (carpeta apps-script/) guarda el pedido, la foto del diseño
+   y descuenta inventario según la hoja Recetas. */
+
+// claves de consumo: la hoja Recetas dice qué pieza gasta cada una
+function bomOf(p, cfg, qty) {
+  const out = [], clean = s => String(s).replace(/ /g, ' ').trim();
+  const add = (key, n = 1) => out.push({ key: clean(key), qty: n * qty });
+  const lab = (groups, id, v) => { const g = groups.find(x => x.id === id); return g?.options ? optLabel(g, v) : v; };
+  const skip = l => /^(Ninguno|Ninguna|Sin corazón)$/i.test(l);
+  const figKeys = (f0, base) => {
+    const f = normFig({ ...f0, extras: [...(f0.extras || [])] }), L = (id, v) => lab(FIG_GROUPS, id, v);
+    add('Figura · Cuerpo');
+    add(`Figura · Cabeza · ${L('skin', f.skin)}`);
+    if (f.hair !== 'calvo') add(`Figura · Cabello · ${L('hair', f.hair)} · ${L('hairColor', f.hairColor)}`);
+    if (f.outfit === 'vestido') add(`Figura · Vestido · ${L('torso', f.torso)}`);
+    else { add(`Figura · Torso · ${L('outfit', f.outfit)} · ${L('torso', f.torso)}`); if (f.legs) add(`Figura · Piernas · ${L('legs', f.legs)}`); }
+    if (f.hat && f.hat !== 'ninguno') add(`Figura · Sombrero · ${L('hat', f.hat)}`);
+    f.extras.forEach(x => add(`Figura · Detalle · ${L('extras', x) || x}`));
+    if (base) add('Figura · Base acrílica');
+  };
+  const figLike = p.groups.some(g => g.id === 'extras');
+  const figIds = new Set(FIG_GROUPS.map(g => g.id));
+  const combo = new Set((p.stockKeys || []).flat());
+  add(p.name);
+  p.groups.forEach(g => {
+    if (!visible(g, cfg) || (figLike && figIds.has(g.id))) return;
+    const v = cfg[g.id];
+    if (g.type === 'figs') v.forEach(f => figKeys(f, true));
+    else if (g.type === 'stepper') { if (v) add(`${p.name} · ${g.label}`, v); }
+    else if (g.type === 'multi') (v || []).forEach(x => add(`${p.name} · ${g.label} · ${lab(p.groups, g.id, x)}`));
+    else if ((g.type === 'choice' || g.type === 'swatch') && !combo.has(g.id) && !g.noStock && !['font', 'tpl'].includes(g.id) && !skip(lab(p.groups, g.id, v))) add(`${p.name} · ${g.label} · ${lab(p.groups, g.id, v)}`);
+  });
+  (p.stockKeys || []).forEach(ids => add(`${p.name} · ` + ids.map(id => { const g = p.groups.find(x => x.id === id); return `${g.label} ${lab(p.groups, id, cfg[id])}`; }).join(' · ')));
+  if (figLike) figKeys(cfg, p.id !== 'llavero');
+  return out;
+}
+
+// fuentes incrustadas para que la foto del diseño salga con las mismas letras
+const SVG_FONTS = ['Playfair Display:ital,wght@0,500;0,700', 'Great Vibes', 'Bagel Fat One', 'Pacifico', 'Space Mono:wght@700', 'Alfa Slab One', 'Inter:wght@500;700'];
+let fontCSS = null;
+function embeddedFonts() {
+  if (fontCSS) return fontCSS;
+  const url = 'https://fonts.googleapis.com/css2?' + SVG_FONTS.map(f => 'family=' + f.replace(/ /g, '+')).join('&') + '&display=swap';
+  const toData = u => fetch(u).then(r => r.blob()).then(b => new Promise(ok => { const fr = new FileReader(); fr.onload = () => ok(fr.result); fr.readAsDataURL(b); }));
+  const work = fetch(url).then(r => r.text()).then(async css => {
+    const blocks = css.split(/(?=\/\*\s*[\w-]+\s*\*\/)/).filter(b => /\/\*\s*latin\s*\*\//.test(b));
+    const out = await Promise.all(blocks.map(async b => {
+      const m = b.match(/url\((https:[^)]+)\)/);
+      return m ? b.replace(m[1], await toData(m[1])) : b;
+    }));
+    return out.join('\n');
+  });
+  const timeout = new Promise(ok => setTimeout(() => ok(''), 5000));
+  fontCSS = Promise.race([work, timeout]).catch(() => '');
+  return fontCSS;
+}
+
+// foto JPG del diseño tal como lo ve el cliente
+async function previewImage(p, cfg, size = 900) {
+  let svg = renderProduct(p, cfg);
+  const fonts = await embeddedFonts();
+  if (fonts) svg = svg.replace(/<svg([^>]*)>/, `<svg$1><style>${fonts}</style>`);
+  const vb = (svg.match(/viewBox="([\d.\s-]+)"/) || [, '0 0 300 300'])[1].split(/\s+/).map(Number);
+  const k = size / Math.max(vb[2], vb[3]), w = Math.round(vb[2] * k), h = Math.round(vb[3] * k);
+  svg = svg.replace(/<svg /, `<svg width="${w}" height="${h}" `);
+  const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+  try {
+    const img = new Image(); img.decoding = 'async';
+    await new Promise((ok, ko) => { img.onload = ok; img.onerror = ko; img.src = url; });
+    const pad = Math.round(size * 0.06), cv = document.createElement('canvas');
+    cv.width = w + pad * 2; cv.height = h + pad * 2;
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = p.render === 'frame' ? '#EDE5DA' : '#FBF7F2';
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.drawImage(img, pad, pad, w, h);
+    return cv.toDataURL('image/jpeg', 0.86);
+  } catch { return ''; } finally { URL.revokeObjectURL(url); }
+}
+
 async function submitOrder(order) {
-  console.log('[Pehn] pedido listo para enviar:', order);
-  await new Promise(r => setTimeout(r, 700));
-  return { ok: true };
+  if (!CONFIG.sheetsUrl) {
+    console.warn('[Pehn] Falta CONFIG.sheetsUrl: el pedido no se guardó. Datos:', order);
+    await new Promise(r => setTimeout(r, 600));
+    return { ok: true, demo: true };
+  }
+  const res = await fetch(CONFIG.sheetsUrl, { method: 'POST', body: JSON.stringify({ ...order, token: CONFIG.sheetsToken }) });
+  const out = await res.json().catch(() => ({ ok: false, error: 'Respuesta inválida del servidor.' }));
+  if (!out.ok) throw new Error(out.error || 'No se pudo guardar el pedido.');
+  return out;
 }
 
 /* ---------- cambios sin guardar ---------- */

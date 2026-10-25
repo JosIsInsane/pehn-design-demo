@@ -663,3 +663,4 @@ body[data-page="catalog"]{scroll-padding-top:calc(var(--nav-h) + 140px)}
 .leave p+p{color:var(--ink-2);font-size:14.5px;margin:4px 0 16px}
 .leave-row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 .c-panel{position:relative}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}

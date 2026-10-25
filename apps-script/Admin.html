@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="es">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#FBF7F2;--bg2:#F4EDE4;--sf:#fff;--ink:#1E1611;--ink2:#5C4C41;--ink3:#8B7B6F;--line:#ECE3D8;--line2:#DCCFBF;--brand:#F08A1C;--brand6:#DB7409;--brandInk:#9A4906;--brandSoft:#FDEBD6;--ok:#2E8B57;--okSoft:#E0EBDB;--bad:#B3361F;--badSoft:#F3D6D2;--warnSoft:#FBEFC4;--r:16px;--sh:0 1px 2px rgba(30,22,17,.05),0 8px 24px -14px rgba(30,22,17,.3)}
+  *{box-sizing:border-box}
+  body{margin:0;font:14.5px/1.5 Inter,system-ui,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased}
+  button,input,select,textarea{font:inherit;color:inherit}
+  button{cursor:pointer}
+  :focus-visible{outline:2.5px solid var(--brand6);outline-offset:2px;border-radius:8px}
+  h1,h2,h3{font-family:Fraunces,Georgia,serif;font-weight:500;letter-spacing:-.02em;margin:0}
+  header{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:16px;padding:14px 22px;background:rgba(251,247,242,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  header h1{font-size:21px}
+  nav{display:flex;gap:4px;margin-left:12px}
+  nav button{border:0;background:none;padding:9px 14px;border-radius:999px;font-weight:600;color:var(--ink2);display:flex;gap:8px;align-items:center}
+  nav button[aria-selected="true"]{background:var(--sf);color:var(--ink);box-shadow:var(--sh)}
+  nav b[hidden]{display:none}
+  nav b{min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--brand);color:var(--ink);font-size:11.5px;display:inline-grid;place-items:center}
+  header .sp{flex:1}
+  a.btn{color:inherit}
+  a.btn.wa,a.btn.dark{color:#fff}
+  .btn{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:0 16px;border-radius:999px;border:1px solid var(--line2);background:var(--sf);font-weight:600;font-size:13.5px;text-decoration:none;transition:border-color .2s,background-color .2s}
+  .btn:hover{border-color:var(--ink)}
+  .btn.dark{background:var(--ink);border-color:var(--ink);color:#fff}
+  .btn.wa{background:#25D366;border-color:#25D366;color:#fff}
+  .btn.sm{min-height:34px;padding:0 12px;font-size:13px}
+  main{padding:22px;max-width:1400px;margin:0 auto}
+  .view[hidden]{display:none}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+  .kpi{background:var(--sf);border-radius:var(--r);padding:16px 18px;box-shadow:var(--sh)}
+  .kpi small{color:var(--ink3);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.08em}
+  .kpi b{display:block;font-family:Fraunces,serif;font-size:30px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:4px}
+  .kpi.bad b{color:var(--bad)}
+  .bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+  .search{flex:1 1 240px;max-width:360px;height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line2);background:var(--sf)}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chips button{border:1px solid var(--line2);background:var(--sf);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:500}
+  .chips button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+  .chips button i{font-style:normal;opacity:.6;margin-left:4px;font-variant-numeric:tabular-nums}
+  .orders{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+  .oc{background:var(--sf);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden;display:flex;flex-direction:column;cursor:pointer;border:1px solid transparent;transition:border-color .2s,transform .3s}
+  .oc:hover{border-color:var(--line2);transform:translateY(-2px)}
+  .oc .ph{aspect-ratio:4/3;background:var(--bg2);display:grid;place-items:center;overflow:hidden}
+  .oc .ph img{width:100%;height:100%;object-fit:contain}
+  .oc .bd{padding:12px 14px 14px;display:grid;gap:6px}
+  .oc .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .oc .id{font-size:12px;font-weight:600;color:var(--ink3);font-variant-numeric:tabular-nums}
+  .oc h3{font-size:18px}
+  .oc .prod{font-size:13px;color:var(--ink2);white-space:pre-line;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .money{font-weight:700;font-variant-numeric:tabular-nums}
+  .tag{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--bg2);white-space:nowrap}
+  .tag.ok{background:var(--okSoft);color:#1F6A40}.tag.bad{background:var(--badSoft);color:#8A2A1A}.tag.warn{background:var(--warnSoft);color:#6E5200}
+  .st-Nuevo{background:#FDEBD6}.st-Diseño{background:#E8E0F7}.st-Aprobado{background:#DCEAF6}.st-En{background:#FBEFC4}.st-Listo{background:#E0EBDB}.st-Enviado{background:#D6F0E4}.st-Entregado{background:#C9E8D2}.st-Cancelado{background:#F3D6D2}
+  .empty{padding:48px;text-align:center;color:var(--ink2);background:var(--sf);border-radius:var(--r)}
+  /* detalle */
+  .drawer{position:fixed;inset:0;z-index:20;display:none}
+  .drawer.open{display:block}
+  .drawer .bg{position:absolute;inset:0;background:rgba(24,17,12,.45)}
+  .drawer aside{position:absolute;top:0;right:0;bottom:0;width:min(640px,100%);background:var(--sf);display:flex;flex-direction:column;box-shadow:-20px 0 60px -30px rgba(0,0,0,.5);animation:sl .35s cubic-bezier(.22,1,.36,1)}
+  @keyframes sl{from{transform:translateX(100%)}}
+  .dh{display:flex;align-items:flex-start;gap:12px;padding:20px 22px;border-bottom:1px solid var(--line)}
+  .dh h2{font-size:24px}
+  .db{flex:1;overflow:auto;padding:18px 22px;overscroll-behavior:contain}
+  .x{margin-left:auto;width:40px;height:40px;border-radius:50%;border:0;background:var(--bg)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px 18px;margin:12px 0 18px}
+  .grid2 small{display:block;color:var(--ink3);font-size:12px}
+  .item{display:grid;grid-template-columns:150px 1fr;gap:14px;padding:14px 0;border-top:1px solid var(--line)}
+  .item .ph{aspect-ratio:1;border-radius:12px;background:var(--bg2);overflow:hidden;display:grid;place-items:center}
+  .item .ph img{width:100%;height:100%;object-fit:contain}
+  .item ul{margin:6px 0 0;padding:0;list-style:none;font-size:13px;color:var(--ink2)}
+  .steps{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 4px}
+  .steps button{border:1px solid var(--line2);background:var(--sf);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:500}
+  .steps button[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .steps button.trig::after{content:" · descuenta";opacity:.6;font-size:11px}
+  textarea{width:100%;min-height:80px;padding:10px 12px;border-radius:12px;border:1px solid var(--line2);background:var(--bg)}
+  .note{background:var(--warnSoft);padding:10px 12px;border-radius:12px;font-size:13.5px;margin:10px 0}
+  /* tablas */
+  table{width:100%;border-collapse:separate;border-spacing:0;background:var(--sf);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{font-size:12px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;background:var(--bg2)}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  tr:last-child td{border-bottom:0}
+  .stepper{display:inline-flex;align-items:center;gap:6px}
+  .stepper button{width:30px;height:30px;border-radius:50%;border:1px solid var(--line2);background:var(--sf);font-weight:700}
+  .stepper b{min-width:34px;text-align:center;font-variant-numeric:tabular-nums}
+  input.in{height:34px;padding:0 10px;border-radius:10px;border:1px solid var(--line2);background:var(--bg);width:100%}
+  .form{display:grid;grid-template-columns:repeat(8,1fr) auto;gap:8px;align-items:end;background:var(--sf);padding:14px;border-radius:var(--r);box-shadow:var(--sh);margin-bottom:16px}
+  .form label{display:grid;gap:4px;font-size:12px;font-weight:600;color:var(--ink3)}
+  .cols{display:grid;grid-template-columns:1.2fr .8fr;gap:18px}
+  .card{background:var(--sf);border-radius:var(--r);box-shadow:var(--sh);padding:18px}
+  .card h3{font-size:19px;margin-bottom:10px}
+  .card li{margin:4px 0}
+  .muted{color:var(--ink3)}
+  .toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,160%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:999px;font-weight:600;transition:transform .35s;z-index:30}
+  .toast.show{transform:translate(-50%,0)}
+  .loading{opacity:.55;pointer-events:none}
+  @media (max-width:900px){.kpis{grid-template-columns:1fr 1fr}.cols{grid-template-columns:1fr}.form{grid-template-columns:1fr 1fr}nav{overflow-x:auto}header{flex-wrap:wrap}}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <h1 id="biz">Pehn · Panel</h1>
+  <nav role="tablist" aria-label="Secciones">
+    <button role="tab" aria-selected="true" data-v="pedidos">Pedidos <b id="nNuevos" hidden></b></button>
+    <button role="tab" aria-selected="false" data-v="inventario">Inventario <b id="nBajos" hidden></b></button>
+    <button role="tab" aria-selected="false" data-v="recetas">Recetas <b id="nMapear" hidden></b></button>
+    <button role="tab" aria-selected="false" data-v="resumen">Resumen</button>
+  </nav>
+  <span class="sp"></span>
+  <button class="btn sm" id="reload">Actualizar</button>
+  <a class="btn sm" id="hoja" target="_blank" rel="noopener">Abrir hoja</a>
+</header>
+
+<main id="app">
+  <section class="view" id="v-pedidos">
+    <div class="kpis" id="kpiP"></div>
+    <div class="bar"><input class="search" id="qP" type="search" placeholder="Buscar por cliente, ID o producto…" aria-label="Buscar pedidos"><div class="chips" id="fEstado"></div></div>
+    <div class="orders" id="orders"></div>
+  </section>
+
+  <section class="view" id="v-inventario" hidden>
+    <div class="kpis" id="kpiI"></div>
+    <form class="form" id="fPieza">
+      <label>SKU<input class="in" name="sku" required placeholder="PEL-LARGO…"></label>
+      <label style="grid-column:span 2">Pieza<input class="in" name="pieza" required placeholder="Cabello largo…"></label>
+      <label>Categoría<input class="in" name="cat" placeholder="Cabello…"></label>
+      <label>Stock<input class="in" name="stock" type="number" inputmode="numeric" value="0"></label>
+      <label>Mínimo<input class="in" name="min" type="number" inputmode="numeric" value="3"></label>
+      <label>Costo (L)<input class="in" name="costo" type="number" step="0.01" inputmode="decimal" value="0"></label>
+      <label>Proveedor<input class="in" name="proveedor" placeholder="Opcional…"></label>
+      <button class="btn dark" type="submit">Guardar pieza</button>
+    </form>
+    <div class="bar"><input class="search" id="qI" type="search" placeholder="Buscar pieza o SKU…" aria-label="Buscar en inventario"><div class="chips" id="fInv"></div></div>
+    <table><thead><tr><th>SKU</th><th>Pieza</th><th>Categoría</th><th class="num">Apartado</th><th>Stock</th><th class="num">Mínimo</th><th>Estado</th><th></th></tr></thead><tbody id="inv"></tbody></table>
+  </section>
+
+  <section class="view" id="v-recetas" hidden>
+    <p class="note">Cada clave llega del sitio cuando alguien pide algo (ej. <b>Figura · Cabello · Largo · Negro</b>). Asigna qué pieza del inventario usa y cuántas. Usa <b>*</b> como comodín en la hoja Recetas para cubrir todos los colores. Deja el SKU vacío si esa opción no gasta inventario (ej. labios rojos impresos).</p>
+    <div class="bar"><input class="search" id="qR" type="search" placeholder="Buscar clave…" aria-label="Buscar recetas"><div class="chips" id="fRec"></div></div>
+    <table><thead><tr><th>Clave del sitio</th><th style="width:260px">Pieza (SKU)</th><th style="width:110px">Cantidad</th><th style="width:100px"></th></tr></thead><tbody id="rec"></tbody></table>
+  </section>
+
+  <section class="view" id="v-resumen" hidden>
+    <div class="kpis" id="kpiR"></div>
+    <div class="cols">
+      <div class="card"><h3>No alcanza para pedidos activos</h3><ul id="faltan"></ul></div>
+      <div class="card"><h3>Más pedidos</h3><ol id="top"></ol></div>
+    </div>
+    <div class="card" style="margin-top:18px"><h3>Últimos movimientos de inventario</h3>
+      <table><thead><tr><th>Fecha</th><th>SKU</th><th>Pieza</th><th class="num">Cantidad</th><th class="num">Stock</th><th>Motivo</th><th>Pedido</th></tr></thead><tbody id="movs"></tbody></table></div>
+  </section>
+</main>
+
+<div class="drawer" id="det" aria-hidden="true">
+  <div class="bg" data-x></div>
+  <aside role="dialog" aria-modal="true" aria-labelledby="dTitle">
+    <div class="dh"><div><p class="muted" id="dId" style="margin:0 0 4px;font-weight:600"></p><h2 id="dTitle"></h2></div><button class="x" data-x aria-label="Cerrar">✕</button></div>
+    <div class="db" id="dBody"></div>
+  </aside>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const money = (n, c) => new Intl.NumberFormat('es-HN', { style: 'currency', currency: c || 'HNL', maximumFractionDigits: 0 }).format(n || 0);
+const dfmt = new Intl.DateTimeFormat('es-HN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+const run = (fn, ...args) => new Promise((ok, ko) => google.script.run.withSuccessHandler(ok).withFailureHandler(ko)[fn](...args));
+let D = null, view = 'pedidos', fE = 'Activos', fI = 'Todos', fR = 'Por mapear', openRow = null;
+const imgCache = {};
+
+function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 2600); }
+const fail = e => { $('#app').classList.remove('loading'); toast('Error: ' + (e.message || e)); };
+
+async function load(msg) {
+  $('#app').classList.add('loading');
+  try { D = await run('panelDatos'); render(); if (msg) toast(msg); } catch (e) { fail(e); }
+  $('#app').classList.remove('loading');
+}
+async function act(fn, args, msg) {
+  $('#app').classList.add('loading');
+  try { D = await run(fn, ...args); render(); toast(msg); } catch (e) { fail(e); }
+  $('#app').classList.remove('loading');
+}
+
+const stClass = s => 'st-' + String(s).split(' ')[0];
+const activo = p => !['Entregado', 'Cancelado'].includes(p.estado);
+const stockTag = s => { s = String(s || ''); const k = /^Falta|faltantes/.test(s) ? 'bad' : /Descontado|Alcanza/.test(s) ? 'ok' : 'warn'; return `<span class="tag ${k}">${esc(s || '—')}</span>`; };
+
+function render() {
+  $('#biz').textContent = D.negocio + ' · Panel';
+  $('#hoja').href = D.hoja;
+  const nuevos = D.pedidos.filter(p => p.estado === 'Nuevo').length;
+  const bajos = D.inventario.filter(i => i.stock <= i.min).length;
+  const mapear = D.recetas.filter(r => !r.sku && /^Nueva/.test(r.notas || '')).length;
+  [['#nNuevos', nuevos], ['#nBajos', bajos], ['#nMapear', mapear]].forEach(([s, n]) => { $(s).hidden = !n; $(s).textContent = n; });
+  renderPedidos(); renderInv(); renderRec(); renderRes();
+  if (openRow) { const p = D.pedidos.find(x => x.row === openRow); if (p) detalle(p, true); }
+}
+
+// ---------- pedidos ----------
+function renderPedidos() {
+  const P = D.pedidos, mes = new Date(); mes.setDate(1); mes.setHours(0, 0, 0, 0);
+  const delMes = P.filter(p => p.fecha && new Date(p.fecha) >= mes && p.estado !== 'Cancelado');
+  $('#kpiP').innerHTML = [
+    ['Nuevos', P.filter(p => p.estado === 'Nuevo').length],
+    ['En proceso', P.filter(p => activo(p) && p.estado !== 'Nuevo').length],
+    ['Ventas del mes', money(delMes.reduce((s, p) => s + p.total, 0))],
+    ['Con faltantes', P.filter(p => activo(p) && /^Falta/.test(p.stock)).length, 1],
+  ].map(([l, v, bad]) => `<div class="kpi ${bad && v ? 'bad' : ''}"><small>${l}</small><b>${v}</b></div>`).join('');
+  const opts = ['Activos', 'Todos', ...D.estados];
+  $('#fEstado').innerHTML = opts.map(o => {
+    const n = o === 'Todos' ? P.length : o === 'Activos' ? P.filter(activo).length : P.filter(p => p.estado === o).length;
+    return `<button aria-pressed="${o === fE}" data-fe="${esc(o)}">${esc(o)}<i>${n}</i></button>`;
+  }).join('');
+  const q = $('#qP').value.trim().toLowerCase();
+  const list = P.filter(p => fE === 'Todos' || (fE === 'Activos' ? activo(p) : p.estado === fE))
+    .filter(p => !q || [p.id, p.cliente, p.productos, p.ciudad, p.wa].join(' ').toLowerCase().includes(q));
+  $('#orders').innerHTML = list.length ? list.map(p => `<article class="oc" tabindex="0" role="button" data-row="${p.row}" aria-label="Pedido ${esc(p.id)} de ${esc(p.cliente)}">
+      <div class="ph">${p.previews[0] ? `<img data-img="${p.previews[0]}" alt="Vista previa del pedido ${esc(p.id)}">` : '<span class="muted">Sin vista previa</span>'}</div>
+      <div class="bd"><div class="row"><span class="id">${esc(p.id)}</span><span class="tag ${stClass(p.estado)}">${esc(p.estado)}</span></div>
+        <h3>${esc(p.cliente)}</h3><p class="prod" style="margin:0">${esc(p.productos)}</p>
+        <div class="row"><span class="money">${money(p.total, p.moneda)}</span><span class="muted" style="font-size:12px">${p.fecha ? dfmt.format(new Date(p.fecha)) : ''}</span></div>
+        <div>${stockTag(p.stock)}</div></div></article>`).join('') : '<div class="empty">No hay pedidos con este filtro.</div>';
+  loadImgs();
+}
+
+function loadImgs() {
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return; io.unobserve(e.target);
+    const id = e.target.dataset.img;
+    (imgCache[id] = imgCache[id] || run('panelImagen', id)).then(src => { e.target.src = src; }).catch(() => { e.target.alt = 'No se pudo cargar'; });
+  }), { rootMargin: '200px' });
+  document.querySelectorAll('img[data-img]:not([src])').forEach(i => io.observe(i));
+}
+
+function waLink(p, txt) { const n = String(p.wa).replace(/\D/g, ''); return `https://wa.me/${n.length === 8 ? '504' + n : n}?text=${encodeURIComponent(txt)}`; }
+const MSG = {
+  'Nuevo': p => `¡Hola ${p.cliente}! Recibimos tu pedido ${p.id}. En un momento te mandamos tu diseño para aprobarlo.`,
+  'Diseño enviado': p => `¡Hola ${p.cliente}! Aquí va el diseño de tu pedido ${p.id}. ¿Lo aprobamos o cambiamos algo?`,
+  'Aprobado': p => `¡Listo ${p.cliente}! Tu diseño ${p.id} quedó aprobado. Te pasamos los datos de pago.`,
+  'En producción': p => `${p.cliente}, ya estamos armando tu pedido ${p.id}.`,
+  'Listo': p => `¡${p.cliente}, tu pedido ${p.id} está listo! ¿Coordinamos la entrega?`,
+  'Enviado': p => `${p.cliente}, tu pedido ${p.id} ya va en camino.`,
+  'Entregado': p => `¡Gracias ${p.cliente}! Esperamos que te encante tu pedido ${p.id}.`,
+  'Cancelado': p => `Hola ${p.cliente}, cancelamos tu pedido ${p.id}. Cualquier duda aquí estamos.`,
+};
+
+function detalle(p, keep) {
+  openRow = p.row;
+  $('#dId').textContent = p.id + (p.fecha ? ' · ' + dfmt.format(new Date(p.fecha)) : '');
+  $('#dTitle').textContent = p.cliente;
+  $('#dBody').innerHTML = `
+    <p style="margin:0 0 6px;font-weight:600">Estado</p>
+    <div class="steps" role="group" aria-label="Cambiar estado">${D.estados.map(s => `<button aria-pressed="${s === p.estado}" class="${s === D.gatillo ? 'trig' : ''}" data-st="${esc(s)}">${esc(s)}</button>`).join('')}</div>
+    <p class="muted" style="font-size:12.5px;margin:4px 0 0">Al pasar a <b>${esc(D.gatillo)}</b> se descuenta el inventario. Al cancelar, se regresa.</p>
+    <div class="grid2">
+      <div><small>WhatsApp</small>${esc(p.wa)}</div><div><small>Correo</small>${esc(p.correo || '—')}</div>
+      <div><small>Ciudad</small>${esc(p.ciudad)}</div><div><small>Para cuándo</small>${esc(p.para || '—')}</div>
+      <div><small>Total</small><span class="money">${money(p.total, p.moneda)}</span></div><div><small>Inventario</small>${stockTag(p.stock)}</div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a class="btn wa sm" target="_blank" rel="noopener" href="${waLink(p, (MSG[p.estado] || MSG.Nuevo)(p))}">WhatsApp: mensaje de “${esc(p.estado)}”</a>
+      ${p.correo ? `<a class="btn sm" href="mailto:${esc(p.correo)}?subject=${encodeURIComponent('Tu pedido ' + p.id)}">Correo</a>` : ''}
+      <a class="btn sm" target="_blank" rel="noopener" href="${esc(p.carpeta)}">Fotos en Drive</a>
+    </div>
+    ${p.notasCliente ? `<div class="note"><b>Notas del cliente:</b> ${esc(p.notasCliente)}</div>` : ''}
+    <h3 style="margin:22px 0 4px;font-size:19px">Productos</h3>
+    ${p.items.map((it, i) => `<div class="item"><div class="ph">${p.previews[i] ? `<img data-img="${p.previews[i]}" alt="Vista previa de ${esc(it.product)}">` : ''}</div>
+      <div><b>${esc(it.qty)} × ${esc(it.product)}</b> · <span class="money">${money(it.total, p.moneda)}</span>
+      <ul>${(it.options || []).map(o => `<li>${esc(Array.isArray(o) ? o[0] + ': ' + o[1] : o)}</li>`).join('')}</ul></div></div>`).join('')}
+    <h3 style="margin:22px 0 6px;font-size:19px">Piezas de inventario</h3>
+    <p style="white-space:pre-line;margin:0;color:var(--ink2)">${esc(p.piezas || '—')}</p>
+    <h3 style="margin:22px 0 6px;font-size:19px">Notas internas</h3>
+    <textarea id="nota" aria-label="Notas internas">${esc(p.notas || '')}</textarea>
+    <p style="margin:8px 0 0"><button class="btn sm dark" id="saveNota">Guardar nota</button></p>`;
+  if (!keep) { $('#det').classList.add('open'); $('#det').setAttribute('aria-hidden', 'false'); setTimeout(() => $('#det .x').focus(), 50); }
+  loadImgs();
+}
+function cerrar() { $('#det').classList.remove('open'); $('#det').setAttribute('aria-hidden', 'true'); openRow = null; }
+
+// ---------- inventario ----------
+function renderInv() {
+  const I = D.inventario;
+  const valor = I.reduce((s, i) => s + i.stock * i.costo, 0);
+  $('#kpiI').innerHTML = [['Piezas', I.length], ['Por reponer', I.filter(i => i.stock <= i.min && i.stock > 0).length], ['Agotadas', I.filter(i => i.stock <= 0).length, 1], ['Valor del inventario', money(valor)]]
+    .map(([l, v, bad]) => `<div class="kpi ${bad && v ? 'bad' : ''}"><small>${l}</small><b>${v}</b></div>`).join('');
+  const cats = ['Todos', 'Reponer', ...new Set(I.map(i => i.cat).filter(Boolean))];
+  $('#fInv').innerHTML = cats.map(c => `<button aria-pressed="${c === fI}" data-fi="${esc(c)}">${esc(c)}</button>`).join('');
+  const q = $('#qI').value.trim().toLowerCase();
+  const list = I.filter(i => fI === 'Todos' || (fI === 'Reponer' ? i.stock <= i.min || i.apartado > i.stock : i.cat === fI))
+    .filter(i => !q || (i.sku + ' ' + i.pieza).toLowerCase().includes(q));
+  $('#inv').innerHTML = list.map(i => {
+    const st = i.stock <= 0 ? ['bad', 'Agotado'] : i.apartado > i.stock ? ['bad', `Faltan ${i.apartado - i.stock}`] : i.stock <= i.min ? ['warn', 'Reponer'] : ['ok', 'OK'];
+    return `<tr><td><b>${esc(i.sku)}</b></td><td>${esc(i.pieza)}</td><td class="muted">${esc(i.cat)}</td><td class="num">${i.apartado || ''}</td>
+      <td><span class="stepper"><button data-adj="${esc(i.sku)}" data-d="-1" aria-label="Restar 1 a ${esc(i.pieza)}">−</button><b>${i.stock}</b><button data-adj="${esc(i.sku)}" data-d="1" aria-label="Sumar 1 a ${esc(i.pieza)}">+</button></span></td>
+      <td class="num">${i.min}</td><td><span class="tag ${st[0]}">${st[1]}</span></td>
+      <td><button class="btn sm" data-entrada="${esc(i.sku)}">Entrada…</button> <button class="btn sm" data-edit="${esc(i.sku)}">Editar</button></td></tr>`;
+  }).join('') || '<tr><td colspan="8" class="muted">Sin piezas.</td></tr>';
+}
+
+// ---------- recetas ----------
+function renderRec() {
+  const R = D.recetas, skus = D.inventario.map(i => i.sku);
+  const tabs = ['Por mapear', 'Todas'];
+  $('#fRec').innerHTML = tabs.map(t => `<button aria-pressed="${t === fR}" data-fr="${t}">${t}</button>`).join('');
+  const q = $('#qR').value.trim().toLowerCase();
+  const list = R.filter(r => fR === 'Todas' || /^Nueva/.test(r.notas || '')).filter(r => !q || String(r.clave).toLowerCase().includes(q));
+  $('#rec').innerHTML = list.map(r => `<tr><td>${esc(r.clave)}${r.notas ? `<br><small class="muted">${esc(r.notas)}</small>` : ''}</td>
+    <td><input class="in" list="skus" value="${esc(r.sku)}" data-rsku="${r.row}" aria-label="SKU para ${esc(r.clave)}" placeholder="Vacío = no usa inventario…"></td>
+    <td><input class="in" type="number" min="1" value="${r.qty}" data-rqty="${r.row}" aria-label="Cantidad"></td>
+    <td><button class="btn sm" data-rsave="${r.row}">Guardar</button></td></tr>`).join('') || `<tr><td colspan="4" class="muted">${fR === 'Por mapear' ? 'Todo asignado.' : 'Sin recetas.'}</td></tr>`;
+  if (!$('#skus')) document.body.insertAdjacentHTML('beforeend', '<datalist id="skus"></datalist>');
+  $('#skus').innerHTML = skus.map(s => `<option value="${esc(s)}">`).join('');
+}
+
+// ---------- resumen ----------
+function renderRes() {
+  const P = D.pedidos.filter(p => p.estado !== 'Cancelado'), I = D.inventario;
+  const faltan = I.filter(i => i.apartado > i.stock);
+  $('#kpiR').innerHTML = [['Pedidos totales', P.length], ['Ticket promedio', money(P.length ? P.reduce((s, p) => s + p.total, 0) / P.length : 0)], ['Piezas apartadas', I.reduce((s, i) => s + i.apartado, 0)], ['Faltantes', faltan.length, 1]]
+    .map(([l, v, bad]) => `<div class="kpi ${bad && v ? 'bad' : ''}"><small>${l}</small><b>${v}</b></div>`).join('');
+  $('#faltan').innerHTML = faltan.map(i => `<li><b>${esc(i.sku)}</b> ${esc(i.pieza)} · faltan <b>${i.apartado - i.stock}</b> (hay ${i.stock}, se necesitan ${i.apartado})</li>`).join('') || '<li class="muted">Todo alcanza para los pedidos activos.</li>';
+  const cnt = {};
+  P.forEach(p => p.items.forEach(it => { cnt[it.product] = (cnt[it.product] || 0) + Number(it.qty || 1); }));
+  $('#top').innerHTML = Object.entries(cnt).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([k, v]) => `<li>${esc(k)} · <b>${v}</b></li>`).join('') || '<li class="muted">Aún no hay pedidos.</li>';
+  $('#movs').innerHTML = D.movs.map(m => `<tr><td class="muted">${dfmt.format(new Date(m.fecha))}</td><td><b>${esc(m.sku)}</b></td><td>${esc(m.pieza)}</td><td class="num" style="color:${m.qty < 0 ? 'var(--bad)' : 'var(--ok)'}">${m.qty > 0 ? '+' : ''}${m.qty}</td><td class="num">${m.despues}</td><td>${esc(m.motivo)}</td><td class="muted">${esc(m.pedido)}</td></tr>`).join('') || '<tr><td colspan="7" class="muted">Sin movimientos.</td></tr>';
+}
+
+// ---------- eventos ----------
+document.addEventListener('click', e => {
+  const t = e.target.closest('button,article,[data-x]'); if (!t) return;
+  if (t.dataset.v) { view = t.dataset.v; document.querySelectorAll('nav button').forEach(b => b.setAttribute('aria-selected', b === t)); document.querySelectorAll('.view').forEach(v => { v.hidden = v.id !== 'v-' + view; }); return; }
+  if (t.dataset.fe) { fE = t.dataset.fe; renderPedidos(); return; }
+  if (t.dataset.fi) { fI = t.dataset.fi; renderInv(); return; }
+  if (t.dataset.fr) { fR = t.dataset.fr; renderRec(); return; }
+  if (t.dataset.row) { detalle(D.pedidos.find(p => p.row === +t.dataset.row)); return; }
+  if (t.dataset.x !== undefined) { cerrar(); return; }
+  if (t.dataset.st) {
+    const p = D.pedidos.find(x => x.row === openRow);
+    if (t.dataset.st === 'Cancelado' && !confirm(`¿Cancelar ${p.id}? Si ya se descontó inventario, se regresa.`)) return;
+    act('panelEstado', [openRow, t.dataset.st], `${p.id}: ${t.dataset.st}`); return;
+  }
+  if (t.id === 'saveNota') { run('panelNota', openRow, $('#nota').value).then(() => toast('Nota guardada')).catch(fail); return; }
+  if (t.dataset.adj) { act('panelAjuste', [t.dataset.adj, +t.dataset.d, +t.dataset.d > 0 ? 'Ajuste +1 desde el panel' : 'Ajuste −1 desde el panel'], 'Stock actualizado'); return; }
+  if (t.dataset.entrada) {
+    const n = prompt(`¿Cuántas piezas de ${t.dataset.entrada} entraron?`, '10');
+    if (n && +n) act('panelAjuste', [t.dataset.entrada, +n, 'Entrada de mercancía'], `+${n} ${t.dataset.entrada}`); return;
+  }
+  if (t.dataset.edit) {
+    const i = D.inventario.find(x => x.sku === t.dataset.edit), f = $('#fPieza');
+    ['sku', 'pieza', 'cat', 'stock', 'min', 'costo', 'proveedor'].forEach(k => { f.elements[k].value = i[k] ?? ''; });
+    f.scrollIntoView({ behavior: 'smooth' }); f.elements.pieza.focus(); return;
+  }
+  if (t.dataset.rsave) {
+    const r = t.dataset.rsave;
+    act('panelReceta', [+r, document.querySelector(`[data-rsku="${r}"]`).value, +document.querySelector(`[data-rqty="${r}"]`).value], 'Receta guardada'); return;
+  }
+  if (t.id === 'reload') load('Datos actualizados');
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && $('#det').classList.contains('open')) cerrar();
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('article[data-row]')) { e.preventDefault(); e.target.click(); }
+});
+$('#fPieza').addEventListener('submit', e => {
+  e.preventDefault();
+  const f = Object.fromEntries(new FormData(e.target));
+  act('panelPieza', [f], `${f.sku.toUpperCase()} guardada`); e.target.reset();
+});
+['#qP', '#qI', '#qR'].forEach(s => $(s).addEventListener('input', () => ({ '#qP': renderPedidos, '#qI': renderInv, '#qR': renderRec })[s]()));
+load();
+</script>
+</body>
+</html>
