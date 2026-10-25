@@ -34,9 +34,14 @@ function crmHtml_(k) {
   return t.evaluate();
 }
 
+// URL de la app web (Implementar › Gestionar implementaciones › App web).
+// Google a veces devuelve otra con getUrl(), por eso se fija aquí.
+const URL_APP = 'https://script.google.com/macros/s/AKfycbyo9IZCqPLhRd8Ty83yVWJR7Qt9PaVxEpQUEMlul16GJWUWTFpcehgj326MKQDRZPHs/exec';
+const urlApp_ = () => URL_APP || ScriptApp.getService().getUrl();
+
 // abre el CRM en otra pestaña (los navegadores piden un clic)
 function abrirCRM() {
-  const url = ScriptApp.getService().getUrl();
+  const url = urlApp_();
   if (!url) { SpreadsheetApp.getUi().alert('Primero publica la app web: Implementar › Nueva implementación › App web.'); return; }
   const link = url + '?k=' + encodeURIComponent(clave_());
   const html = HtmlService.createHtmlOutput(`<div style="font:14px/1.6 system-ui;padding:6px">

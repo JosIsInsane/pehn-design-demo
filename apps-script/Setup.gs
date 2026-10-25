@@ -176,7 +176,7 @@ function folder_() {
 }
 
 function mostrarConexion() {
-  const url = ScriptApp.getService().getUrl() || '(primero publica: Implementar › Nueva implementación › App web)';
+  const url = urlApp_() || '(primero publica: Implementar › Nueva implementación › App web)';
   const html = HtmlService.createHtmlOutput(`<div style="font:14px/1.6 system-ui;padding:8px">
     <p><b>1.</b> En <code>app.js</code> pega:</p>
     <pre style="background:#F4EDE4;padding:12px;border-radius:10px;white-space:pre-wrap">sheetsUrl: '${url}',\nsheetsToken: '${config_()['Token del sitio']}',</pre>
