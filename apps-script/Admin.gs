@@ -48,7 +48,7 @@ function abrirCRM() {
     <p>Abre el CRM en una pestaña nueva. Guarda el enlace en favoritos para entrar directo.</p>
     <p><a id="go" href="${link}" target="_blank" rel="noopener" style="display:inline-block;background:#1E1611;color:#fff;padding:12px 20px;border-radius:999px;text-decoration:none;font-weight:600">Abrir CRM</a></p>
     <p style="color:#8B7B6F;font-size:12px">El enlace lleva la clave de acceso: compártelo solo con tu equipo.</p>
-    <script>try{window.open(${JSON.stringify(link).replace(/\//g, '\\/')},'_blank');}catch(e){}</script></div>`).setWidth(440).setHeight(200);
+    <script>try{window.open(${JSON.stringify(link.split('/'))}.join(String.fromCharCode(47)),'_blank');}catch(e){}</script></div>`).setWidth(440).setHeight(200);
   SpreadsheetApp.getUi().showModalDialog(html, 'Pehn · CRM');
 }
 
