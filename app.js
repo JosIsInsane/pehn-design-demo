@@ -43,12 +43,20 @@ const FIG_GROUPS = [
     { v: 'corto', label: 'Corto', price: 0 }, { v: 'lado', label: 'De lado', price: 0 },
     { v: 'largo', label: 'Largo', price: 0 }, { v: 'ondas', label: 'Ondulado', price: 0 },
     { v: 'chongo', label: 'Chongo', price: 0 }, { v: 'rizos', label: 'Rizos', price: 0 },
-    { v: 'sombrero', label: 'Sombrero', price: 25 }, { v: 'vaquero', label: 'Vaquero', price: 25 },
     { v: 'calvo', label: 'Sin cabello', price: 0 }] },
   { id: 'hairColor', label: 'Color de cabello', type: 'swatch', options: sw(HAIRC), showIf: c => c.hair !== 'calvo' },
-  { id: 'face', label: 'Cara', type: 'choice', options: [
-    { v: 'feliz', label: 'Sonrisa', price: 0 }, { v: 'labios', label: 'Labios rojos', price: 0 },
-    { v: 'lentes', label: 'Lentes', price: 15 }, { v: 'barba', label: 'Barba', price: 15 }, { v: 'guino', label: 'Guiño', price: 0 }] },
+  { id: 'hat', label: 'Sombrero o gorra', type: 'choice', options: [
+    { v: 'ninguno', label: 'Ninguno', price: 0 }, { v: 'sombrero', label: 'Sombrero', price: 25 },
+    { v: 'vaquero', label: 'Vaquero', price: 25 }, { v: 'gorra', label: 'Gorra', price: 20 }, { v: 'mono', label: 'Moño', price: 10 }] },
+  { id: 'face', label: 'Expresión', type: 'choice', options: [
+    { v: 'feliz', label: 'Sonrisa', price: 0 }, { v: 'risa', label: 'Carcajada', price: 0 },
+    { v: 'guino', label: 'Guiño', price: 0 }, { v: 'seria', label: 'Seria', price: 0 }] },
+  // se pueden combinar: barba + lentes + labios rojos…
+  { id: 'extras', label: 'Detalles de la cara', type: 'multi', options: [
+    { v: 'lentes', label: 'Lentes', price: 15, excl: ['sol'] }, { v: 'sol', label: 'Lentes de sol', price: 15, excl: ['lentes'] },
+    { v: 'barba', label: 'Barba', price: 15 }, { v: 'bigote', label: 'Bigote', price: 10 },
+    { v: 'labios', label: 'Labios rojos', price: 0 }, { v: 'rubor', label: 'Chapitas', price: 0 },
+    { v: 'pecas', label: 'Pecas', price: 0 }, { v: 'aretes', label: 'Aretes', price: 10 }] },
   { id: 'outfit', label: 'Ropa', type: 'choice', options: [
     { v: 'playera', label: 'Playera', price: 0 }, { v: 'blusa', label: 'Blusa', price: 0 },
     { v: 'sueter', label: 'Suéter', price: 20 }, { v: 'cuadros', label: 'Camisa a cuadros', price: 20 },
@@ -66,15 +74,28 @@ const FIG_PRESETS = [
   { name: 'Leo', skin: '#C68B5E', hair: 'rizos', hairColor: '#1F1712', face: 'guino', outfit: 'texto', torso: '#F6952A', legs: '#2E4A8C', printText: 'LEO' },
   { name: 'Vale', skin: '#F6D3B3', hair: 'ondas', hairColor: '#A8692E', face: 'feliz', outfit: 'vestido', torso: '#F48FB1', legs: '#2E4A8C', printText: '' },
 ];
-const figDefault = i => ({ ...FIG_PRESETS[i % FIG_PRESETS.length], name: '' });
+// formato viejo (cara única, sombrero en el peinado) -> capas nuevas; sirve también para pedidos guardados
+function normFig(f) {
+  if (!f || typeof f !== 'object') return f;
+  if (!Array.isArray(f.extras)) f.extras = [];
+  if (['labios', 'lentes', 'barba'].includes(f.face)) { if (!f.extras.includes(f.face)) f.extras.push(f.face); f.face = 'feliz'; }
+  if (f.face === 'labios') f.face = 'feliz';
+  if (['sombrero', 'vaquero'].includes(f.hair)) { f.hat = f.hair; f.hair = 'corto'; }
+  if (!f.hat) f.hat = 'ninguno';
+  if (!f.face) f.face = 'feliz';
+  return f;
+}
+const normCfg = (p, c) => { if (!c) return c; if (Array.isArray(c.figs)) c.figs.forEach(normFig); if (p && p.groups.some(g => g.id === 'extras')) normFig(c); return c; };
+FIG_PRESETS.forEach(normFig);
+const figDefault = i => ({ ...clone(FIG_PRESETS[i % FIG_PRESETS.length]), name: '' });
 
 // estilos rápidos: cambian la figura activa de un toque (se conserva el nombre)
 const LOOKS = [
-  { label: 'Casual él', f: { hair: 'corto', face: 'feliz', outfit: 'playera', torso: '#3E6E8E', legs: '#2E4A8C' } },
-  { label: 'Casual ella', f: { hair: 'largo', face: 'labios', outfit: 'blusa', torso: '#F48FB1', legs: '#1F1712' } },
-  { label: 'Novio', f: { hair: 'lado', face: 'feliz', outfit: 'traje', torso: '#2A1A0E', legs: '#1F1712' } },
-  { label: 'Novia', f: { hair: 'chongo', face: 'labios', outfit: 'vestido', torso: '#FFFDF9' } },
-  { label: 'Vaquero', f: { hair: 'vaquero', hairColor: '#5A3720', face: 'feliz', outfit: 'cuadros', torso: '#3E6E8E', legs: '#1F1712' } },
+  { label: 'Casual él', f: { hair: 'corto', hat: 'ninguno', face: 'feliz', extras: [], outfit: 'playera', torso: '#3E6E8E', legs: '#2E4A8C' } },
+  { label: 'Casual ella', f: { hair: 'largo', hat: 'ninguno', face: 'feliz', extras: ['labios', 'rubor'], outfit: 'blusa', torso: '#F48FB1', legs: '#1F1712' } },
+  { label: 'Novio', f: { hair: 'lado', hat: 'ninguno', face: 'feliz', extras: ['barba'], outfit: 'traje', torso: '#2A1A0E', legs: '#1F1712' } },
+  { label: 'Novia', f: { hair: 'chongo', hat: 'ninguno', face: 'feliz', extras: ['labios', 'rubor', 'aretes'], outfit: 'vestido', torso: '#FFFDF9' } },
+  { label: 'Vaquero', f: { hair: 'corto', hat: 'vaquero', face: 'feliz', extras: ['bigote'], outfit: 'cuadros', torso: '#3E6E8E', legs: '#1F1712' } },
 ];
 
 const TEXTS = {
@@ -267,6 +288,8 @@ const CARDS = [
   { id: 'termo' }, { id: 'llavero' }, { id: 'playera' }, { id: 'taza' },
 ];
 
+CARDS.forEach(c => c.cfg?.figs?.forEach(normFig));
+
 const CATS = [['todos', 'Todos'], ['cuadros', 'Cuadros'], ['figuras', 'Figuras y llaveros'], ['ropa', 'Ropa'], ['bolsas', 'Bolsas'], ['vasos', 'Vasos y tazas']];
 const catName = id => CATS.find(c => c[0] === id)?.[1] || '';
 // mosaicos de categorías en la landing
@@ -284,6 +307,7 @@ function defaults(p) {
     if (g.type === 'swatch' || g.type === 'choice') c[g.id] = g.options[0].v;
     else if (g.type === 'stepper') c[g.id] = g.min;
     else if (g.type === 'figs') c[g.id] = [figDefault(0), figDefault(1)];
+    else if (g.type === 'multi') c[g.id] = [];
     else c[g.id] = '';
   });
   p.init && p.init(c);
@@ -300,6 +324,8 @@ function optPrices(groups, cfg, lines, prefix = '') {
     if (g.type === 'swatch' || g.type === 'choice') {
       const o = g.options.find(o => o.v === v);
       if (o && o.price) lines.push({ label: prefix + o.label, price: o.price });
+    } else if (g.type === 'multi') {
+      g.options.filter(o => (v || []).includes(o.v) && o.price).forEach(o => lines.push({ label: prefix + o.label, price: o.price }));
     } else if ((g.type === 'text' || g.type === 'file') && g.price && String(v || '').trim()) {
       lines.push({ label: prefix + g.label, price: g.price });
     } else if (g.type === 'stepper' && v) {
@@ -329,6 +355,8 @@ function summaryOf(groups, cfg) {
     if (g.type === 'stepper') return v ? [[g.label, v]] : [];
     if (g.type === 'figs') return v.map((f, i) => [`Figura ${i + 1}`, summaryOf(FIG_GROUPS, f).map(x => x[1]).join(', ')]);
     if (g.type === 'date') return v ? [[g.label, fmtDate(v)]] : [];
+    if (g.type === 'multi') { const l = g.options.filter(o => (v || []).includes(o.v)).map(o => o.label); return l.length ? [[g.label, l.join(' + ')]] : []; }
+    if (g.id === 'hat' && v === 'ninguno') return [];
     return String(v || '').trim() ? [[g.label, v]] : [];
   });
 }
@@ -360,28 +388,51 @@ function hairSVG(style, c, k) {
     case 'ondas': { const d = 'M62 58C54 10 146 10 138 58C146 70 136 80 144 92C148 102 138 110 128 106C122 98 128 84 124 72L124 50C110 38 90 38 76 50L76 72C72 84 78 98 72 106C62 110 52 102 56 92C64 80 54 70 62 58Z'; return `<path ${st} d="${d}"/>${gloss(d)}`; }
     case 'rizos': return `<g ${st}>${[[70, 42], [82, 28], [100, 22], [118, 28], [130, 42], [66, 58], [134, 58]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="13"/>`).join('')}</g><ellipse cx="88" cy="28" rx="16" ry="9" fill="url(#${k}g)"/>`;
     case 'chongo': return `<g ${st}><circle cx="100" cy="12" r="14"/><path d="M66 54C60 18 140 18 134 54C120 40 80 40 66 54Z"/></g>${gloss('M66 54C60 18 140 18 134 54C120 40 80 40 66 54Z')}`;
-    case 'sombrero': return `<g fill="#1E1A18" stroke="#000" stroke-width="1.6" stroke-linejoin="round"><path d="M74 40L78 8Q100 0 122 8L126 40Z"/><ellipse cx="100" cy="40" rx="44" ry="8"/></g><rect x="76" y="30" width="48" height="6" fill="#B3262E"/><path d="M80 12Q100 4 112 10L110 32H82Z" fill="url(#${k}g)"/>`;
-    case 'vaquero': {
-      const h = c === '#1F1712' ? '#6B4428' : c, ho = shade(h, -0.35);
-      return `<g fill="${h}" stroke="${ho}" stroke-width="1.6" stroke-linejoin="round"><path d="M48 44Q52 32 72 36L76 10Q100 0 124 10L128 36Q148 32 152 44Q140 54 100 52Q60 54 48 44Z"/></g>
-        <path d="M76 30Q100 36 124 30" stroke="${shade(h, -0.5)}" stroke-width="5" fill="none"/><path d="M92 6Q100 14 108 6" stroke="${ho}" stroke-width="2" fill="none"/><path d="M80 14Q96 6 110 10L108 28H80Z" fill="url(#${k}g)"/>`;
-    }
     default: return '';
   }
 }
 
-function faceSVG(face) {
-  const k = '#231A14';
-  const eye = x => `<ellipse cx="${x}" cy="52" rx="3.6" ry="4.6" fill="${k}"/><circle cx="${x + 1.2}" cy="50.5" r="1.1" fill="#fff"/>`;
-  const brows = `<path d="M82 42h10M108 42h10" stroke="${k}" stroke-width="2.4" stroke-linecap="round"/>`;
-  const smile = `<path d="M88 64Q100 73 112 64" fill="none" stroke="${k}" stroke-width="3" stroke-linecap="round"/>`;
-  switch (face) {
-    case 'guino': return `${eye(88)}<path d="M107 53Q112 48 117 53" fill="none" stroke="${k}" stroke-width="3" stroke-linecap="round"/>${smile}`;
-    case 'labios': return `${eye(88)}${eye(112)}<path d="M82 47l-4-3M118 47l4-3" stroke="${k}" stroke-width="1.8" stroke-linecap="round"/><path d="M90 64Q100 60 110 64Q100 73 90 64Z" fill="#B7212D"/><circle cx="80" cy="62" r="4" fill="#F48FB1" opacity=".45"/><circle cx="120" cy="62" r="4" fill="#F48FB1" opacity=".45"/>`;
-    case 'lentes': return `<g fill="none" stroke="${k}" stroke-width="2.6"><rect x="77" y="44" width="19" height="15" rx="6"/><rect x="104" y="44" width="19" height="15" rx="6"/><path d="M96 50h8"/></g>${eye(87)}${eye(113)}${smile}`;
-    case 'barba': return `${brows}${eye(88)}${eye(112)}<path d="M72 58C74 86 126 86 128 58C120 70 112 72 100 72C88 72 80 70 72 58Z" fill="#3B2617"/><path d="M90 66Q100 72 110 66" fill="none" stroke="#000" stroke-width="2.6" stroke-linecap="round"/>`;
-    default: return `${eye(88)}${eye(112)}${smile}`;
+// va encima del peinado: el pelo largo sigue viéndose a los lados
+function hatSVG(hat, f, k) {
+  switch (hat) {
+    case 'sombrero': return `<g fill="#1E1A18" stroke="#000" stroke-width="1.6" stroke-linejoin="round"><path d="M74 40L78 8Q100 0 122 8L126 40Z"/><ellipse cx="100" cy="40" rx="44" ry="8"/></g><rect x="76" y="30" width="48" height="6" fill="#B3262E"/><path d="M80 12Q100 4 112 10L110 32H82Z" fill="url(#${k}g)"/>`;
+    case 'vaquero': {
+      const h = '#6B4428', ho = shade(h, -0.35);
+      return `<g fill="${h}" stroke="${ho}" stroke-width="1.6" stroke-linejoin="round"><path d="M48 44Q52 32 72 36L76 10Q100 0 124 10L128 36Q148 32 152 44Q140 54 100 52Q60 54 48 44Z"/></g>
+        <path d="M76 30Q100 36 124 30" stroke="${shade(h, -0.5)}" stroke-width="5" fill="none"/><path d="M92 6Q100 14 108 6" stroke="${ho}" stroke-width="2" fill="none"/><path d="M80 14Q96 6 110 10L108 28H80Z" fill="url(#${k}g)"/>`;
+    }
+    case 'gorra': {
+      const h = f.torso && !isLight(f.torso) ? f.torso : '#B3262E', ho = shade(h, -0.35);
+      return `<g fill="${h}" stroke="${ho}" stroke-width="1.6" stroke-linejoin="round"><path d="M66 44C64 12 136 12 134 44Z"/><path d="M60 44H152Q156 52 146 54H62Z"/></g><circle cx="100" cy="14" r="3.5" fill="${ho}"/><path d="M78 20Q96 10 110 14L108 38H78Z" fill="url(#${k}g)"/>`;
+    }
+    case 'mono': return `<g transform="translate(124 26) rotate(18)" fill="#E45A84" stroke="#B33A63" stroke-width="1.4" stroke-linejoin="round"><path d="M0 0L-16-10V10Z"/><path d="M0 0L16-10V10Z"/><circle r="4.5"/></g>`;
+    default: return '';
   }
+}
+
+function faceSVG(f) {
+  const k = '#231A14', x = new Set(f.extras || []), ex = f.face || 'feliz';
+  const lips = x.has('labios');
+  const eye = cx => `<ellipse cx="${cx}" cy="52" rx="3.6" ry="4.6" fill="${k}"/><circle cx="${cx + 1.2}" cy="50.5" r="1.1" fill="#fff"/>`;
+  let s = '';
+  if (x.has('rubor')) s += `<circle cx="80" cy="62" r="5" fill="#F48FB1" opacity=".5"/><circle cx="120" cy="62" r="5" fill="#F48FB1" opacity=".5"/>`;
+  if (x.has('pecas')) s += `<g fill="#9A5B3A" opacity=".7">${[[78, 58], [83, 61], [79, 64], [117, 58], [122, 61], [118, 64]].map(([a, b]) => `<circle cx="${a}" cy="${b}" r="1.1"/>`).join('')}</g>`;
+  if (x.has('barba')) s += `<path d="M72 58C74 86 126 86 128 58C120 70 112 72 100 72C88 72 80 70 72 58Z" fill="#3B2617"/>`;
+  if (x.has('bigote')) s += `<path d="M86 63Q93 57 100 61Q107 57 114 63Q107 62 100 64Q93 62 86 63Z" fill="#2B1C12"/>`;
+  // boca según expresión; con labios rojos se pinta
+  const mc = lips ? '#B7212D' : (x.has('barba') ? '#000' : k);
+  if (ex === 'risa') s += `<path d="M87 63Q100 80 113 63Z" fill="${lips ? '#B7212D' : '#4A2018'}"/><path d="M91 64H109" stroke="#fff" stroke-width="2.4"/>`;
+  else if (ex === 'seria') s += `<path d="M91 66H109" stroke="${mc}" stroke-width="${lips ? 4 : 3}" stroke-linecap="round"/>`;
+  else s += lips ? `<path d="M89 64Q100 60 111 64Q100 74 89 64Z" fill="#B7212D"/>` : `<path d="M88 64Q100 73 112 64" fill="none" stroke="${mc}" stroke-width="3" stroke-linecap="round"/>`;
+  // ojos
+  if (ex === 'guino') s += `${eye(88)}<path d="M107 53Q112 48 117 53" fill="none" stroke="${k}" stroke-width="3" stroke-linecap="round"/>`;
+  else s += eye(88) + eye(112);
+  if (lips) s += `<path d="M82 47l-4-3M118 47l4-3" stroke="${k}" stroke-width="1.6" stroke-linecap="round"/>`;
+  if (x.has('barba') || ex === 'seria') s += `<path d="M82 42h10M108 42h10" stroke="${k}" stroke-width="2.4" stroke-linecap="round"/>`;
+  if (x.has('lentes')) s += `<g fill="none" stroke="${k}" stroke-width="2.6"><rect x="77" y="44" width="19" height="15" rx="6"/><rect x="104" y="44" width="19" height="15" rx="6"/><path d="M96 50h8M77 49l-6-2M123 49l6-2"/></g>`;
+  if (x.has('sol')) s += `<g fill="#1A1412" stroke="#000" stroke-width="1.6"><path d="M75 45H97V53Q96 62 86 61Q76 60 75 53Z"/><path d="M103 45H125V53Q124 60 114 61Q104 62 103 53Z"/><path d="M97 47h6M75 46l-5-2M125 46l5-2" fill="none"/></g><path d="M79 48l6 0" stroke="#fff" stroke-opacity=".5" stroke-width="2" stroke-linecap="round"/><path d="M107 48l6 0" stroke="#fff" stroke-opacity=".5" stroke-width="2" stroke-linecap="round"/>`;
+  if (x.has('aretes')) s += `<g fill="#D9B44A" stroke="#A8862A" stroke-width="1"><circle cx="70" cy="70" r="3.2"/><circle cx="130" cy="70" r="3.2"/></g>`;
+  return s;
 }
 
 function outfitSVG(f, k) {
@@ -409,7 +460,8 @@ function outfitSVG(f, k) {
   }
 }
 
-function minifig(f, opts = {}) {
+function minifig(f0, opts = {}) {
+  const f = normFig({ ...f0, extras: [...(f0.extras || [])] });
   const k = 'm' + (++UID);
   const skin = f.skin || '#F6D3B3', torso = f.torso || '#1F2A44';
   const dress = f.outfit === 'vestido';
@@ -444,8 +496,9 @@ function minifig(f, opts = {}) {
     <rect x="70" y="24" width="60" height="62" rx="18" fill="${skin}" stroke="${so}" ${L}/>
     <rect x="70" y="24" width="60" height="62" rx="18" ${H}/>
     <ellipse cx="84" cy="36" rx="9" ry="5" fill="#fff" opacity=".45"/>
-    ${faceSVG(f.face)}
-    ${hairSVG(f.hair, f.hairColor || '#1F1712', k)}`;
+    ${faceSVG(f)}
+    ${hairSVG(f.hat !== 'ninguno' && f.hair === 'chongo' ? 'corto' : f.hair, f.hairColor || '#1F1712', k)}
+    ${hatSVG(f.hat, f, k)}`;
   return s;
 }
 
@@ -825,7 +878,13 @@ function renderGrid(append = false) {
   reveal(true);
 }
 
-function refresh() { state.shown = PAGE; swapContent($('#grid'), () => renderGrid()); }
+function syncURL() {
+  const u = new URL(location.href);
+  [['cat', state.cat !== 'todos' && state.cat], ['q', state.q.trim()], ['sort', state.sort !== 'feat' && state.sort]].forEach(([k, v]) => v ? u.searchParams.set(k, v) : u.searchParams.delete(k));
+  ['card', 'edit'].forEach(k => u.searchParams.delete(k));
+  history.replaceState(null, '', u);
+}
+function refresh() { state.shown = PAGE; syncURL(); swapContent($('#grid'), () => renderGrid()); }
 
 $('#filters')?.addEventListener('click', e => {
   const b = e.target.closest('[data-f]'); if (!b || b.dataset.f === state.cat) return;
@@ -875,6 +934,7 @@ const zCenter = () => { const a = zArea(); return [a.clientWidth / 2, a.clientHe
 let tipT;
 function showTip() {
   const t = $('#zoomTip'); if (!t) return;
+  try { if (sessionStorage.getItem('pehn_tip')) { t.classList.add('hide'); return; } sessionStorage.setItem('pehn_tip', '1'); } catch { }
   t.textContent = matchMedia('(pointer: coarse)').matches ? 'Pellizca o toca dos veces para acercar' : 'Usa la rueda o doble clic para acercar';
   t.classList.remove('hide'); clearTimeout(tipT); tipT = setTimeout(hideTip, 3200);
 }
@@ -923,14 +983,13 @@ let cur = null; // { p, cfg, qty, editIdx, fig, step, photo }
 
 function openCustom(id, cfg, qty = 1, editIdx = null, photo = null, photoPos = null) {
   const p = PRODUCTS.find(x => x.id === id); if (!p) return;
-  cur = { p, cfg: cfg ? clone(cfg) : defaults(p), qty, editIdx, fig: 0, step: 0, photo, photoPos, showPhoto: false };
+  cur = { p, cfg: normCfg(p, cfg ? clone(cfg) : defaults(p)), qty, editIdx, fig: 0, step: 0, photo, photoPos, showPhoto: false };
   $('#cCat').textContent = photo ? 'Inspirado en un pedido real' : (CATS.find(c => c[0] === p.cat)?.[1] || '');
   $('#cTitle').textContent = p.name;
   $('#cDesc').textContent = p.desc;
   $('#cPreview').style.setProperty('--pv', p.render === 'frame' ? '#E9E1D6' : p.bg);
   const rb = $('#refBtn'); rb.hidden = !photo; rb.classList.remove('on');
   if (photo) { rb.querySelector('img').src = photo; rb.querySelector('img').style.objectPosition = photoPos || '50% 50%'; }
-  $('#cHint').hidden = p.render !== 'frame';
   $('#cBreak').hidden = true; $('#brkBtn').setAttribute('aria-expanded', 'false');
   lastPrice = null;
   buildForm(); update(true);
@@ -954,11 +1013,16 @@ function groupHTML(g, cfg, sc) {
       : `<div class="ch" role="radiogroup" aria-label="${g.label}">${g.options.map(o => `<button type="button" role="radio" aria-checked="${o.v === v}" aria-pressed="${o.v === v}" ${a} data-v="${o.v}">${o.label}${o.price ? `<small>${plus(o.price)}</small>` : ''}</button>`).join('')}</div>`;
     return `<div class="grp">${head}${body}</div>`;
   }
+  if (g.type === 'multi') {
+    const on = v || [];
+    return `<div class="grp"><div class="grp-h"><span class="l">${g.label}</span><em data-mc>${on.length ? on.length + ' elegido' + (on.length > 1 ? 's' : '') : 'Puedes elegir varios'}</em></div>
+      <div class="ch multi" role="group" aria-label="${g.label}">${g.options.map(o => `<button type="button" aria-pressed="${on.includes(o.v)}" ${a} data-m="${o.v}"><span class="tick" aria-hidden="true"></span>${o.label}${o.price ? `<small>${plus(o.price)}</small>` : ''}</button>`).join('')}</div></div>`;
+  }
   const fid = `f_${sc}_${g.id}`;
   if (g.type === 'text' || g.type === 'textarea') {
     const cnt = `${String(v || '').length}/${g.max}${g.price ? ' · ' + plus(g.price) : ''}`;
     const input = g.type === 'text'
-      ? `<input type="text" id="${fid}" ${a} data-t="1" maxlength="${g.max}" placeholder="${esc(g.placeholder || '')}" value="${esc(v)}" autocomplete="off" enterkeyhint="done">`
+      ? `<input type="text" id="${fid}" ${a} data-t="1" maxlength="${g.max}" placeholder="${esc(g.placeholder || '')}" value="${esc(v)}" autocomplete="off" spellcheck="false" ${g.id === 'name' ? 'autocapitalize="words"' : ''} enterkeyhint="done">`
       : `<textarea id="${fid}" ${a} data-t="1" maxlength="${g.max}" rows="3">${esc(v)}</textarea>`;
     const sug = g.suggest ? `<div class="sug" aria-label="Ideas de texto"><span>Ideas:</span>${g.suggest.map((t, i) => `<button type="button" ${a} data-sug="${i}">${esc(t.length > 34 ? t.slice(0, 32) + '…' : t)}</button>`).join('')}</div>` : '';
     return `<div class="grp"><div class="grp-h"><label for="${fid}">${g.label}</label><em data-cnt="${fid}">${cnt}</em></div>${input}${sug}</div>`;
@@ -1063,12 +1127,21 @@ $('#cForm')?.addEventListener('click', e => {
   if (b.dataset.qty) { cur.qty = Math.max(1, Math.min(99, cur.qty + +b.dataset.qty)); buildForm(); update(false, true); return; }
   if (b.dataset.look !== undefined) {
     const f = cur.cfg.figs[cur.fig];
-    Object.assign(f, LOOKS[+b.dataset.look].f);
+    Object.assign(f, clone(LOOKS[+b.dataset.look].f));
     buildForm(); update(); return;
   }
   const sc = b.dataset.sc, id = b.dataset.g; if (!sc) return;
   const obj = target(sc), g = groupsOf(sc).find(x => x.id === id);
   if (b.dataset.sug !== undefined) { obj[id] = g.suggest[+b.dataset.sug]; buildForm(); update(); return; }
+  if (b.dataset.m !== undefined) {
+    const arr = obj[id] = [...(obj[id] || [])], v = b.dataset.m, o = g.options.find(x => x.v === v);
+    const i = arr.indexOf(v);
+    if (i >= 0) arr.splice(i, 1); else { arr.push(v); (o.excl || []).forEach(e => { const j = arr.indexOf(e); if (j >= 0) arr.splice(j, 1); }); }
+    b.parentElement.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', arr.includes(x.dataset.m)));
+    const em = b.closest('.grp').querySelector('[data-mc]'); if (em) em.textContent = arr.length ? arr.length + ' elegido' + (arr.length > 1 ? 's' : '') : 'Puedes elegir varios';
+    if (sc === 'f') { const av = document.querySelector(`[data-tab="${cur.fig}"] .av`); if (av) av.innerHTML = headSVG(obj); }
+    update(); return;
+  }
   if (b.dataset.v !== undefined) {
     if (obj[id] === b.dataset.v) return;
     obj[id] = b.dataset.v;
@@ -1201,7 +1274,7 @@ document.querySelectorAll('.wa-link').forEach(el => { el.href = waURL('¡Hola Pe
 
 /* ---------- carrito ---------- */
 let cart = [];
-try { cart = JSON.parse(localStorage.getItem('pehn_cart') || '[]').filter(i => PRODUCTS.some(p => p.id === i.id)); } catch { cart = []; }
+try { cart = JSON.parse(localStorage.getItem('pehn_cart') || '[]').filter(i => PRODUCTS.some(p => p.id === i.id)); cart.forEach(i => normCfg(PRODUCTS.find(p => p.id === i.id), i.cfg)); } catch { cart = []; }
 function saveCart() {
   try { localStorage.setItem('pehn_cart', JSON.stringify(cart)); } catch { /* sin storage: sigue en memoria */ }
   const n = $('#cartCount'); if (n) n.textContent = cart.reduce((s, i) => s + i.qty, 0);
@@ -1263,7 +1336,7 @@ function renderCheckout(total) {
         <label>Ciudad<input name="city" autocomplete="address-level2" required value="${esc(d.city)}"></label>
         <label>¿Para cuándo?<input name="date" type="date"></label>
       </div>
-      <label>Notas para el diseño<textarea name="notes" placeholder="Ej. él usa lentes redondos, ella tiene fleco; es para nuestro aniversario..."></textarea></label>
+      <label>Notas para el diseño<textarea name="notes" placeholder="Ej. él usa lentes redondos, ella tiene fleco; es para nuestro aniversario…"></textarea></label>
       <div class="err" id="coErr" role="alert"></div>
     </form>`;
   $('#dFoot').innerHTML = `<div class="tot big"><span>Total estimado</span><span>${fmt(total)}</span></div>
@@ -1283,14 +1356,28 @@ $('#drawer')?.addEventListener('click', e => {
   else if (t.id === 'backCart') { view = 'cart'; renderDrawer(); }
   else if (t.id === 'sendOrder') handleSend(t);
 });
+$('#drawer')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.matches('#coForm input')) { e.preventDefault(); $('#sendOrder')?.click(); }
+});
 
 async function handleSend(btn) {
   const f = $('#coForm'), err = $('#coErr');
   const data = Object.fromEntries(new FormData(f));
-  const missing = ['name', 'phone', 'email', 'city'].filter(k => !String(data[k] || '').trim());
-  if (missing.length) { err.textContent = 'Completa nombre, WhatsApp, correo y ciudad.'; f.elements[missing[0]].focus(); return; }
-  if (!/^\S+@\S+\.\S+$/.test(data.email)) { err.textContent = 'Revisa tu correo.'; f.elements.email.focus(); return; }
-  if (String(data.phone).replace(/\D/g, '').length < 10) { err.textContent = 'Revisa tu número de WhatsApp.'; f.elements.phone.focus(); return; }
+  const checks = {
+    name: v => v.trim() ? '' : 'Escribe tu nombre.',
+    phone: v => v.replace(/\D/g, '').length >= 10 ? '' : 'Escribe un WhatsApp de 10 dígitos.',
+    email: v => /^\S+@\S+\.\S+$/.test(v) ? '' : 'Revisa tu correo, ej. ana@correo.com.',
+    city: v => v.trim() ? '' : 'Escribe tu ciudad.',
+  };
+  let first = null;
+  Object.entries(checks).forEach(([k, fn]) => {
+    const el = f.elements[k], msg = fn(String(data[k] || '')), id = 'e_' + k;
+    let m = document.getElementById(id);
+    if (!m) { m = document.createElement('span'); m.id = id; m.className = 'f-err'; el.after(m); el.setAttribute('aria-describedby', id); }
+    m.textContent = msg; el.setAttribute('aria-invalid', !!msg);
+    if (msg && !first) first = el;
+  });
+  if (first) { err.textContent = 'Revisa los campos marcados.'; first.focus(); return; }
   err.textContent = '';
   try { localStorage.setItem('pehn_contact', JSON.stringify({ name: data.name, phone: data.phone, email: data.email, city: data.city })); } catch { }
 
@@ -1308,7 +1395,7 @@ async function handleSend(btn) {
     subtotal: gross, discount: disc, total,
   };
 
-  btn.disabled = true; btn.textContent = 'Enviando...';
+  btn.disabled = true; btn.textContent = 'Enviando…';
   try {
     await submitOrder(order);
     cart = []; saveCart(); view = 'cart'; closeDrawer();
@@ -1331,21 +1418,35 @@ async function submitOrder(order) {
 
 /* ---------- modales (entrada y salida animadas) ---------- */
 let lastFocus = null;
+// solo el modal abierto es usable; lo demás queda inerte para teclado y lectores de pantalla
+function syncInert() {
+  const top = [...document.querySelectorAll('.modal.open:not(.closing),.drawer.open:not(.closing)')].pop();
+  [...document.body.children].forEach(el => { if (el.tagName !== 'SCRIPT') el.inert = !!top && el !== top && !el.classList.contains('toast'); });
+}
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Tab') return;
+  const top = [...document.querySelectorAll('.modal.open,.drawer.open')].pop(); if (!top) return;
+  const f = [...top.querySelectorAll('button:not([disabled]),a[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')].filter(x => x.offsetParent !== null);
+  if (!f.length) return;
+  const i = f.indexOf(document.activeElement);
+  if (e.shiftKey && (i <= 0)) { e.preventDefault(); f[f.length - 1].focus(); }
+  else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); }
+});
 function openModal(s) {
   const m = $(s); if (!m || m.classList.contains('open')) return;
   lastFocus = document.activeElement;
   m.classList.remove('closing'); m.classList.add('open'); m.setAttribute('aria-hidden', 'false');
-  document.body.style.overflow = 'hidden';
+  document.body.style.overflow = 'hidden'; syncInert();
   setTimeout(() => (m.querySelector('.sheet,.d-panel,.done-card') || m).focus?.({ preventScroll: true }), 50);
 }
 function closeModal(s) {
   const m = $(s); if (!m || !m.classList.contains('open')) return;
   const done = () => {
     m.classList.remove('open', 'closing'); m.setAttribute('aria-hidden', 'true');
-    if (!document.querySelector('.modal.open,.drawer.open')) document.body.style.overflow = '';
-    lastFocus?.focus?.({ preventScroll: true });
+    syncInert();
+    if (!document.querySelector('.modal.open,.drawer.open')) { document.body.style.overflow = ''; lastFocus?.focus?.({ preventScroll: true }); }
   };
-  m.classList.add('closing');
+  m.classList.add('closing'); syncInert();
   setTimeout(done, 200);
 }
 function openDrawer() { renderDrawer(); openModal('#drawer'); }
@@ -1427,7 +1528,6 @@ if ($('#cats')) $('#cats').innerHTML = CAT_TILES.map(t => {
   return `<a class="cat-tile" href="catalogo.html?cat=${t.cat}" style="--tint:${t.tint}"><div class="cat-art">${art}</div>
     <div class="cat-label"><div><h3>${catName(t.cat)}</h3><small>${t.note} · ${n} diseño${n > 1 ? 's' : ''}</small></div><span class="cat-go">${ARROW}</span></div></a>`;
 }).join('');
-document.querySelectorAll('#faces span').forEach((s, i) => { s.innerHTML = headSVG(FIG_PRESETS[[0, 1, 4, 5][i]]); });
 $('#howFig')?.insertAdjacentHTML('afterbegin', frameSVG(cardCfg(CARDS[0])));
 
 // menú móvil
@@ -1471,6 +1571,8 @@ $('#yr').textContent = new Date().getFullYear();
 if ($('#grid')) {
   const q = new URLSearchParams(location.search);
   if (CATS.some(c => c[0] === q.get('cat'))) state.cat = q.get('cat');
+  if (q.get('q')) { state.q = q.get('q'); $('#q').value = state.q; $('#qClear').hidden = false; }
+  if (['asc', 'desc', 'name'].includes(q.get('sort'))) { state.sort = q.get('sort'); $('#sort').value = state.sort; }
   renderFilters(); renderGrid();
   if (q.has('card')) openCard(+q.get('card'));
   else if (q.has('edit')) editItem(+q.get('edit'));

@@ -609,3 +609,26 @@ body:not(.locked) .ico-lock{display:none}
 }
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 @media (max-width:960px){.zoom-tip{left:12px;top:max(14px,env(safe-area-inset-top));transform:none;max-width:calc(100% - 84px);white-space:normal}}
+
+/* ---------- accesorios combinables ---------- */
+.ch.multi button{padding-left:12px}
+.ch.multi .tick{width:18px;height:18px;border-radius:6px;border:1.5px solid var(--line-2);display:grid;place-items:center;transition:background-color .2s,border-color .2s}
+.ch.multi button[aria-pressed="true"]{background:var(--brand-soft);border-color:var(--brand-600);color:var(--ink)}
+.ch.multi button[aria-pressed="true"] small{color:var(--brand-ink)}
+.ch.multi button[aria-pressed="true"] .tick{background:var(--ink);border-color:var(--ink)}
+.ch.multi button[aria-pressed="true"] .tick::after{content:"";width:8px;height:5px;border:2px solid #fff;border-top:0;border-right:0;transform:translateY(-1px) rotate(-45deg)}
+
+/* ---------- guías de interfaz ---------- */
+body{-webkit-tap-highlight-color:transparent}
+[id]{scroll-margin-top:calc(var(--nav-h) + 20px)}
+.cart-fab{bottom:calc(20px + env(safe-area-inset-bottom))}
+.wa-float{bottom:calc(92px + env(safe-area-inset-bottom))}
+.co input[aria-invalid="true"]{border-color:var(--danger);background:#FFF7F5}
+.f-err{display:block;min-height:0;font-size:12.5px;font-weight:500;color:var(--danger)}
+.f-err:empty{display:none}
+.sec-head h2{margin:0}
+@media (max-width:640px){
+  .cart-fab{bottom:calc(14px + env(safe-area-inset-bottom))}
+  .wa-float{bottom:calc(78px + env(safe-area-inset-bottom))}
+}
+@media (max-width:640px){.hero .cta-row .btn{flex:1 1 100%}.announce{font-size:12.5px;padding:8px 12px}}

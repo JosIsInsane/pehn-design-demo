@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
 <title>Pehn Design</title>
 <meta name="description" content="Cuadros con minifiguras, sudaderas, bolsas, vasos y regalos personalizados hechos a mano. Diseña el tuyo y mira el precio al instante.">
 <meta name="theme-color" content="#FBF7F2">
@@ -15,18 +16,16 @@
 <body data-page="home">
 <a class="skip" href="#main">Saltar al contenido</a>
 
-<div class="announce">Vista previa de tu diseño antes de producir<span class="opt">·</span><span class="opt" style="opacity:1;margin:0">Envíos a todo el país</span></div>
+<div class="announce">Apruebas tu diseño antes de que lo hagamos</div>
 
 <header class="nav" id="top">
   <div class="wrap nav-in">
-    <a href="index.html" class="brand" aria-label="Pehn Design, inicio"><img src="logo.png" alt="" width="44" height="44"><span class="brand-name">Pehn Design</span></a>
+    <a href="index.html" class="brand" aria-label="Pehn Design, inicio"><img src="logo.png" alt="" width="44" height="44"><span class="brand-name" translate="no">Pehn Design</span></a>
     <nav class="links" aria-label="Principal">
       <a href="catalogo.html">Catálogo</a>
       <a href="#trabajos">Pedidos reales</a>
       <a href="#como">Cómo funciona</a>
       <a href="#historia">Historia</a>
-      <a href="#resenas">Reseñas</a>
-      <a href="#blog">Blog</a>
     </nav>
     <div class="nav-actions">
       <a class="icon-btn" href="catalogo.html#buscar" aria-label="Buscar en el catálogo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></a>
@@ -39,7 +38,6 @@
     <a href="#trabajos">Pedidos reales</a>
     <a href="#como">Cómo funciona</a>
     <a href="#historia">Historia</a>
-    <a href="#resenas">Reseñas</a>
     <a href="#faq">Preguntas</a>
     <a class="btn btn-primary" href="catalogo.html?card=0">Diseñar el mío</a>
   </nav>
@@ -50,35 +48,18 @@
   <section class="hero">
     <div class="wrap hero-in">
       <div class="hero-copy">
-        <span class="pill"><b>Nuevo</b> Cuadros con calendario y mascotas</span>
-        <h1 class="display">Regalos que cuentan <span class="it">su</span> historia.</h1>
-        <p class="lead">Cuadros con minifiguras que se parecen a ustedes, sudaderas, bolsas y vasos personalizados. Diseñas cada detalle, ves el precio al instante y nosotros lo armamos a mano.</p>
+        <h1 class="display">Ustedes, en <span class="it">minifigura</span>.</h1>
+        <p class="lead">Elige peinado, ropa, mascotas y la frase de su historia. Ves el cuadro y el precio mientras lo armas; nosotros lo hacemos a mano.</p>
         <div class="cta-row">
           <a href="catalogo.html?card=0" class="btn btn-primary">Diseñar mi cuadro <svg class="arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
           <a href="catalogo.html" class="btn btn-ghost">Ver catálogo</a>
-        </div>
-        <div class="hero-proof">
-          <div class="faces" id="faces" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
-          <p><b>Cada figura se arma pieza por pieza</b><br>y te mandamos tu diseño para aprobarlo antes de producir.</p>
         </div>
       </div>
       <div class="hero-art">
         <figure class="hero-photo" style="margin:0"><img src="fotos/cuadro-amor.jpg" alt="Cuadro real con las minifiguras de Fer y Clau sobre un corazón rosa" width="476" height="606"><figcaption>Pedido real · Fer & Clau</figcaption></figure>
         <div class="hero-card"><div class="hero-fig" id="heroFig" aria-label="Ejemplos de cuadros personalizados" role="img"></div></div>
-        <div class="float-chip chip-a" aria-hidden="true"><span class="dot"></span><span>Vista previa en vivo<small>Cambia y míralo al momento</small></span></div>
-        <div class="float-chip chip-b" aria-hidden="true"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9Z"/><circle cx="8" cy="8" r="1.5"/></svg></span><span>Desde $770<small>Cuadro con 2 figuras</small></span></div>
         <button class="shuffle" id="shuffle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>Otro diseño</button>
       </div>
-    </div>
-  </section>
-
-  <!-- CONFIANZA -->
-  <section class="trust" aria-label="Por qué Pehn Design">
-    <div class="wrap trust-in">
-      <div class="trust-item"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8Z"/></svg></span><div><b>Hecho a mano</b><span>Cada pieza se arma una por una</span></div></div>
-      <div class="trust-item"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg></span><div><b>Apruebas antes</b><span>Vista previa antes de producir</span></div></div>
-      <div class="trust-item"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9Z"/><circle cx="8" cy="8" r="1.5"/></svg></span><div><b>Precio al instante</b><span>Sin cotizaciones eternas</span></div></div>
-      <div class="trust-item"><span class="ti"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 6h12v10H2zM14 10h4l3 3v3h-7"/><circle cx="6.5" cy="17.5" r="1.8"/><circle cx="17.5" cy="17.5" r="1.8"/></svg></span><div><b>Envío nacional</b><span>Empacado listo para regalar</span></div></div>
     </div>
   </section>
 
@@ -86,7 +67,7 @@
   <section class="sec">
     <div class="wrap">
       <div class="sec-head">
-        <div><span class="eyebrow">La colección</span><h2 class="h2">Todo se puede <span class="it">personalizar</span></h2></div>
+        <div><h2 class="h2">Elige qué personalizar</h2></div>
         <a class="link-arrow" href="catalogo.html">Ver todo el catálogo <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
       </div>
       <div class="cats" id="cats"></div>
@@ -97,7 +78,7 @@
   <section class="sec" style="padding-top:0">
     <div class="wrap">
       <div class="sec-head">
-        <div><span class="eyebrow">Favoritos</span><h2 class="h2">Los más pedidos</h2></div>
+        <div><h2 class="h2">Los más pedidos</h2></div>
         <a class="link-arrow" href="catalogo.html?cat=cuadros">Ver cuadros <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
       </div>
       <div class="grid" id="featured"></div>
@@ -109,8 +90,7 @@
     <div class="wrap">
       <div class="how">
         <div>
-          <span class="eyebrow">Cómo funciona</span>
-          <h2 class="h2" style="margin-top:14px">Lo diseñas en <span class="it">minutos</span></h2>
+          <h2 class="h2">Así se hace un pedido</h2>
           <div class="how-steps">
             <div class="how-step"><span class="n">1</span><div><h3>Elige un diseño</h3><p>Parte de un pedido real o empieza desde cero. Cuadros, figuras, ropa, bolsas y vasos.</p></div></div>
             <div class="how-step"><span class="n">2</span><div><h3>Hazlo suyo</h3><p>Peinado, ropa, mascotas, nombres, colores y frase. La vista previa y el precio cambian al momento.</p></div></div>
@@ -119,8 +99,6 @@
           <div class="cta-row"><a class="btn btn-primary" href="catalogo.html?card=0">Probar el personalizador <svg class="arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
         </div>
         <div class="how-visual" id="howFig" role="img" aria-label="Vista previa de un cuadro personalizado">
-          <div class="float-chip c1" aria-hidden="true"><span class="dot"></span><span>Fer · Suéter rayas<small>Cambio aplicado</small></span></div>
-          <div class="float-chip c2" aria-hidden="true"><span>Total $770<small>Precio al instante</small></span></div>
         </div>
       </div>
     </div>
@@ -130,7 +108,7 @@
   <section class="sec" id="trabajos" style="padding-top:0">
     <div class="wrap">
       <div class="sec-head">
-        <div><span class="eyebrow">Galería</span><h2 class="h2">Pedidos <span class="it">reales</span></h2><p class="lead">Toca cualquiera y te lo dejamos listo para personalizar con sus nombres.</p></div>
+        <div><h2 class="h2">Pedidos <span class="it">reales</span></h2><p class="lead">Toca uno y ábrelo con ese mismo diseño, listo para cambiar nombres y detalles.</p></div>
         <a class="link-arrow" href="https://www.instagram.com/pehn.designn/" target="_blank" rel="noopener">Más en Instagram <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
       </div>
       <div class="works-grid">
@@ -146,23 +124,23 @@
   <!-- HISTORIA -->
   <section class="story" id="historia">
     <div class="wrap story-in">
-      <figure class="ph"><img src="fotos/historia.jpg" alt="Detrás de Pehn Design" loading="lazy" data-ph="historia.jpg"></figure>
+      <figure class="ph"><img src="fotos/cuadros-varios.jpg" alt="Cuadros terminados en el taller de Pehn Design" loading="lazy" style="object-position:50% 20%"></figure>
       <div>
-        <span class="eyebrow">Nuestra historia</span>
         <!-- TODO: texto real de la marca -->
-        <h2 class="h2">Detrás de cada pieza hay una <span class="it" style="color:var(--brand)">persona</span></h2>
+        <h2 class="h2" style="margin-top:0">Hecho a mano, pieza por pieza</h2>
         <p>Pehn Design nació de las ganas de regalar algo que no se compra en cualquier tienda. Empezamos armando un cuadro para alguien especial y hoy cada pedido es una historia nueva: aniversarios, cumpleaños, familias completas y hasta mascotas.</p>
         <p>Cada figura se elige pieza por pieza para que se parezca a ti, y cada cuadro se arma, se pinta y se empaca a mano.</p>
-        <p class="edit-note">✎ Espacio para la historia real: quién está detrás, cómo empezó, desde dónde envían.</p>
+        <!-- TODO historia real: quién está detrás, cómo empezó, desde dónde envían -->
       </div>
     </div>
   </section>
 
   <!-- RESEÑAS -->
-  <section class="sec" id="resenas">
+  <!-- Reseñas: quitar "hidden" cuando haya reseñas reales con permiso -->
+  <section class="sec" id="resenas" hidden>
     <div class="wrap">
       <div class="sec-head">
-        <div><span class="eyebrow">Reseñas</span><h2 class="h2">Lo que dicen</h2></div>
+        <div><h2 class="h2">Lo que dicen</h2></div>
       </div>
       <!-- TODO: reemplazar con reseñas reales (con permiso del cliente) -->
       <div class="rev-grid">
@@ -174,10 +152,11 @@
   </section>
 
   <!-- BLOG -->
-  <section class="sec" id="blog" style="padding-top:0">
+  <!-- Blog: quitar "hidden" cuando haya artículos -->
+  <section class="sec" id="blog" style="padding-top:0" hidden>
     <div class="wrap">
       <div class="sec-head">
-        <div><span class="eyebrow">Ideas y procesos</span><h2 class="h2">Blog</h2></div>
+        <div><h2 class="h2">Blog</h2></div>
         <span class="soon">Próximamente</span>
       </div>
       <div class="blog-grid">
@@ -192,8 +171,7 @@
   <section class="sec" id="faq" style="padding-top:0">
     <div class="wrap faq">
       <div>
-        <span class="eyebrow">Dudas</span>
-        <h2 class="h2" style="margin-top:14px">Preguntas frecuentes</h2>
+        <h2 class="h2">Preguntas frecuentes</h2>
         <div class="faq-card"><b>¿Tienes otra idea?</b><p>Escríbenos y la armamos contigo. Pedidos de 5 piezas o más tienen 10% de descuento.</p><a class="btn btn-dark btn-sm wa-link" href="#" target="_blank" rel="noopener">Escribir por WhatsApp</a></div>
       </div>
       <div>
@@ -218,12 +196,12 @@
 <footer class="foot">
   <div class="wrap">
     <div class="foot-grid">
-      <div class="foot-brand"><a href="index.html" class="brand"><img src="logo.png" alt="" width="44" height="44"><span class="brand-name">Pehn Design</span></a><p>Cuadros con minifiguras y regalos personalizados, hechos a mano para historias únicas.</p></div>
+      <div class="foot-brand"><a href="index.html" class="brand"><img src="logo.png" alt="" width="44" height="44"><span class="brand-name" translate="no">Pehn Design</span></a><p>Cuadros con minifiguras y regalos personalizados, hechos a mano para historias únicas.</p></div>
       <nav aria-label="Tienda"><b>Tienda</b><a href="catalogo.html">Catálogo</a><a href="catalogo.html?cat=cuadros">Cuadros</a><a href="catalogo.html?cat=ropa">Ropa</a><a href="catalogo.html?cat=vasos">Vasos y tazas</a></nav>
-      <nav aria-label="Pehn"><b>Pehn</b><a href="#historia">Historia</a><a href="#resenas">Reseñas</a><a href="#blog">Blog</a><a href="#faq">Preguntas</a></nav>
+      <nav aria-label="Pehn"><b>Pehn</b><a href="#historia">Historia</a><a href="#faq">Preguntas</a></nav>
       <nav aria-label="Contacto"><b>Contacto</b><a class="wa-link" href="#" target="_blank" rel="noopener">WhatsApp</a><a href="https://www.instagram.com/pehn.designn/" target="_blank" rel="noopener">Instagram</a></nav>
     </div>
-    <div class="copy"><span>© <span id="yr"></span> Pehn Design</span><span>Hecho a mano con cariño</span></div>
+    <div class="copy"><span>© <span id="yr"></span> Pehn Design</span><span>@pehn.designn</span></div>
   </div>
 </footer>
 

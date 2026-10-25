@@ -2,7 +2,8 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
 <title>Catálogo · Pehn Design</title>
 <meta name="description" content="Personaliza cuadros con minifiguras, sudaderas, bolsas y vasos. Precio al instante y vista previa en vivo.">
 <meta name="theme-color" content="#FBF7F2">
@@ -15,11 +16,11 @@
 <body data-page="catalog">
 <a class="skip" href="#main">Saltar al contenido</a>
 
-<div class="announce">Vista previa de tu diseño antes de producir<span class="opt">·</span><span class="opt" style="opacity:1;margin:0">Envíos a todo el país</span></div>
+<div class="announce">Apruebas tu diseño antes de que lo hagamos</div>
 
 <header class="nav" id="top">
   <div class="wrap nav-in">
-    <a href="index.html" class="brand" aria-label="Pehn Design, inicio"><img src="logo.png" alt="" width="44" height="44"><span class="brand-name">Pehn Design</span></a>
+    <a href="index.html" class="brand" aria-label="Pehn Design, inicio"><img src="logo.png" alt="" width="44" height="44"><span class="brand-name" translate="no">Pehn Design</span></a>
     <nav class="links" aria-label="Principal">
       <a href="index.html">Inicio</a>
       <a href="catalogo.html" aria-current="page">Catálogo</a>
@@ -47,9 +48,8 @@
   <section class="cat-hero">
     <div class="wrap">
       <nav class="crumbs" aria-label="Ruta"><a href="index.html">Inicio</a><span aria-hidden="true">/</span><span>Catálogo</span></nav>
-      <span class="eyebrow">La colección</span>
-      <h1 style="margin-top:14px">Diseña tu <span class="it">regalo</span></h1>
-      <p class="lead">Parte de un pedido real o empieza desde cero. Cambias cada detalle, ves el precio al momento y te lo confirmamos por WhatsApp.</p>
+      <h1>Catálogo</h1>
+      <p class="lead">Los cuadros con foto parten de un pedido real. Ábrelo, cámbialo y mira el precio al momento.</p>
     </div>
   </section>
 
@@ -99,12 +99,12 @@
 <footer class="foot">
   <div class="wrap">
     <div class="foot-grid">
-      <div class="foot-brand"><a href="index.html" class="brand"><img src="logo.png" alt="" width="44" height="44"><span class="brand-name">Pehn Design</span></a><p>Cuadros con minifiguras y regalos personalizados, hechos a mano para historias únicas.</p></div>
+      <div class="foot-brand"><a href="index.html" class="brand"><img src="logo.png" alt="" width="44" height="44"><span class="brand-name" translate="no">Pehn Design</span></a><p>Cuadros con minifiguras y regalos personalizados, hechos a mano para historias únicas.</p></div>
       <nav aria-label="Tienda"><b>Tienda</b><a href="catalogo.html">Catálogo</a><a href="catalogo.html?cat=cuadros">Cuadros</a><a href="catalogo.html?cat=ropa">Ropa</a><a href="catalogo.html?cat=vasos">Vasos y tazas</a></nav>
-      <nav aria-label="Pehn"><b>Pehn</b><a href="index.html#historia">Historia</a><a href="index.html#resenas">Reseñas</a><a href="index.html#blog">Blog</a><a href="index.html#faq">Preguntas</a></nav>
+      <nav aria-label="Pehn"><b>Pehn</b><a href="index.html#historia">Historia</a><a href="index.html#faq">Preguntas</a></nav>
       <nav aria-label="Contacto"><b>Contacto</b><a class="wa-link" href="#" target="_blank" rel="noopener">WhatsApp</a><a href="https://www.instagram.com/pehn.designn/" target="_blank" rel="noopener">Instagram</a></nav>
     </div>
-    <div class="copy"><span>© <span id="yr"></span> Pehn Design</span><span>Hecho a mano con cariño</span></div>
+    <div class="copy"><span>© <span id="yr"></span> Pehn Design</span><span>@pehn.designn</span></div>
   </div>
 </footer>
 
@@ -133,8 +133,7 @@
         <button type="button" id="zReset" aria-label="Restablecer zoom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 15v5h-5M4 4l6 6M20 20l-6-6"/></svg></button>
       </div>
       <button class="ref" id="refBtn" hidden aria-label="Comparar con la foto del pedido real"><img alt=""><span>Pedido real</span></button>
-      <p class="c-hint" id="cHint" hidden>Vista previa ilustrada · el producto final se arma a mano</p>
-    </div>
+          </div>
     <div class="c-panel">
       <div class="c-head">
         <p class="c-cat" id="cCat"></p>
