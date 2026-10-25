@@ -102,24 +102,29 @@
   .thumb{width:44px;height:44px;flex:none;border-radius:10px;background:var(--bg2);overflow:hidden;display:grid;place-items:center}
   .thumb img{width:100%;height:100%;object-fit:cover}
   /* tablero */
-  .board{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(260px,1fr);gap:14px;overflow-x:auto;padding-bottom:12px;scroll-snap-type:x proximity}
-  .col{background:var(--bg2);border-radius:var(--r);padding:10px;min-height:60vh;scroll-snap-align:start;transition:background-color .2s,box-shadow .2s}
-  .col.drop{background:var(--brandSoft);box-shadow:inset 0 0 0 2px var(--brand)}
-  .col h4{display:flex;align-items:center;gap:8px;margin:2px 4px 10px;font:600 13px Inter}
-  .col h4 i{font-style:normal;color:var(--ink3);font-variant-numeric:tabular-nums}
-  .col h4 .dot{width:10px;height:10px;border-radius:50%}
-  .oc{display:block;width:100%;text-align:left;background:var(--sf);border-radius:14px;box-shadow:var(--sh);margin-bottom:10px;overflow:hidden;border:1px solid transparent;transition:border-color .2s,transform .2s}
-  .oc:hover{border-color:var(--line2)}
-  .oc.dragging{opacity:.5}
-  .oc .ph{aspect-ratio:16/10;background:var(--bg);overflow:hidden;display:grid;place-items:center}
-  .oc .ph img{width:100%;height:100%;object-fit:contain}
-  .oc .bd{padding:10px 12px 12px;display:grid;gap:4px}
-  .oc .row{display:flex;justify-content:space-between;align-items:center;gap:8px}
-  .oc .id{font-size:11.5px;font-weight:600;color:var(--ink3);font-variant-numeric:tabular-nums}
-  .oc .nm{font-weight:600;font-size:15px}
-  .oc .pr{font-size:12.5px;color:var(--ink2);white-space:pre-line;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-  .oc .next{margin-top:6px;width:100%}
   /* tablas */
+  table.ped{min-width:0}
+  table.ped td{padding:8px 12px}
+  table.ped tr.off{opacity:.62}
+  table.ped tr.click:hover{background:var(--bg)}
+  .thc{width:52px;padding-right:0}
+  .thumb.sm{width:40px;height:40px;border-radius:8px}
+  .sortb{font:inherit;color:inherit;text-transform:inherit;letter-spacing:inherit;font-weight:inherit;white-space:nowrap}
+  .sortb:hover{color:var(--ink)}
+  .pcell{max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  select.est{font:600 12.5px Inter;padding:5px 26px 5px 10px;border-radius:999px;border:1px solid var(--line2);cursor:pointer;max-width:150px}
+  .pager{display:flex;justify-content:space-between;align-items:center;margin:14px 2px 30px;font-size:13px;flex-wrap:wrap;gap:10px}
+  .pager .btn[disabled]{opacity:.4;cursor:default}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  @media (max-width:820px){
+    .hm,.thc{display:none}
+    table.ped td,table.ped th{padding:9px 8px;font-size:13px}
+    table.ped td b{white-space:nowrap;font-size:12.5px}
+    select.est{font-size:12px;padding:4px 20px 4px 8px;max-width:118px}
+    table.ped td:nth-child(3) small,table.ped td:nth-child(2) small{display:none}
+    table.ped th{font-size:10px;letter-spacing:.03em}
+    .pre{display:none}
+  }
   .tw{overflow-x:auto;border-radius:var(--r);box-shadow:var(--sh);background:var(--sf)}
   table{width:100%;border-collapse:collapse;min-width:720px}
   th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
@@ -247,7 +252,6 @@
       <!-- PEDIDOS -->
       <section class="view" id="v-pedidos" hidden>
         <div class="bar">
-          <div class="seg" role="group" aria-label="Vista"><button aria-pressed="true" data-pv="tablero">Tablero</button><button aria-pressed="false" data-pv="lista">Lista</button></div>
           <input class="search" id="qP" type="search" placeholder="Filtrar por cliente, ID o producto…" aria-label="Filtrar pedidos">
           <div class="chips" id="fP"></div>
           <button class="btn sm" data-csv="pedidos" title="Descarga los pedidos que ves en una hoja de Excel">Exportar CSV</button>
@@ -334,7 +338,7 @@ const activo = p => !['Entregado', 'Cancelado'].includes(p.estado);
 const nextOf = s => { const E = D.estados, i = E.indexOf(s); return i >= 0 && i < E.indexOf('Entregado') ? E[i + 1] : null; };
 const stockTag = s => { s = String(s || ''); const k = /^Falta|faltantes/.test(s) ? 'bad' : /Descontado|Alcanza|Regresado/.test(s) ? 'ok' : 'warn'; return `<span class="tag ${k}">${esc(s || '—')}</span>`; };
 
-let view = 'inicio', pv = 'tablero', fP = 'Activos', fC = 'Todos', fI = 'Todos', fR = 'Por asignar', open = null;
+let view = 'inicio', fP = 'Activos', fC = 'Todos', fI = 'Todos', fR = 'Por asignar', open = null;
 const imgCache = {};
 
 // ---------- servidor ----------
@@ -455,28 +459,29 @@ function filtraPedidos() {
   return D.pedidos.filter(p => fP === 'Todos' || (fP === 'Activos' ? activo(p) : p.estado === fP))
     .filter(p => !q || [p.id, p.cliente, p.productos, p.ciudad, p.wa, p.correo].join(' ').toLowerCase().includes(q));
 }
+const PAGINA = 25;
+let sortP = 'fecha', dirP = -1, pagP = 0;
+const SORTS = { id: p => p.id, cliente: p => p.cliente.toLowerCase(), estado: p => D.estados.indexOf(p.estado), entrega: p => p.paraDia || '9999', total: p => p.total, fecha: p => p.fecha || '' };
 function rPedidos() {
   const P = D.pedidos;
-  document.querySelectorAll('[data-pv]').forEach(b => b.setAttribute('aria-pressed', b.dataset.pv === pv));
   const opts = ['Activos', 'Todos', ...D.estados];
   $('#fP').innerHTML = opts.map(o => { const n = o === 'Todos' ? P.length : o === 'Activos' ? P.filter(activo).length : P.filter(p => p.estado === o).length; return `<button aria-pressed="${o === fP}" data-fp="${esc(o)}">${esc(o)}<i>${n}</i></button>`; }).join('');
-  const list = filtraPedidos();
-  if (pv === 'tablero') {
-    const cols = fP === 'Activos' || fP === 'Todos' ? D.estados.filter(s => fP === 'Todos' || !['Entregado', 'Cancelado'].includes(s)) : [fP];
-    $('#pedBody').innerHTML = `<div class="board">${cols.map(s => {
-      const items = list.filter(p => p.estado === s);
-      return `<div class="col" data-col="${esc(s)}"><h4><span class="dot" style="background:${ST_COLOR[s]}"></span>${esc(s)} <i>${items.length}</i></h4>
-        ${items.map(p => { const nx = nextOf(p.estado); return `<div class="oc" draggable="true" data-drag="${p.row}">
-          <button class="oc-open" data-ped="${p.row}" style="display:block;width:100%;text-align:left" aria-label="Abrir pedido ${esc(p.id)} de ${esc(p.cliente)}">
-            <div class="ph">${p.previews[0] ? `<img data-img="${p.previews[0]}" alt="">` : '<span class="muted">Sin foto</span>'}</div>
-            <div class="bd"><div class="row"><span class="id">${esc(p.id)}</span><span class="money">${money(p.total, p.moneda)}</span></div>
-              <span class="nm">${esc(p.cliente)}</span><span class="pr">${esc(p.productos)}</span>
-              <div class="row"><span class="muted" style="font-size:12px">${p.para ? 'Para ' + esc(p.para) : fdate(p.fecha)}</span>${/^Falta/.test(p.stock) ? '<span class="tag bad">Falta stock</span>' : ''}</div></div></button>
-          ${nx ? `<div style="padding:0 12px 12px"><button class="btn sm next" data-mv="${p.row}" data-to="${esc(nx)}">Pasar a ${esc(nx)} →</button></div>` : ''}</div>`; }).join('') || '<p class="muted" style="font-size:13px;margin:8px 6px">Nada aquí.</p>'}</div>`;
-    }).join('')}</div>`;
-  } else {
-    $('#pedBody').innerHTML = `<div class="tw"><table><thead><tr><th>Pedido</th><th>Cliente</th><th>Productos</th><th>Estado</th><th>Inventario</th><th>Para</th><th class="num">Total</th><th>Fecha</th></tr></thead><tbody>${list.map(p => `<tr class="click" data-ped="${p.row}" tabindex="0"><td><b>${esc(p.id)}</b></td><td>${esc(p.cliente)}<br><small class="muted">${esc(p.wa)}</small></td><td style="max-width:280px;white-space:pre-line;font-size:13px">${esc(p.productos)}</td><td><span class="tag ${stClass(p.estado)}">${esc(p.estado)}</span></td><td>${stockTag(p.stock)}</td><td>${esc(p.para || '—')}</td><td class="num money">${money(p.total, p.moneda)}</td><td class="muted">${fdate(p.fecha)}</td></tr>`).join('') || '<tr><td colspan="8" class="empty">Sin pedidos con este filtro.</td></tr>'}</tbody></table></div>`;
-  }
+  const f = SORTS[sortP], list = filtraPedidos().sort((a, b) => (f(a) > f(b) ? 1 : f(a) < f(b) ? -1 : 0) * dirP);
+  const pags = Math.max(1, Math.ceil(list.length / PAGINA));
+  pagP = Math.min(pagP, pags - 1);
+  const ini = pagP * PAGINA, vista = list.slice(ini, ini + PAGINA);
+  const th = (k, t, cls = '') => `<th class="${cls}" aria-sort="${sortP === k ? (dirP > 0 ? 'ascending' : 'descending') : 'none'}"><button class="sortb" data-sort="${k}">${t}${sortP === k ? (dirP > 0 ? ' ↑' : ' ↓') : ''}</button></th>`;
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  const ent = p => { if (!p.paraDia || !activo(p)) return p.para ? esc(p.para) : '<span class="muted">—</span>'; const n = Math.round((new Date(p.paraDia + 'T00:00:00') - hoy) / 864e5); const t = new Intl.DateTimeFormat('es-HN', { day: 'numeric', month: 'short' }).format(new Date(p.paraDia + 'T00:00:00')); return n <= 2 && p.estado !== 'Listo' ? `<span class="tag ${n < 0 ? 'bad' : 'warn'}">${t}</span>` : t; };
+  $('#pedBody').innerHTML = `<div class="tw"><table class="ped"><thead><tr><th class="thc"><span class="sr">Foto</span></th>${th('id', 'Pedido')}${th('cliente', 'Cliente')}<th class="hm">Productos</th>${th('estado', 'Estado')}${th('entrega', 'Entrega', 'hm')}${th('total', 'Total', 'num')}</tr></thead><tbody>${vista.map(p => `<tr class="click${activo(p) ? '' : ' off'}" data-ped="${p.row}" tabindex="0">
+      <td class="thc"><span class="thumb sm">${p.previews[0] ? `<img data-img="${p.previews[0]}" alt="">` : ''}</span></td>
+      <td><b><span class="pre">PEHN-</span>${esc(p.id.replace(/^PEHN-/, ''))}</b><br><small class="muted">${fdate(p.fecha)}</small></td>
+      <td>${esc(p.cliente)}<br><small class="muted">${esc(p.wa)}</small></td>
+      <td class="hm pcell">${esc(p.productos.split('\n')[0])}${p.productos.includes('\n') ? ' <small class="muted">+más</small>' : ''}${/^Falta/.test(p.stock) && activo(p) ? ' <span class="tag bad">Falta stock</span>' : ''}</td>
+      <td><select class="est ${stClass(p.estado)}" data-estado="${p.row}" aria-label="Estado de ${esc(p.id)}">${D.estados.map(e => `<option${e === p.estado ? ' selected' : ''}>${esc(e)}</option>`).join('')}</select></td>
+      <td class="hm">${ent(p)}</td>
+      <td class="num money">${money(p.total, p.moneda)}</td></tr>`).join('') || '<tr><td colspan="7" class="empty">Sin pedidos con este filtro.</td></tr>'}</tbody></table></div>
+    <div class="pager"><span class="muted">${list.length ? `${ini + 1}–${ini + vista.length} de ${list.length}` : '0 pedidos'}</span>${pags > 1 ? `<span><button class="btn sm" data-pg="-1" ${pagP === 0 ? 'disabled' : ''}>← Anterior</button> <span class="muted" style="margin:0 8px">Página ${pagP + 1} de ${pags}</span> <button class="btn sm" data-pg="1" ${pagP >= pags - 1 ? 'disabled' : ''}>Siguiente →</button></span>` : ''}</div>`;
 }
 
 function waNum(t) { const n = String(t).replace(/\D/g, ''); return n.length === 8 ? '504' + n : n; }
@@ -641,7 +646,9 @@ function bajarCsv(que) {
 }
 
 // ---------- eventos ----------
+document.addEventListener('change', e => { const sel = e.target.closest('select[data-estado]'); if (sel) mover(+sel.dataset.estado, sel.value).finally(() => { rPedidos(); watchImgs(); }); });
 document.addEventListener('click', async e => {
+  if (e.target.closest('select')) return;
   const t = e.target.closest('button,tr.click,img[data-zoom],[data-x]'); if (!t) return;
   const d = t.dataset;
   if (d.csv) return bajarCsv(d.csv);
@@ -652,8 +659,9 @@ document.addEventListener('click', async e => {
   if (d.pid) { const p = D.pedidos.find(x => x.id === d.pid); if (p) openPedido(p); return; }
   if (d.cli) { $('#gsRes').hidden = true; const c = D.clientes.find(x => (x.tel || x.nombre) === d.cli); if (c) openCliente(c); return; }
   if (d.x !== undefined) return closeDrawer();
-  if (d.pv) { pv = d.pv; return rPedidos(), watchImgs(); }
-  if (d.fp) { fP = d.fp; return rPedidos(), watchImgs(); }
+  if (d.sort) { if (sortP === d.sort) dirP = -dirP; else { sortP = d.sort; dirP = d.sort === 'fecha' || d.sort === 'total' ? -1 : 1; } pagP = 0; return rPedidos(), watchImgs(); }
+  if (d.pg) { pagP += +d.pg; rPedidos(); watchImgs(); return window.scrollTo(0, 0); }
+  if (d.fp) { fP = d.fp; pagP = 0; return rPedidos(), watchImgs(); }
   if (d.fc) { fC = d.fc; return rClientes(); }
   if (d.fr) { fR = d.fr; return rRec(); }
   if (d.mv) return mover(+d.mv, d.to);
@@ -678,12 +686,8 @@ document.addEventListener('keydown', e => {
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('tr.click')) { e.preventDefault(); e.target.click(); }
 });
 // arrastrar tarjetas entre columnas
-document.addEventListener('dragstart', e => { const c = e.target.closest('[data-drag]'); if (!c) return; e.dataTransfer.setData('text/plain', c.dataset.drag); c.classList.add('dragging'); });
-document.addEventListener('dragend', e => { e.target.closest?.('[data-drag]')?.classList.remove('dragging'); document.querySelectorAll('.col.drop').forEach(c => c.classList.remove('drop')); });
-document.addEventListener('dragover', e => { const col = e.target.closest('[data-col]'); if (!col) return; e.preventDefault(); document.querySelectorAll('.col.drop').forEach(c => c !== col && c.classList.remove('drop')); col.classList.add('drop'); });
-document.addEventListener('drop', e => { const col = e.target.closest('[data-col]'); if (!col) return; e.preventDefault(); col.classList.remove('drop'); mover(+e.dataTransfer.getData('text/plain'), col.dataset.col); });
 $('#fPieza').addEventListener('submit', async e => { e.preventDefault(); const f = Object.fromEntries(new FormData(e.target)); if (await act('pieza', f, `${f.sku.toUpperCase()} guardada`)) { e.target.reset(); $('#addPieza').open = false; } });
-[['#qP', () => { rPedidos(); watchImgs(); }], ['#qC', rClientes], ['#qI', rInv], ['#qR', rRec], ['#qM', rMovs]].forEach(([s, fn]) => $(s).addEventListener('input', fn));
+[['#qP', () => { pagP = 0; rPedidos(); watchImgs(); }], ['#qC', rClientes], ['#qI', rInv], ['#qR', rRec], ['#qM', rMovs]].forEach(([s, fn]) => $(s).addEventListener('input', fn));
 if (matchMedia('(max-width:820px)').matches) document.querySelectorAll('.lbl-s').forEach(x => { x.style.display = 'inline'; });
 
 // ---------- inicio ----------
