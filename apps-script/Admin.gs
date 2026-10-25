@@ -72,6 +72,7 @@ function crmDatos_() { return conMemo_(crmDatosLeer_); }
 function crmDatosLeer_() {
   const cfg = config_(), tz = Session.getScriptTimeZone();
   const txt = v => v instanceof Date ? Utilities.formatDate(v, tz, 'dd/MM/yyyy') : String(v == null ? '' : v);
+  const dia = v => v instanceof Date ? Utilities.formatDate(v, tz, 'yyyy-MM-dd') : (/^\d{4}-\d{2}-\d{2}/.test(String(v)) ? String(v).slice(0, 10) : '');
   const iso = v => { const d = v instanceof Date ? v : (v ? new Date(v) : null); return d && !isNaN(d) ? d.toISOString() : ''; };
 
   const previews = {};
@@ -84,7 +85,7 @@ function crmDatosLeer_() {
     const d = datos_(p);
     return {
       row: p._row, id: txt(p.ID), fecha: iso(p.Fecha), estado: txt(p.Estado) || 'Nuevo',
-      cliente: txt(p.Cliente), wa: txt(p.WhatsApp), tel: telKey_(p.WhatsApp), correo: txt(p.Correo), ciudad: txt(p.Ciudad), para: txt(p['Para cuándo']),
+      cliente: txt(p.Cliente), wa: txt(p.WhatsApp), tel: telKey_(p.WhatsApp), correo: txt(p.Correo), ciudad: txt(p.Ciudad), para: txt(p['Para cuándo']), paraDia: dia(p['Para cuándo']),
       productos: txt(p.Productos), piezas: txt(p.Piezas), total: Number(p.Total) || 0, moneda: txt(p.Moneda) || 'HNL', stock: txt(p.Stock),
       notasCliente: txt(p['Notas del cliente']), notas: txt(p['Notas internas']), carpeta: txt(p.Carpeta), actualizado: iso(p.Actualizado),
       descontado: !!d.descontado,

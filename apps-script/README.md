@@ -59,6 +59,9 @@ Aun así, el código se protege solo:
 - **CRM**: menú **Pehn › Abrir CRM (pestaña nueva)**. Guarda ese enlace en favoritos: lleva la clave de *Config › Clave del CRM*. Compártelo solo con tu equipo; si se filtra, cambia la clave.
 - Si el CRM no carga, en el editor corre la función **probarCRM** (Ejecutar) y mira el registro.
 - **Estados**: Nuevo → Diseño enviado → Aprobado → **En producción** (descuenta) → Listo → Enviado → Entregado. Cancelado regresa stock.
+- **Exportar:** en Pedidos y Clientes, botón *Exportar CSV* (abre en Excel). Sirve también para llevar los datos a otro sistema.
+- **Respaldo:** **Pehn › Respaldar la hoja ahora** guarda una copia completa en Drive (carpeta *Respaldos*) y activa una copia automática cada lunes. Solo copia: no borra nada. De vez en cuando borra a mano las copias viejas para no llenar el Drive.
+- **Avisos en Inicio:** entregas de los próximos 7 días o vencidas, y pedidos *Nuevo* sin atender hace más de 2 días.
 - **Entrada de mercancía**: en el CRM, *Inventario › Entrada…*. También puedes editar el stock en la hoja: queda en *Movimientos*.
 - **Opciones nuevas**: cuando alguien pide algo que no tiene receta, aparece en *Recetas › Por mapear*. Asigna el SKU o déjalo vacío si no gasta inventario.
 

@@ -8,6 +8,7 @@ function onOpen() {
     .addItem('Abrir CRM (pestaña nueva)', 'abrirCRM')
     .addItem('Abrir CRM aquí', 'abrirPanel')
     .addItem('Revisar stock ahora', 'revisarStockMenu')
+    .addItem('Respaldar la hoja ahora', 'respaldarAhora')
     .addSeparator()
     .addItem('Configurar hojas', 'configurar')
     .addItem('Ver URL y token para el sitio', 'mostrarConexion')
@@ -165,6 +166,31 @@ function instalarDisparadores_() {
   ScriptApp.getProjectTriggers().forEach(t => { if (t.getHandlerFunction() in want) ScriptApp.deleteTrigger(t); });
   ScriptApp.newTrigger('alEditar_').forSpreadsheet(ss_()).onEdit().create();
   ScriptApp.newTrigger('resumenStockDiario_').timeBased().everyDays(1).atHour(8).create();
+  instalarRespaldo_();
+}
+
+// copia completa de la hoja en Drive (carpeta Respaldos). Solo copia: no borra ni cambia nada.
+function respaldarAhora() {
+  const r = respaldar_();
+  instalarRespaldo_();
+  SpreadsheetApp.getUi().alert(`Listo. Copia guardada en Drive: ${r.name}\n\nDesde ahora se hace sola cada lunes en la madrugada.`);
+}
+function respaldoSemanal_() {
+  try { respaldar_(); } catch (err) {
+    const to = config_()['Correo del negocio'];
+    if (to) MailApp.sendEmail(to, 'No se pudo respaldar la hoja de Pehn', String(err && err.message || err));
+    throw err;
+  }
+}
+function respaldar_() {
+  const dir = folder_(), sub = dir.getFoldersByName('Respaldos'), carpeta = sub.hasNext() ? sub.next() : dir.createFolder('Respaldos');
+  const name = 'Respaldo Pehn · ' + Utilities.formatDate(now_(), Session.getScriptTimeZone(), 'yyyy-MM-dd');
+  const file = DriveApp.getFileById(ss_().getId()).makeCopy(name, carpeta);
+  return { name, id: file.getId() };
+}
+function instalarRespaldo_() {
+  if (ScriptApp.getProjectTriggers().some(t => t.getHandlerFunction() === 'respaldoSemanal_')) return;
+  ScriptApp.newTrigger('respaldoSemanal_').timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(3).create();
 }
 
 function folder_() {

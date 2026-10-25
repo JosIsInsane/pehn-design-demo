@@ -250,6 +250,7 @@
           <div class="seg" role="group" aria-label="Vista"><button aria-pressed="true" data-pv="tablero">Tablero</button><button aria-pressed="false" data-pv="lista">Lista</button></div>
           <input class="search" id="qP" type="search" placeholder="Filtrar por cliente, ID o producto…" aria-label="Filtrar pedidos">
           <div class="chips" id="fP"></div>
+          <button class="btn sm" data-csv="pedidos" title="Descarga los pedidos que ves en una hoja de Excel">Exportar CSV</button>
         </div>
         <div id="pedBody"></div>
       </section>
@@ -257,7 +258,7 @@
       <!-- CLIENTES -->
       <section class="view" id="v-clientes" hidden>
         <div class="kpis" id="kpiCli"></div>
-        <div class="bar"><input class="search" id="qC" type="search" placeholder="Buscar cliente, WhatsApp, ciudad o etiqueta…" aria-label="Buscar clientes"><div class="chips" id="fC"></div></div>
+        <div class="bar"><input class="search" id="qC" type="search" placeholder="Buscar cliente, WhatsApp, ciudad o etiqueta…" aria-label="Buscar clientes"><div class="chips" id="fC"></div><button class="btn sm" data-csv="clientes">Exportar CSV</button></div>
         <div class="tw"><table><thead><tr><th>Cliente</th><th>WhatsApp</th><th>Ciudad</th><th>Etiquetas</th><th class="num">Pedidos</th><th class="num">Total</th><th>Último pedido</th></tr></thead><tbody id="cli"></tbody></table></div>
       </section>
 
@@ -431,6 +432,12 @@ function rInicio() {
     kpi('Ventas del mes', money(delMes.reduce((s, p) => s + p.total, 0)), `${delMes.length} pedidos`),
   ].join('');
   const todo = [];
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  const dias = p => p.paraDia ? Math.round((new Date(p.paraDia + 'T00:00:00') - hoy) / 864e5) : null;
+  const urgentes = P.filter(p => activo(p) && p.estado !== 'Listo' && dias(p) !== null && dias(p) <= 7).sort((a, b) => dias(a) - dias(b));
+  urgentes.slice(0, 5).forEach(p => { const n = dias(p); todo.push(`<button class="li" data-ped="${p.row}"><span class="ic warn">${ICON.alert}</span><div><b>${n < 0 ? 'Entrega vencida' : n === 0 ? 'Entrega hoy' : n === 1 ? 'Entrega mañana' : 'Entrega en ' + n + ' días'}: ${esc(p.cliente)}</b><small>${esc(p.id)} · ${esc(p.estado)}</small></div></button>`); });
+  const frios = P.filter(p => p.estado === 'Nuevo' && p.fecha && (Date.now() - new Date(p.fecha)) > 2 * 864e5);
+  if (frios.length) todo.push(`<button class="li" data-go="pedidos" data-f="Nuevo"><span class="ic bad">${ICON.alert}</span><div><b>${frios.length} pedido${frios.length > 1 ? 's' : ''} sin atender hace más de 2 días</b><small>${esc(frios.slice(0, 3).map(p => p.cliente).join(', '))}${frios.length > 3 ? '…' : ''}</small></div></button>`);
   P.filter(p => p.estado === 'Nuevo').slice(0, 6).forEach(p => todo.push(`<button class="li" data-ped="${p.row}"><span class="ic brand">${ICON.bag}</span><div><b>Confirmar a ${esc(p.cliente)}</b><small>${esc(p.id)} · ${esc(p.productos.split('\n')[0])}</small></div><span class="money">${money(p.total, p.moneda)}</span></button>`));
   const faltan = P.filter(p => activo(p) && /^Falta/.test(p.stock));
   if (faltan.length > 2) todo.push(`<button class="li" data-go="pedidos" data-f="Activos"><span class="ic bad">${ICON.alert}</span><div><b>Falta inventario en ${faltan.length} pedidos</b><small>${esc(faltan.slice(0, 3).map(p => p.id).join(', '))}…</small></div></button>`);
@@ -614,10 +621,30 @@ $('#gs').addEventListener('keydown', e => {
 });
 document.addEventListener('click', e => { if (!e.target.closest('.gs')) { $('#gsRes').hidden = true; $('.gs').setAttribute('aria-expanded', 'false'); } });
 
+// ---------- exportar ----------
+const celdaCsv = v => { let s = String(v == null ? '' : v).replace(/\r?\n/g, ' | '); if (/^[=+\-@]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; };
+function bajarCsv(que) {
+  let cab, filas;
+  if (que === 'clientes') {
+    cab = ['Nombre', 'WhatsApp', 'Correo', 'Ciudad', 'Etiquetas', 'Notas', 'Pedidos', 'Total HNL', 'Primer pedido', 'Último pedido'];
+    filas = D.clientes.map(c => [c.nombre, c.wa, c.correo, c.ciudad, c.etiquetas, c.notas, c.pedidos.length, c.total, c.primero, c.ultimo]);
+  } else {
+    cab = ['ID', 'Fecha', 'Estado', 'Cliente', 'WhatsApp', 'Correo', 'Ciudad', 'Para cuándo', 'Productos', 'Total', 'Moneda', 'Inventario', 'Notas del cliente', 'Notas internas'];
+    filas = filtraPedidos().map(p => [p.id, p.fecha, p.estado, p.cliente, p.wa, p.correo, p.ciudad, p.paraDia || p.para, p.productos, p.total, p.moneda, p.stock, p.notasCliente, p.notas]);
+  }
+  const csv = '\ufeff' + [cab, ...filas].map(r => r.map(celdaCsv).join(',')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = `pehn-${que}-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  toast(`${filas.length} filas exportadas`);
+}
+
 // ---------- eventos ----------
 document.addEventListener('click', async e => {
   const t = e.target.closest('button,tr.click,img[data-zoom],[data-x]'); if (!t) return;
   const d = t.dataset;
+  if (d.csv) return bajarCsv(d.csv);
   if (d.v) return go(d.v);
   if (d.go) { if (d.iq) $('#qI').value = d.iq; $('#gsRes').hidden = true; return go(d.go, { fP: d.f, fI: d.fi }); }
   if (d.fi && !d.go) { fI = d.fi; if (view !== 'inventario') go('inventario'); else rInv(); return; }
