@@ -457,7 +457,8 @@ function rPedidos() {
 }
 
 function waNum(t) { const n = String(t).replace(/\D/g, ''); return n.length === 8 ? '504' + n : n; }
-const waLink = (t, txt) => `https://wa.me/${waNum(t)}?text=${encodeURIComponent(txt)}`;
+// Google borra todo lo que sigue a dos barras en el código de la página: por eso \/\/
+const waLink = (t, txt) => `https:\/\/wa.me/${waNum(t)}?text=${encodeURIComponent(txt)}`;
 const MSG = {
   'Nuevo': p => `¡Hola ${p.cliente}! Recibimos tu pedido ${p.id} (${money(p.total, p.moneda)}). En un momento te mandamos tu diseño para aprobarlo.`,
   'Diseño enviado': p => `¡Hola ${p.cliente}! Aquí va el diseño de tu pedido ${p.id}. ¿Lo aprobamos o cambiamos algo?`,
