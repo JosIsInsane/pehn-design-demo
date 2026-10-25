@@ -37,7 +37,7 @@ const FONTS = { groovy: "'Bagel Fat One'", clasica: "'Outfit'", script: "'Pacifi
 
 /* ---------- opciones de cada figura ---------- */
 const FIG_GROUPS = [
-  { id: 'name', label: 'Nombre', type: 'text', max: 12, placeholder: 'Ej. Fer' },
+  { id: 'name', label: 'Nombre', type: 'text', max: 12, placeholder: 'Ej. Fer…' },
   { id: 'skin', label: 'Tono de piel', type: 'swatch', options: sw(SKIN) },
   { id: 'hair', label: 'Peinado', type: 'choice', options: [
     { v: 'corto', label: 'Corto', price: 0 }, { v: 'lado', label: 'De lado', price: 0 },
@@ -63,7 +63,7 @@ const FIG_GROUPS = [
     { v: 'traje', label: 'Traje', price: 30 }, { v: 'vestido', label: 'Vestido', price: 30 },
     { v: 'texto', label: 'Con texto', price: 35 }] },
   { id: 'torso', label: 'Color de ropa', type: 'swatch', options: sw(CLOTH) },
-  { id: 'printText', label: 'Texto en playera', type: 'text', max: 6, placeholder: 'Ej. PAPÁ', showIf: c => c.outfit === 'texto' },
+  { id: 'printText', label: 'Texto en playera', type: 'text', max: 6, placeholder: 'Ej. PAPÁ…', showIf: c => c.outfit === 'texto' },
   { id: 'legs', label: 'Color de pantalón', type: 'swatch', options: sw(PANTS), showIf: c => c.outfit !== 'vestido' },
 ];
 const FIG_PRESETS = [
@@ -129,16 +129,16 @@ const PRODUCTS = [
         { v: 'pride', label: 'Arcoíris', price: 20 }] },
       { step: 1, id: 'nameFont', label: 'Letra de los nombres', type: 'choice', options: [
         { v: 'serif', label: 'Elegante', price: 0 }, { v: 'firma', label: 'Manuscrita', price: 0 }] },
-      { step: 2, id: 'word', label: 'Palabra', type: 'text', max: 12, placeholder: 'Amor', showIf: c => c.tpl === 'amor' },
-      { step: 2, id: 'top', label: 'Título arriba', type: 'text', max: 22, placeholder: 'Happy Birthday', showIf: c => c.tpl === 'cumple' },
+      { step: 2, id: 'word', label: 'Palabra', type: 'text', max: 12, placeholder: 'Amor…', showIf: c => c.tpl === 'amor' },
+      { step: 2, id: 'top', label: 'Título arriba', type: 'text', max: 22, placeholder: 'Happy Birthday…', showIf: c => c.tpl === 'cumple' },
       { step: 2, id: 'calDate', label: 'Fecha especial', type: 'date', showIf: c => c.tpl === 'calendario' },
       { step: 2, id: 'body', label: 'Texto', type: 'textarea', max: 220, showIf: c => c.tpl !== 'libre',
         suggest: [TEXTS.amor, TEXTS.amor2, TEXTS.cal, TEXTS.cumple, TEXTS.frase] },
-      { step: 2, id: 'date', label: 'Fecha', type: 'text', max: 14, placeholder: '29 08 2025', showIf: c => c.tpl === 'cumple' || c.tpl === 'aniv' },
+      { step: 2, id: 'date', label: 'Fecha', type: 'text', max: 14, placeholder: '29 08 2025…', showIf: c => c.tpl === 'cumple' || c.tpl === 'aniv' },
       { step: 3, id: 'frame', label: 'Marco', type: 'choice', options: [
         { v: '#FFFDF9', label: 'Blanco', price: 0 }, { v: '#2A1A0E', label: 'Negro', price: 0 }, { v: '#B9824C', label: 'Madera', price: 60 }] },
       { step: 3, id: 'size', label: 'Tamaño', type: 'choice', options: [
-        { v: '23', label: '23×23 cm', price: 0 }, { v: '30', label: '30×30 cm', price: 180 }] },
+        { v: '23', label: '23×23\u00a0cm', price: 0 }, { v: '30', label: '30×30\u00a0cm', price: 180 }] },
     ],
     init: c => { c.body = TEXTS.amor; c.word = 'Amor'; c.calDate = '2025-05-31'; },
   },
@@ -159,7 +159,7 @@ const PRODUCTS = [
     render: 'keychain',
     groups: [
       ...FIG_GROUPS.filter(g => g.id !== 'name' && g.id !== 'legs'),
-      { id: 'tagText', label: 'Iniciales o fecha en la placa', type: 'text', max: 8, placeholder: 'Ej. F & C', price: 20 },
+      { id: 'tagText', label: 'Iniciales o fecha en la placa', type: 'text', max: 8, placeholder: 'Ej. F & C…', price: 20 },
       { id: 'ring', label: 'Argolla', type: 'choice', options: [
         { v: '#B9B4AE', label: 'Plateada', price: 0 }, { v: '#E0B44C', label: 'Dorada', price: 20 }] },
     ],
@@ -173,11 +173,11 @@ const PRODUCTS = [
       { id: 'pair', label: '¿Cuántas?', type: 'choice', options: [
         { v: '2', label: 'Par (2)', price: 0 }, { v: '1', label: 'Solo una', price: -260 }] },
       { id: 'color1', label: 'Sudadera 1 · color', type: 'swatch', options: sw([['#F7F4EE', 'Blanco'], ['#9A9A9E', 'Gris jaspe'], ['#2A1A0E', 'Negro'], ['#1F2A44', 'Marino'], ['#E9D8B4', 'Beige'], ['#F48FB1', 'Rosa']]) },
-      { id: 'ini1', label: 'Sudadera 1 · inicial', type: 'text', max: 2, placeholder: 'E' },
+      { id: 'ini1', label: 'Sudadera 1 · inicial', type: 'text', max: 2, placeholder: 'E…' },
       { id: 'ink1', label: 'Sudadera 1 · color del bordado', type: 'swatch', options: sw([['#B3262E', 'Rojo'], ['#6FA8DC', 'Azul'], ['#2A1A0E', 'Negro'], ['#FFFDF9', 'Blanco'], ['#F48FB1', 'Rosa'], ['#2F8F5B', 'Verde']]) },
       { id: 'size1', label: 'Sudadera 1 · talla', type: 'choice', options: ['CH', 'M', 'G', 'XG'].map(v => ({ v, label: v, price: 0 })) },
       { id: 'color2', label: 'Sudadera 2 · color', type: 'swatch', options: sw([['#9A9A9E', 'Gris jaspe'], ['#F7F4EE', 'Blanco'], ['#2A1A0E', 'Negro'], ['#1F2A44', 'Marino'], ['#E9D8B4', 'Beige'], ['#F48FB1', 'Rosa']]), showIf: c => c.pair === '2' },
-      { id: 'ini2', label: 'Sudadera 2 · inicial', type: 'text', max: 2, placeholder: 'K', showIf: c => c.pair === '2' },
+      { id: 'ini2', label: 'Sudadera 2 · inicial', type: 'text', max: 2, placeholder: 'K…', showIf: c => c.pair === '2' },
       { id: 'ink2', label: 'Sudadera 2 · color del bordado', type: 'swatch', options: sw([['#6FA8DC', 'Azul'], ['#B3262E', 'Rojo'], ['#2A1A0E', 'Negro'], ['#FFFDF9', 'Blanco'], ['#F48FB1', 'Rosa'], ['#2F8F5B', 'Verde']]), showIf: c => c.pair === '2' },
       { id: 'size2', label: 'Sudadera 2 · talla', type: 'choice', options: ['CH', 'M', 'G', 'XG'].map(v => ({ v, label: v, price: 0 })), showIf: c => c.pair === '2' },
     ],
@@ -190,7 +190,7 @@ const PRODUCTS = [
     groups: [
       { id: 'color', label: 'Color de playera', type: 'swatch', options: sw(CLOTH) },
       { id: 'size', label: 'Talla', type: 'choice', options: ['CH', 'M', 'G', 'XG'].map(v => ({ v, label: v, price: 0 })).concat({ v: 'XXG', label: 'XXG', price: 30 }) },
-      { id: 'text', label: 'Texto', type: 'text', max: 18, placeholder: 'Ej. Good vibes' },
+      { id: 'text', label: 'Texto', type: 'text', max: 18, placeholder: 'Ej. Good vibes…' },
       { id: 'font', label: 'Letra', type: 'choice', options: [
         { v: 'groovy', label: 'Groovy', price: 0 }, { v: 'college', label: 'College', price: 0 },
         { v: 'script', label: 'Script', price: 0 }, { v: 'serif', label: 'Elegante', price: 0 }] },
@@ -208,7 +208,7 @@ const PRODUCTS = [
       { id: 'type', label: 'Tipo', type: 'choice', options: [
         { v: 'clasica', label: 'Clásica', price: 0 }, { v: 'magica', label: 'Mágica', price: 80 }] },
       { id: 'inner', label: 'Color interior y asa', type: 'swatch', options: sw(CLOTH.filter(c => c[0] !== '#FFFDF9')) },
-      { id: 'text', label: 'Texto', type: 'text', max: 16, placeholder: 'Ej. Café con Ana' },
+      { id: 'text', label: 'Texto', type: 'text', max: 16, placeholder: 'Ej. Café con Ana…' },
       { id: 'font', label: 'Letra', type: 'choice', options: [
         { v: 'script', label: 'Script', price: 0 }, { v: 'groovy', label: 'Groovy', price: 0 }, { v: 'serif', label: 'Elegante', price: 0 }] },
       { id: 'img', label: 'Foto o diseño', type: 'file', price: 40 },
@@ -220,12 +220,12 @@ const PRODUCTS = [
     render: 'cup',
     groups: [
       { id: 'cup', label: 'Color del vaso', type: 'swatch', options: sw([['#F4F1EC', 'Transparente'], ['#F7B6C8', 'Rosa'], ['#C9B8F0', 'Lila'], ['#B6E3D4', 'Menta'], ['#9CC6F2', 'Cielo'], ['#2A1A0E', 'Negro']]) },
-      { id: 'name', label: 'Nombre', type: 'text', max: 12, placeholder: 'Ej. Sofía' },
+      { id: 'name', label: 'Nombre', type: 'text', max: 12, placeholder: 'Ej. Sofía…' },
       { id: 'font', label: 'Letra', type: 'choice', options: [
         { v: 'firma', label: 'Manuscrita', price: 0 }, { v: 'groovy', label: 'Groovy', price: 0 }, { v: 'serif', label: 'Elegante', price: 0 }] },
       { id: 'ink', label: 'Color del vinil', type: 'swatch', options: sw([['#FFFFFF', 'Blanco'], ['#1E1611', 'Negro'], ['#C9A44C', 'Dorado'], ['#E45A84', 'Rosa'], ['#3E6E8E', 'Azul']]) },
       { id: 'size', label: 'Tamaño', type: 'choice', options: [
-        { v: '16', label: '16 oz', price: 0 }, { v: '24', label: '24 oz', price: 40 }] },
+        { v: '16', label: '16\u00a0oz', price: 0 }, { v: '24', label: '24\u00a0oz', price: 40 }] },
     ],
     init: c => { c.name = 'Sofía'; c.cup = '#F7B6C8'; },
   },
@@ -235,11 +235,11 @@ const PRODUCTS = [
     render: 'tumbler',
     groups: [
       { id: 'color', label: 'Color', type: 'swatch', options: sw([['#1E1611', 'Negro'], ['#F08A1C', 'Naranja'], ['#F7F4EE', 'Blanco'], ['#F7B6C8', 'Rosa'], ['#3E6E8E', 'Azul'], ['#7FA88A', 'Salvia']]) },
-      { id: 'name', label: 'Nombre', type: 'text', max: 12, placeholder: 'Ej. Valeria' },
+      { id: 'name', label: 'Nombre', type: 'text', max: 12, placeholder: 'Ej. Valeria…' },
       { id: 'font', label: 'Letra', type: 'choice', options: [
         { v: 'firma', label: 'Manuscrita', price: 0 }, { v: 'groovy', label: 'Groovy', price: 0 }, { v: 'serif', label: 'Elegante', price: 0 }] },
       { id: 'cap', label: 'Capacidad', type: 'choice', options: [
-        { v: '500', label: '500 ml', price: 0 }, { v: '750', label: '750 ml', price: 80 }] },
+        { v: '500', label: '500\u00a0ml', price: 0 }, { v: '750', label: '750\u00a0ml', price: 80 }] },
     ],
     init: c => { c.name = 'Valeria'; },
   },
@@ -250,7 +250,7 @@ const PRODUCTS = [
     groups: [
       { id: 'color', label: 'Color de la bolsa', type: 'choice', options: [
         { v: '#EFE3CC', label: 'Natural', price: 0 }, { v: '#1E1611', label: 'Negra', price: 20 }, { v: '#C9D6BE', label: 'Salvia', price: 20 }] },
-      { id: 'text', label: 'Texto', type: 'text', max: 18, placeholder: 'Ej. Plantas & café' },
+      { id: 'text', label: 'Texto', type: 'text', max: 18, placeholder: 'Ej. Plantas & café…' },
       { id: 'font', label: 'Letra', type: 'choice', options: [
         { v: 'serif', label: 'Elegante', price: 0 }, { v: 'groovy', label: 'Groovy', price: 0 }, { v: 'firma', label: 'Manuscrita', price: 0 }] },
       { id: 'ink', label: 'Color de tinta', type: 'swatch', options: sw([['#1E1611', 'Negro'], ['#F08A1C', 'Naranja'], ['#B3262E', 'Rojo'], ['#3E6E8E', 'Azul'], ['#FFFFFF', 'Blanco']]) },
@@ -361,7 +361,9 @@ function summaryOf(groups, cfg) {
   });
 }
 const summary = (p, cfg) => summaryOf(p.groups, cfg);
-function fmtDate(iso) { const [y, m, d] = String(iso).split('-').map(Number); return y ? `${d} de ${MONTHS[m - 1].toLowerCase()} de ${y}` : ''; }
+const DATE_FMT = new Intl.DateTimeFormat(CONFIG.locale, { day: 'numeric', month: 'long', year: 'numeric' });
+const MONTH_FMT = new Intl.DateTimeFormat(CONFIG.locale, { month: 'long' });
+function fmtDate(iso) { const [y, m, d] = String(iso).split('-').map(Number); return y ? DATE_FMT.format(new Date(y, m - 1, d)) : ''; }
 
 /* =================================================================
    ILUSTRACIÓN. Busca parecerse al producto físico: plástico con brillo,
@@ -570,7 +572,7 @@ function calendarSVG(iso) {
   const [y, m, d] = String(iso || '2025-05-31').split('-').map(Number);
   const first = new Date(y, m - 1, 1).getDay(), days = new Date(y, m, 0).getDate();
   const x0 = 96, cw = 18, y0 = 78, rh = 11.5;
-  let s = `<text x="150" y="52" text-anchor="middle" font-family="'Playfair Display'" font-size="11" letter-spacing="2" fill="#231A14">${esc(MONTHS[m - 1].toUpperCase())}</text>`;
+  let s = `<text x="150" y="52" text-anchor="middle" font-family="'Playfair Display'" font-size="11" letter-spacing="2" fill="#231A14">${esc(MONTH_FMT.format(new Date(y, m - 1, 1)).toUpperCase())}</text>`;
   s += ['D', 'L', 'M', 'M', 'J', 'V', 'S'].map((w, i) => `<text x="${x0 + i * cw}" y="65" text-anchor="middle" font-family="'Playfair Display'" font-size="7" fill="#231A14">${w}</text>`).join('');
   for (let n = 1; n <= days; n++) {
     const idx = first + n - 1, cx = x0 + (idx % 7) * cw, cy = y0 + Math.floor(idx / 7) * rh;
@@ -832,7 +834,7 @@ function cardHTML(card, ci, href) {
     <div class="card-media" style="--tint:${tint}">
       ${badge ? `<span class="badge">${badge}</span>` : ''}
       <div class="art-illus">${renderProduct(p, cfg)}</div>
-      ${hasPhoto ? `<img class="real" src="${card.photo}" alt="" loading="lazy" style="object-position:${card.photoPos || '50% 50%'}" onerror="this.closest('.card').classList.remove('has-photo');this.nextElementSibling.remove();this.remove()"><span class="real-chip"><i></i>Pedido real</span>` : ''}
+      ${hasPhoto ? `<img class="real" src="${card.photo}" alt="" width="480" height="600" loading="lazy" decoding="async" style="object-position:${card.photoPos || '50% 50%'}" onerror="this.closest('.card').classList.remove('has-photo');this.nextElementSibling.remove();this.remove()"><span class="real-chip"><i></i>Pedido real</span>` : ''}
       <span class="card-cta">Personalizar ${ARROW}</span>
     </div>
     <div class="card-body">
@@ -874,6 +876,7 @@ function renderGrid(append = false) {
   const lm = $('#loadMore');
   lm.hidden = shown >= list.length;
   $('#loadTxt').textContent = `Mostrando ${shown} de ${list.length}`;
+  $('#loadBtn').textContent = `Mostrar ${Math.min(PAGE, list.length - shown)} más`;
   $('#loadBar').style.transform = `scaleX(${list.length ? shown / list.length : 0})`;
   reveal(true);
 }
@@ -972,6 +975,18 @@ function hideTip() { $('#zoomTip')?.classList.add('hide'); }
   const up = e => { pts.delete(e.pointerId); if (pts.size < 2) pinch = null; last = pts.size ? [...pts.values()][0] : null; area.classList.remove('dragging'); };
   area.addEventListener('pointerup', up); area.addEventListener('pointercancel', up);
   area.addEventListener('gesturestart', e => e.preventDefault());
+  area.addEventListener('keydown', e => {
+    const k = e.key, step = 48;
+    if (k === '+' || k === '=') zoomAt(...zCenter(), Z.s * 1.5, true);
+    else if (k === '-' || k === '_') zoomAt(...zCenter(), Z.s / 1.5, true);
+    else if (k === '0') zReset();
+    else if (k.startsWith('Arrow') && Z.s > 1.01) {
+      Z.x += k === 'ArrowLeft' ? step : k === 'ArrowRight' ? -step : 0;
+      Z.y += k === 'ArrowUp' ? step : k === 'ArrowDown' ? -step : 0;
+      zApply(true);
+    } else return;
+    e.preventDefault();
+  });
   $('#zIn').addEventListener('click', () => zoomAt(...zCenter(), Z.s * 1.5, true));
   $('#zOut').addEventListener('click', () => zoomAt(...zCenter(), Z.s / 1.5, true));
   $('#zReset').addEventListener('click', () => zReset());
@@ -984,6 +999,7 @@ let cur = null; // { p, cfg, qty, editIdx, fig, step, photo }
 function openCustom(id, cfg, qty = 1, editIdx = null, photo = null, photoPos = null) {
   const p = PRODUCTS.find(x => x.id === id); if (!p) return;
   cur = { p, cfg: normCfg(p, cfg ? clone(cfg) : defaults(p)), qty, editIdx, fig: 0, step: 0, photo, photoPos, showPhoto: false };
+  cur.start = JSON.stringify([cur.cfg, qty]);
   $('#cCat').textContent = photo ? 'Inspirado en un pedido real' : (CATS.find(c => c[0] === p.cat)?.[1] || '');
   $('#cTitle').textContent = p.name;
   $('#cDesc').textContent = p.desc;
@@ -1022,18 +1038,18 @@ function groupHTML(g, cfg, sc) {
   if (g.type === 'text' || g.type === 'textarea') {
     const cnt = `${String(v || '').length}/${g.max}${g.price ? ' · ' + plus(g.price) : ''}`;
     const input = g.type === 'text'
-      ? `<input type="text" id="${fid}" ${a} data-t="1" maxlength="${g.max}" placeholder="${esc(g.placeholder || '')}" value="${esc(v)}" autocomplete="off" spellcheck="false" ${g.id === 'name' ? 'autocapitalize="words"' : ''} enterkeyhint="done">`
-      : `<textarea id="${fid}" ${a} data-t="1" maxlength="${g.max}" rows="3">${esc(v)}</textarea>`;
+      ? `<input type="text" id="${fid}" name="${sc}_${g.id}" ${a} data-t="1" maxlength="${g.max}" placeholder="${esc(g.placeholder || '')}" value="${esc(v)}" autocomplete="off" spellcheck="false" ${g.id === 'name' ? 'autocapitalize="words"' : ''} enterkeyhint="done">`
+      : `<textarea id="${fid}" name="${sc}_${g.id}" ${a} data-t="1" maxlength="${g.max}" rows="3" autocomplete="off">${esc(v)}</textarea>`;
     const sug = g.suggest ? `<div class="sug" aria-label="Ideas de texto"><span>Ideas:</span>${g.suggest.map((t, i) => `<button type="button" ${a} data-sug="${i}">${esc(t.length > 34 ? t.slice(0, 32) + '…' : t)}</button>`).join('')}</div>` : '';
     return `<div class="grp"><div class="grp-h"><label for="${fid}">${g.label}</label><em data-cnt="${fid}">${cnt}</em></div>${input}${sug}</div>`;
   }
   if (g.type === 'date') {
     return `<div class="grp"><div class="grp-h"><label for="${fid}">${g.label}</label><em>${v ? fmtDate(v) : ''}</em></div>
-      <input type="date" id="${fid}" ${a} data-t="1" value="${esc(v)}"></div>`;
+      <input type="date" id="${fid}" name="${sc}_${g.id}" ${a} data-t="1" value="${esc(v)}" autocomplete="off"></div>`;
   }
   if (g.type === 'file') {
     return `<div class="grp"><div class="grp-h"><span class="l">${g.label}</span><em>${plus(g.price || 0)}</em></div>
-      <label class="file">${v ? `<img class="thumb" src="${v}" alt="">` : '<span class="thumb"></span>'}<span>${v ? esc(cfg[g.id + 'Name'] || 'Imagen lista') + ' · cambiar' : 'Subir imagen (PNG/JPG)'}</span><input type="file" accept="image/*" ${a} data-file="1"></label>
+      <label class="file">${v ? `<img class="thumb" src="${v}" alt="" width="44" height="44">` : '<span class="thumb"></span>'}<span>${v ? esc(cfg[g.id + 'Name'] || 'Imagen lista') + ' · cambiar' : 'Subir imagen (PNG/JPG)'}</span><input type="file" accept="image/*" ${a} data-file="1"></label>
       ${v ? `<button type="button" class="rm" ${a} data-clear="1" style="margin-top:8px">Quitar imagen</button>` : ''}</div>`;
   }
   if (g.type === 'stepper') {
@@ -1110,7 +1126,7 @@ function update(first = false, quiet = false) {
   cancelAnimationFrame(stageRAF);
   stageRAF = requestAnimationFrame(() => {
     const stage = $('#cStage');
-    stage.innerHTML = cur.showPhoto ? `<img class="stage-photo" src="${cur.photo}" alt="Foto real del pedido" style="object-position:${cur.photoPos || '50% 50%'}">` : renderProduct(p, cfg);
+    stage.innerHTML = cur.showPhoto ? `<img class="stage-photo" src="${cur.photo}" alt="Foto real del pedido" width="480" height="600" style="object-position:${cur.photoPos || '50% 50%'}">` : renderProduct(p, cfg);
     if (!first && !quiet) stage.firstElementChild?.animate([{ transform: 'scale(.985)', opacity: .7 }, { transform: 'none', opacity: 1 }], { duration: 240, easing: 'cubic-bezier(.22,1,.36,1)' });
   });
   const { lines, unit } = priceOf(p, cfg);
@@ -1158,7 +1174,10 @@ $('#cForm')?.addEventListener('click', e => {
   else if (b.dataset.d && g.type === 'figs') {
     const arr = obj[id];
     if (+b.dataset.d > 0 && arr.length < g.max) { arr.push(figDefault(arr.length)); cur.fig = arr.length - 1; }
-    else if (+b.dataset.d < 0 && arr.length > g.min) { arr.splice(cur.fig, 1); cur.fig = Math.max(0, cur.fig - 1); }
+    else if (+b.dataset.d < 0 && arr.length > g.min) {
+      const at = cur.fig, [gone] = arr.splice(at, 1); cur.fig = Math.max(0, at - 1);
+      toast(`Quitaste a ${String(gone.name || '').trim() || 'la figura ' + (at + 1)}`, { label: 'Deshacer', run: () => { arr.splice(at, 0, gone); cur.fig = at; buildForm(); update(); } });
+    }
   } else if (b.dataset.d) obj[id] = Math.max(g.min, Math.min(g.max, obj[id] + Number(b.dataset.d)));
   const y = $('#cForm').scrollTop; buildForm(); $('#cForm').scrollTop = y; update();
 });
@@ -1217,6 +1236,7 @@ $('#addBtn')?.addEventListener('click', () => {
     return;
   }
   const item = { id: cur.p.id, cfg: clone(cur.cfg), qty: cur.qty };
+  cur.start = JSON.stringify([cur.cfg, cur.qty]);
   const isNew = cur.editIdx === null;
   if (isNew) cart.push(item); else cart[cur.editIdx] = item;
   flyToCart();
@@ -1318,7 +1338,7 @@ function renderDrawer() {
     ${disc ? `<div class="tot"><span>Descuento por volumen</span><span class="disc">−${fmt(disc)}</span></div>` : ''}
     <div class="tot"><span>Envío</span><span>Se cotiza al confirmar</span></div>
     <div class="tot big"><span>Total</span><span>${fmt(total)}</span></div>
-    <button class="btn btn-dark" id="goCheckout">Continuar con mis datos →</button>
+    <button class="btn btn-dark" id="goCheckout">Poner mis datos de envío →</button>
     <a class="btn btn-ghost wa-cart" href="${waURL(waCartText())}" target="_blank" rel="noopener">o pídelo por WhatsApp</a>
     <p class="note">No se cobra nada aún. Primero te enviamos tu diseño para aprobar.</p>`;
 }
@@ -1329,14 +1349,14 @@ function renderCheckout(total) {
     <form class="co" id="coForm" novalidate>
       <label>Nombre completo<input name="name" autocomplete="name" required value="${esc(d.name)}"></label>
       <div class="row2">
-        <label>WhatsApp<input name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="10 dígitos" value="${esc(d.phone)}"></label>
+        <label>WhatsApp<input name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="10 dígitos, ej. 5512345678…" value="${esc(d.phone)}"></label>
         <label>Correo<input name="email" type="email" inputmode="email" autocomplete="email" required value="${esc(d.email)}"></label>
       </div>
       <div class="row2">
         <label>Ciudad<input name="city" autocomplete="address-level2" required value="${esc(d.city)}"></label>
         <label>¿Para cuándo?<input name="date" type="date"></label>
       </div>
-      <label>Notas para el diseño<textarea name="notes" placeholder="Ej. él usa lentes redondos, ella tiene fleco; es para nuestro aniversario…"></textarea></label>
+      <label>Notas para el diseño<textarea name="notes" placeholder="Ej. él usa lentes redondos, ella tiene fleco…"></textarea></label>
       <div class="err" id="coErr" role="alert"></div>
     </form>`;
   $('#dFoot').innerHTML = `<div class="tot big"><span>Total estimado</span><span>${fmt(total)}</span></div>
@@ -1348,7 +1368,11 @@ $('#drawer')?.addEventListener('click', e => {
   const t = e.target;
   if (t.dataset.del !== undefined) {
     const row = t.closest('.item');
-    const go = () => { cart.splice(+t.dataset.del, 1); saveCart(); renderDrawer(); };
+    const idx = +t.dataset.del;
+    const go = () => {
+      const [gone] = cart.splice(idx, 1); saveCart(); renderDrawer();
+      toast('Quitado de tu pedido', { label: 'Deshacer', run: () => { cart.splice(idx, 0, gone); saveCart(); renderDrawer(); } });
+    };
     if (!row) go(); else row.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(40px)' }], { duration: 200, easing: 'ease-in' }).onfinish = go;
   }
   else if (t.dataset.edit !== undefined) { editItem(+t.dataset.edit); }
@@ -1416,6 +1440,14 @@ async function submitOrder(order) {
   return { ok: true };
 }
 
+/* ---------- cambios sin guardar ---------- */
+const dirty = () => cur && JSON.stringify([cur.cfg, cur.qty]) !== cur.start;
+function tryCloseCustom() {
+  if (!dirty() || !$('#leave')) return closeModal('#custom');
+  const l = $('#leave'); l.hidden = false; l.querySelector('[data-stay]').focus();
+}
+addEventListener('beforeunload', e => { if ($('#custom')?.classList.contains('open') && dirty()) { e.preventDefault(); e.returnValue = ''; } });
+
 /* ---------- modales (entrada y salida animadas) ---------- */
 let lastFocus = null;
 // solo el modal abierto es usable; lo demás queda inerte para teclado y lectores de pantalla
@@ -1455,14 +1487,18 @@ function closeDrawer() { closeModal('#drawer'); }
 document.addEventListener('click', e => {
   const c = e.target.closest('[data-card]');
   if (c) { openCard(+c.dataset.card); return; }
-  if (e.target.closest('[data-close]')) closeModal('#custom');
+  if (e.target.closest('[data-close]')) tryCloseCustom();
+  if (e.target.closest('[data-stay]')) $('#leave').hidden = true;
+  if (e.target.closest('[data-leave]')) { $('#leave').hidden = true; closeModal('#custom'); }
   if (e.target.closest('[data-dclose]')) closeDrawer();
   if (e.target.closest('[data-xdone]')) closeModal('#done');
 });
 document.addEventListener('keydown', e => {
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('.card[data-card]')) { e.preventDefault(); openCard(+e.target.dataset.card); }
   if (e.key !== 'Escape') return;
-  ['#done', '#custom'].forEach(s => $(s)?.classList.contains('open') && closeModal(s));
+  if ($('#leave') && !$('#leave').hidden) { $('#leave').hidden = true; return; }
+  if ($('#done')?.classList.contains('open')) closeModal('#done');
+  if ($('#custom')?.classList.contains('open')) tryCloseCustom();
   if ($('#drawer')?.classList.contains('open')) closeDrawer();
 });
 $('#cartBtn')?.addEventListener('click', openDrawer);
@@ -1483,10 +1519,17 @@ function openCard(ci) {
 }
 
 let toastT;
-function toast(msg) { const t = $('#toast'); if (!t) return; t.textContent = msg; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 2600); }
+function toast(msg, action) {
+  const t = $('#toast'); if (!t) return;
+  t.innerHTML = `<span>${esc(msg)}</span>${action ? `<button type="button" class="toast-act">${esc(action.label)}</button>` : ''}`;
+  if (action) t.querySelector('.toast-act').onclick = () => { action.run(); t.classList.remove('show'); };
+  t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), action ? 6000 : 2600);
+}
 
 /* ---------- hero: cuadros que se van cruzando ---------- */
 const HERO = [0, 1, 3, 2, 4].map(i => CARDS[i].cfg);
+const PAUSE_ICO = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
+const PLAY_ICO = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7Z"/></svg>';
 let heroI = 0, heroTimer = 0;
 function hero(animate = true) {
   const box = $('#heroFig'); if (!box) return;
@@ -1502,8 +1545,16 @@ function hero(animate = true) {
 if ($('#heroFig')) {
   hero(false);
   const next = () => { heroI++; hero(); };
-  $('#shuffle').addEventListener('click', () => { next(); clearInterval(heroTimer); heroTimer = setInterval(() => !document.hidden && next(), 5000); });
-  heroTimer = setInterval(() => !document.hidden && next(), 5000);
+  let paused = REDUCED, hover = false;
+  const pb = $('#heroPause');
+  const setP = v => { paused = v; pb.setAttribute('aria-pressed', v); pb.setAttribute('aria-label', v ? 'Reanudar cambio automático' : 'Pausar cambio automático'); pb.innerHTML = v ? PLAY_ICO : PAUSE_ICO; };
+  setP(paused);
+  heroTimer = setInterval(() => { if (!paused && !hover && !document.hidden) next(); }, 5000);
+  $('#shuffle').addEventListener('click', next);
+  pb.addEventListener('click', () => setP(!paused));
+  const art = $('.hero-art');
+  art.addEventListener('pointerenter', () => { hover = true; }); art.addEventListener('pointerleave', () => { hover = false; });
+  art.addEventListener('focusin', () => { hover = true; }); art.addEventListener('focusout', () => { hover = false; });
 }
 
 // huecos de fotos reales: si no existe el archivo se muestra el aviso
@@ -1524,7 +1575,7 @@ if ($('#featured')) $('#featured').innerHTML = [0, 1, 3, 2].map(i => cardHTML(CA
 if ($('#cats')) $('#cats').innerHTML = CAT_TILES.map(t => {
   const n = CARDS.filter(c => PRODUCTS.find(p => p.id === c.id).cat === t.cat).length;
   const p = t.product && PRODUCTS.find(x => x.id === t.product);
-  const art = t.photo ? `<img src="${t.photo}" alt="" loading="lazy">` : renderProduct(p, defaults(p));
+  const art = t.photo ? `<img src="${t.photo}" alt="" width="480" height="600" loading="lazy" decoding="async">` : renderProduct(p, defaults(p));
   return `<a class="cat-tile" href="catalogo.html?cat=${t.cat}" style="--tint:${t.tint}"><div class="cat-art">${art}</div>
     <div class="cat-label"><div><h3>${catName(t.cat)}</h3><small>${t.note} · ${n} diseño${n > 1 ? 's' : ''}</small></div><span class="cat-go">${ARROW}</span></div></a>`;
 }).join('');

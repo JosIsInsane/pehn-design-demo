@@ -60,7 +60,7 @@
           <label class="search">
             <span class="sr" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Buscar productos</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-            <input type="search" id="q" placeholder="Busca cuadro, vaso, sudadera…" autocomplete="off" enterkeyhint="search">
+            <input type="search" id="q" name="q" placeholder="Busca cuadro, vaso, sudadera…" autocomplete="off" enterkeyhint="search">
             <button type="button" class="clear" id="qClear" aria-label="Borrar búsqueda" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
           </label>
           <div class="sort">
@@ -79,6 +79,7 @@
 
     <div class="wrap">
       <div class="results-meta"><span id="resCount" aria-live="polite"></span><span>Precios en MXN</span></div>
+      <h2 class="sr">Productos</h2>
       <div class="grid" id="grid"></div>
       <div class="load-more" id="loadMore" hidden>
         <div class="bar"><i id="loadBar"></i></div>
@@ -122,7 +123,7 @@
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="cTitle" tabindex="-1">
     <button class="x" data-close aria-label="Cerrar">✕</button>
     <div class="c-preview" id="cPreview">
-      <div class="c-stage" id="cZoomArea" aria-label="Vista previa. Pellizca o usa la rueda para acercar.">
+      <div class="c-stage" id="cZoomArea" tabindex="0" role="group" aria-roledescription="vista previa con zoom" aria-label="Vista previa. Usa + y − para acercar, flechas para moverte y 0 para restablecer.">
         <div class="zoom-layer" id="cStage"></div>
       </div>
       <p class="zoom-tip" id="zoomTip">Pellizca o usa la rueda para acercar</p>
@@ -141,6 +142,11 @@
         <p class="c-desc" id="cDesc"></p>
       </div>
       <form id="cForm" class="c-form" onsubmit="return false"></form>
+      <div class="leave" id="leave" role="alertdialog" aria-modal="true" aria-labelledby="leaveT" aria-describedby="leaveD" hidden>
+        <p id="leaveT"><b>¿Salir sin guardar?</b></p>
+        <p id="leaveD">Si sales, se pierden los cambios de este diseño.</p>
+        <div class="leave-row"><button type="button" class="btn btn-ghost btn-sm" data-stay>Seguir editando</button><button type="button" class="btn btn-dark btn-sm" data-leave>Salir sin guardar</button></div>
+      </div>
       <div class="c-foot">
         <div class="breakdown" id="cBreak" hidden></div>
         <div class="c-buy">
@@ -166,7 +172,7 @@
     <img src="logo.png" alt="" width="88" height="88">
     <h2>¡Pedido recibido!</h2>
     <p id="doneTxt"></p>
-    <button class="btn btn-dark" data-xdone>Seguir viendo</button>
+    <button class="btn btn-dark" data-xdone>Volver a la tienda</button>
   </div>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>

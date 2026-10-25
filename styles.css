@@ -632,3 +632,34 @@ body{-webkit-tap-highlight-color:transparent}
   .wa-float{bottom:calc(78px + env(safe-area-inset-bottom))}
 }
 @media (max-width:640px){.hero .cta-row .btn{flex:1 1 100%}.announce{font-size:12.5px;padding:8px 12px}}
+
+/* ---------- revisión con Web Interface Guidelines ---------- */
+html{scroll-padding-top:calc(var(--nav-h) + 16px)}
+body[data-page="catalog"]{scroll-padding-top:calc(var(--nav-h) + 140px)}
+@media (pointer:fine){html{overscroll-behavior:none}}
+.d-body,.breakdown ul{overscroll-behavior:contain}
+.sort select{color:var(--ink);background-color:var(--surface)}
+.brand-name{white-space:nowrap}
+.item>div{min-width:0}
+.item h4,.item ul li{overflow-wrap:anywhere}
+.card-body h3{overflow-wrap:anywhere}
+.c-stage:focus-visible{outline:2.5px solid var(--brand-600);outline-offset:-6px;border-radius:24px}
+/* hero: controles del cambio automático */
+.hero-ctl{position:absolute;z-index:2;left:31%;bottom:-20px;transform:translateX(-50%);display:flex;gap:6px}
+.hero-ctl .shuffle{position:static;transform:none}
+.hero-ctl .shuffle:hover{transform:translateY(-2px)}
+.hero-pause{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--surface);color:var(--ink);box-shadow:var(--sh-2);transition:transform .3s var(--spring),background-color .2s}
+.hero-pause:hover{transform:translateY(-2px)}
+.hero-pause svg{width:14px;height:14px}
+/* toast con deshacer */
+.toast{display:flex;align-items:center;gap:14px;padding:10px 10px 10px 20px}
+.toast:not(:has(.toast-act)){padding:14px 22px}
+.toast-act{min-height:36px;padding:0 14px;border-radius:999px;background:rgba(255,255,255,.14);color:#fff;font-weight:600;font-size:14px;transition:background-color .2s}
+.toast-act:hover{background:rgba(255,255,255,.26)}
+/* aviso de cambios sin guardar */
+.leave{position:absolute;z-index:6;left:50%;bottom:110px;transform:translateX(-50%);width:min(380px,calc(100% - 32px));padding:20px;border-radius:var(--r);background:var(--surface);box-shadow:var(--sh-3);border:1px solid var(--line);animation:rise .3s var(--ease)}
+.leave[hidden]{display:none}
+.leave b{font-family:var(--serif);font-size:20px;font-weight:500}
+.leave p+p{color:var(--ink-2);font-size:14.5px;margin:4px 0 16px}
+.leave-row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+.c-panel{position:relative}
