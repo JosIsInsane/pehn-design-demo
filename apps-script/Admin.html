@@ -646,7 +646,6 @@ if (ERROR || !D) {
   $('#fatal').innerHTML = `<div class="err"><b>No se pudieron leer los datos de la hoja.</b><br>En el editor de Apps Script corre la función <b>probarCRM</b> y revisa el registro, o corre <b>Pehn › Configurar hojas</b>.<pre>${esc(ERROR || 'Sin datos')}</pre></div>`;
   document.querySelectorAll('.view').forEach(v => { v.hidden = true; });
 } else {
-  if (D.sinClientes) toast('Corre Pehn › Configurar hojas para crear la hoja Clientes.');
   render();
 }
 </script>

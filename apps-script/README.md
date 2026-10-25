@@ -24,6 +24,16 @@ El sitio manda cada pedido a una hoja de Google con la foto del diseño. La hoja
 | Clientes | Una ficha por WhatsApp. Etiquetas y notas se editan en el CRM. |
 | Config | Correo del negocio, admins, estado que descuenta, avisos, token, clave del CRM. |
 
+## Si el negocio ya tiene su propia hoja
+
+**Instala esto en una hoja de cálculo nueva**, no dentro de la que ya usan. Así su información de antes no se mezcla con nada.
+
+Aun así, el código se protege solo:
+- Si encuentra una pestaña con el mismo nombre (Pedidos, Inventario, Clientes, Config…) pero con otros encabezados, **no la toca**. *Configurar hojas* se detiene sin cambiar nada y avisa cuáles chocan.
+- Nunca borra hojas, filas ni archivos. Solo agrega filas en sus propias hojas.
+- Los disparadores que instala son solo los suyos (`alEditar_`, `resumenStockDiario_`); no borra otros.
+- Si su hoja ya tiene un proyecto de Apps Script con `onOpen`, `doGet` o `doPost`, pegar estos archivos ahí los reemplazaría. Otra razón para usar una hoja nueva.
+
 ## Instalación (15 minutos)
 
 1. Crea una hoja nueva en Google Sheets. Menú **Extensiones › Apps Script**.

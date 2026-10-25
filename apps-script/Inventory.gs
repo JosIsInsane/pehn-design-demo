@@ -120,6 +120,7 @@ function alEditar_(e) {
   if (!e || !e.range) return;
   const sh = e.range.getSheet(), name = sh.getName(), r = e.range.getRow(), c = e.range.getColumn();
   if (r < 2 || e.range.getNumRows() > 1 || e.range.getNumColumns() > 1) return;
+  if (!Object.keys(SHEETS).some(k => SHEETS[k] === name && esNuestra_(sh, k))) return; // hojas ajenas: nada
   if (name === SHEETS.pedidos && c === COL.pedidos.Estado) {
     const lock = LockService.getScriptLock(); lock.waitLock(20000);
     try { aplicarEstado_(r, e.value); } finally { lock.releaseLock(); }

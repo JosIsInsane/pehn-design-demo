@@ -88,7 +88,7 @@ function crmDatos_() {
 
   // clientes: ficha de la hoja + lo que se calcula de sus pedidos
   const fichas = {};
-  const shC = ss_().getSheetByName(SHEETS.clientes);
+  const shC = hojaClientes_();
   if (shC) rows_('clientes').forEach(r => { fichas[telKey_(r.WhatsApp)] = r; });
   const map = {};
   pedidos.slice().reverse().forEach(p => {
@@ -113,7 +113,7 @@ function crmDatos_() {
   return {
     estados: ESTADOS, gatillo: txt(cfg['Estado que descuenta stock']) || 'En producción',
     negocio: txt(cfg['Nombre del negocio']) || 'Pehn Design', waNegocio: txt(cfg['WhatsApp del negocio']),
-    hoja: ss_().getUrl(), sinClientes: !shC, generado: new Date().toISOString(),
+    hoja: ss_().getUrl(), generado: new Date().toISOString(),
     pedidos, clientes, inventario, recetas, movs,
   };
 }
@@ -139,8 +139,8 @@ function crm(k, accion, args) {
       sheet_('pedidos').getRange(args.row, COL.pedidos['Notas internas']).setValue(String(args.texto || '').slice(0, 2000));
       break;
     case 'cliente': {
-      const sh = ss_().getSheetByName(SHEETS.clientes);
-      if (!sh) throw new Error('Falta la hoja Clientes. Corre Pehn › Configurar hojas.');
+      const sh = hojaClientes_();
+      if (!sh) throw new Error('Ya existe una hoja "Clientes" con otros datos; no se modifica.');
       const row = Number(args.row) || 0;
       if (row) sh.getRange(row, COL.clientes.Etiquetas, 1, 2).setValues([[args.etiquetas || '', args.notas || '']]);
       else sh.appendRow(["'" + telKey_(args.tel), args.nombre || '', args.correo || '', args.ciudad || '', '', '', args.etiquetas || '', args.notas || '']);

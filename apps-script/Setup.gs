@@ -18,6 +18,12 @@ function configurar() {
   // la app web expone las funciones públicas: esta solo corre para quien abre la hoja
   if (!Session.getActiveUser().getEmail()) throw new Error('Corre esto desde la hoja: Pehn › Configurar hojas.');
   const ss = ss_();
+  // antes de escribir nada: si una hoja con el mismo nombre ya tiene otros datos, no se toca ninguna
+  const ajenas = Object.keys(SHEETS).filter(key => { const sh = ss.getSheetByName(SHEETS[key]); return sh && !esNuestra_(sh, key); });
+  if (ajenas.length) {
+    SpreadsheetApp.getUi().alert(`No se cambió nada.\n\nEstas hojas ya existen con otros datos: ${ajenas.map(k => SHEETS[k]).join(', ')}.\n\nInstala el sistema en una hoja de cálculo nueva para no mezclar información.`);
+    return;
+  }
   Object.keys(SHEETS).forEach(key => {
     let sh = ss.getSheetByName(SHEETS[key]);
     if (!sh) sh = ss.insertSheet(SHEETS[key]);

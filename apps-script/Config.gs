@@ -53,6 +53,38 @@ function ss_() { return SpreadsheetApp.getActive(); }
 function sheet_(key) {
   const sh = ss_().getSheetByName(SHEETS[key]);
   if (!sh) throw new Error(`Falta la hoja "${SHEETS[key]}". Corre Pehn › Configurar hojas.`);
+  if (!esNuestra_(sh, key)) throw new Error(`La hoja "${SHEETS[key]}" ya existía con otros datos. No se tocó. Instala el sistema en una hoja de cálculo nueva.`);
+  return sh;
+}
+
+// protege hojas que ya existían: solo se usa una hoja vacía o con nuestros encabezados
+const NUESTRA_ = {};
+function esNuestra_(sh, key) {
+  const id = sh.getSheetId ? sh.getSheetId() : key;
+  if (NUESTRA_[id] === true) return true;
+  const head = HEADERS[key];
+  if (sh.getLastRow() === 0) return true; // vacía: todavía no es de nadie
+  const got = sh.getRange(1, 1, 1, head.length).getValues()[0].map(v => String(v).trim());
+  const ok = got[0] === head[0] && head.every((h, i) => got[i] === h || got[i] === '');
+  if (ok) NUESTRA_[id] = true;
+  return ok;
+}
+
+// la hoja Clientes se crea sola la primera vez (con los clientes de pedidos anteriores)
+function hojaClientes_() {
+  let sh = ss_().getSheetByName(SHEETS.clientes);
+  if (sh) return esNuestra_(sh, 'clientes') ? sh : null; // una hoja "Clientes" ajena no se toca
+  sh = ss_().insertSheet(SHEETS.clientes);
+  sh.getRange(1, 1, 1, HEADERS.clientes.length).setValues([HEADERS.clientes]).setFontWeight('bold').setBackground('#1E1611').setFontColor('#FFFFFF');
+  sh.setFrozenRows(1);
+  const map = {};
+  rows_('pedidos').forEach(p => {
+    const k = telKey_(p.WhatsApp); if (!k) return;
+    const c = map[k] = map[k] || ["'" + k, p.Cliente, p.Correo, p.Ciudad, p.Fecha, p.Fecha, '', ''];
+    c[1] = p.Cliente || c[1]; c[2] = p.Correo || c[2]; c[3] = p.Ciudad || c[3]; c[5] = p.Fecha;
+  });
+  const vals = Object.values(map);
+  if (vals.length) sh.getRange(2, 1, vals.length, 8).setValues(vals);
   return sh;
 }
 
