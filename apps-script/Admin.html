@@ -490,16 +490,51 @@ let view = 'inicio', fP = 'Activos', fC = 'Todos', fI = 'Todos', fR = 'Por asign
 const imgCache = {};
 
 // ---------- servidor ----------
+let enVuelo = 0;
+const ocupado = n => { enVuelo += n; $('#busy').hidden = enVuelo <= 0; };
 function call(accion, args) {
-  $('#busy').hidden = false;
+  ocupado(1);
   return new Promise((ok, ko) => google.script.run
-    .withSuccessHandler(s => { $('#busy').hidden = true; try { ok(JSON.parse(s)); } catch (e) { ko(new Error('Respuesta vacía del servidor.')); } })
-    .withFailureHandler(e => { $('#busy').hidden = true; ko(e); })
+    .withSuccessHandler(s => { ocupado(-1); try { ok(JSON.parse(s)); } catch (e) { ko(new Error('Respuesta vacía del servidor.')); } })
+    .withFailureHandler(e => { ocupado(-1); ko(e); })
     .crm(K, accion, args || {}));
 }
+
+// Cambio al instante en pantalla; la hoja se actualiza por detrás.
+const LOCAL = {
+  estado: a => { const p = D.pedidos.find(x => x.row === a.row); if (p) { p.estado = a.estado; p.actualizado = new Date().toISOString(); } },
+  nota: a => { const p = D.pedidos.find(x => x.row === a.row); if (p) p.notas = a.texto; },
+  cliente: a => { const c = D.clientes.find(x => x.tel === a.tel && x.nombre === a.nombre); if (c) { c.etiquetas = a.etiquetas; c.notas = a.notas; } },
+  ajuste: a => { const i = D.inventario.find(x => x.sku === a.sku); if (i) i.stock += a.delta; },
+  pieza: a => {
+    const sku = String(a.sku || '').trim().toUpperCase(), i = D.inventario.find(x => x.sku === sku);
+    const v = { sku, pieza: a.pieza, cat: a.cat || '', stock: +a.stock || 0, min: +a.min || 0, costo: +a.costo || 0, proveedor: a.proveedor || '' };
+    if (i) Object.assign(i, v); else D.inventario.push({ ...v, row: 0, unidad: 'pza', actualizado: '', apartado: 0 });
+  },
+  receta: a => { const r = D.recetas.find(x => x.row === a.row); if (r) { r.sku = String(a.sku || '').trim().toUpperCase(); r.qty = +a.qty || 1; r.notas = r.sku ? '' : 'Sin inventario'; } },
+};
+// pendientes: los datos del servidor solo se aplican cuando ya no queda ninguno en camino
+let pend = 0, tanda = 0;
 async function act(accion, args, msg) {
-  try { D = await call(accion, args); render(); if (msg) toast(msg); return true; }
-  catch (e) { toast('No se pudo: ' + (e.message || e)); return false; }
+  const local = LOCAL[accion];
+  if (local) { local(args); render(); if (msg) toast(msg); }
+  pend++; tanda++;
+  try {
+    const res = await call(accion, args);
+    if (--pend === 0) {
+      // si hubo varios cambios seguidos, una lectura final asegura que todo quedó igual que en la hoja
+      if (tanda > 1) { tanda = 0; pend++; try { D = await call('datos'); } finally { pend--; } }
+      else D = res;
+      tanda = 0; render();
+    }
+    if (!local && msg) toast(msg);
+    return true;
+  } catch (e) {
+    pend--;
+    toast('No se pudo guardar: ' + (e.message || e) + '. Volviendo a leer la hoja…');
+    if (pend === 0) { tanda = 0; try { D = await call('datos'); render(); } catch (e2) { } }
+    return false;
+  }
 }
 function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 3000); }
 
@@ -573,7 +608,8 @@ function render() {
   $('#skus').innerHTML = D.inventario.map(i => `<option value="${esc(i.sku)}">${esc(i.pieza)}</option>`).join('');
   $('#cats').innerHTML = [...new Set(D.inventario.map(i => i.cat).filter(Boolean))].map(c => `<option value="${esc(c)}">`).join('');
   ({ inicio: rInicio, pedidos: rPedidos, clientes: rClientes, inventario: rInv, recetas: rRec, movimientos: rMovs })[view]();
-  if (open) { const fn = open.type === 'pedido' ? openPedido : openCliente; const it = open.type === 'pedido' ? D.pedidos.find(p => p.row === open.key) : D.clientes.find(c => (c.tel || c.nombre) === open.key); if (it) fn(it, true); }
+  const escribiendo = document.activeElement && document.activeElement.closest('#dBody') && document.activeElement.matches('input,textarea');
+  if (open && !escribiendo) { const fn = open.type === 'pedido' ? openPedido : openCliente; const it = open.type === 'pedido' ? D.pedidos.find(p => p.row === open.key) : D.clientes.find(c => (c.tel || c.nombre) === open.key); if (it) fn(it, true); }
   watchImgs();
 }
 // l: título · v: cifra · o: { sub, bad, nav, tone, icon, pill }
@@ -878,8 +914,8 @@ document.addEventListener('click', async e => {
   if (d.mv) return mover(+d.mv, d.to);
   if (d.zoom) { $('#lbImg').src = t.src; $('#lbDl').href = t.src; $('#lbDl').download = (d.name || 'pedido') + '.jpg'; $('#lb').hidden = false; return; }
   if (t.id === 'lbX') { $('#lb').hidden = true; return; }
-  if (t.id === 'saveNota') { const ok = await act('nota', { row: +d.row, texto: $('#nota').value }); if (ok) $('#notaOk').textContent = 'Guardado ✓'; return; }
-  if (t.id === 'saveCli') { const c = D.clientes.find(x => (x.tel || x.nombre) === d.key); const ok = await act('cliente', { row: c.row, tel: c.tel, nombre: c.nombre, correo: c.correo, ciudad: c.ciudad, etiquetas: $('#cTags').value, notas: $('#cNotas').value }); if (ok) $('#cliOk').textContent = 'Guardado ✓'; return; }
+  if (t.id === 'saveNota') { $('#notaOk').textContent = 'Guardando…'; const ok = await act('nota', { row: +d.row, texto: $('#nota').value }); if ($('#notaOk')) $('#notaOk').textContent = ok ? 'Guardado ✓' : ''; return; }
+  if (t.id === 'saveCli') { const c = D.clientes.find(x => (x.tel || x.nombre) === d.key); const ok = await act('cliente', { row: c.row, tel: c.tel, nombre: c.nombre, correo: c.correo, ciudad: c.ciudad, etiquetas: $('#cTags').value, notas: $('#cNotas').value }); if ($('#cliOk')) $('#cliOk').textContent = ok ? 'Guardado ✓' : ''; return; }
   if (d.adj) return act('ajuste', { sku: d.adj, delta: +d.d, motivo: +d.d > 0 ? 'Ajuste +1 desde el CRM' : 'Ajuste −1 desde el CRM' }, 'Stock actualizado');
   if (d.in) { const n = await ask({ title: `Entrada de ${d.in}`, text: '¿Cuántas piezas llegaron?', input: 10, ok: 'Sumar al stock' }); if (n && +n) act('ajuste', { sku: d.in, delta: +n, motivo: 'Entrada de mercancía' }, `+${n} ${d.in}`); return; }
   if (d.edit) { const i = D.inventario.find(x => x.sku === d.edit), f = $('#fPieza'); $('#addPieza').open = true; ['sku', 'pieza', 'cat', 'stock', 'min', 'costo', 'proveedor'].forEach(k => { f.elements[k].value = i[k] ?? ''; }); f.elements.pieza.focus(); return; }
@@ -897,7 +933,7 @@ document.addEventListener('keydown', e => {
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('tr.click')) { e.preventDefault(); e.target.click(); }
 });
 // arrastrar tarjetas entre columnas
-$('#fPieza').addEventListener('submit', async e => { e.preventDefault(); const f = Object.fromEntries(new FormData(e.target)); if (await act('pieza', f, `${f.sku.toUpperCase()} guardada`)) { e.target.reset(); $('#addPieza').open = false; } });
+$('#fPieza').addEventListener('submit', async e => { e.preventDefault(); const f = Object.fromEntries(new FormData(e.target)); e.target.reset(); $('#addPieza').open = false; act('pieza', f, `${f.sku.toUpperCase()} guardada`); });
 [['#qP', () => { pagP = 0; rPedidos(); watchImgs(); }], ['#qC', rClientes], ['#qI', rInv], ['#qR', rRec], ['#qM', rMovs]].forEach(([s, fn]) => $(s).addEventListener('input', fn));
 if (matchMedia('(max-width:820px)').matches) document.querySelectorAll('.lbl-s').forEach(x => { x.style.display = 'inline'; });
 
