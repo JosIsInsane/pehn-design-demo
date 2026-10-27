@@ -9,7 +9,7 @@ const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const productoDe = id => PRODUCTS.find(p => p.id === id);
 const HOLA = '¡Hola Pehn Design! ✦';
 // claves del navegador (localStorage): cambiarlas vacía el carrito guardado de todos
-const KEY_CART = 'pehn_cart', KEY_CONTACT = 'pehn_contact', KEY_ORDERS = 'pehn_pedidos', KEY_CONSENT = 'pehn_aviso', KEY_SITIO = 'pehn_sitio';
+const KEY_CART = 'pehn_cart', KEY_CONTACT = 'pehn_contact', KEY_ORDERS = 'pehn_pedidos', KEY_CONSENT = 'pehn_aviso', KEY_SITIO = 'pehn_sitio', KEY_PAGO = 'pehn_pago';
 // lectura/escritura segura del navegador: en modo privado o sin permiso no truena
 const leer = (k, def) => { try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; } };
 const guardar = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* sin almacenamiento: sigue sin recordar */ } };
@@ -609,7 +609,7 @@ function aplicarSitio(v) {
 }
 aplicarSitio(leer(KEY_SITIO, null)); // lo guardado: la página sale con el contenido nuevo sin esperar
 if (CONFIG.sheetsUrl) {
-  fetch(CONFIG.sheetsUrl + '?api=sitio').then(r => r.json()).then(r => { if (r && r.ok && r.sitio) { aplicarSitio(r.sitio); guardar(KEY_SITIO, r.sitio); } }).catch(() => { /* sin conexión: queda el HTML */ });
+  fetch(CONFIG.sheetsUrl + '?api=sitio').then(r => r.json()).then(r => { if (r && r.ok && r.sitio) { aplicarSitio(r.sitio); guardar(KEY_SITIO, r.sitio); if (r.pago) guardar(KEY_PAGO, r.pago); } }).catch(() => { /* sin conexión: queda el HTML */ });
 }
 
 /* ---------- carrito ---------- */
@@ -649,6 +649,8 @@ function renderDrawer() {
     return;
   }
   if (view === 'checkout') return renderCheckout(total);
+  if (view === 'anticipo') return renderAnticipo(total);
+  $('#dTitle').textContent = 'Tu pedido';
   $('#dBody').innerHTML = rows.map((r, idx) => `<div class="item" style="--i:${idx}">
     <div class="th" style="background:${r.p.render === 'frame' ? '#E9E1D6' : r.p.bg}">${renderProduct(r.p, r.i.cfg)}</div>
     <div><h4>${r.p.name}</h4><ul>${summary(r.p, r.i.cfg).slice(0, 5).map(([k, v]) => `<li>${esc(k)}: <b>${esc(String(v).slice(0, 60))}</b></li>`).join('')}</ul>
@@ -661,14 +663,22 @@ function renderDrawer() {
     <div class="tot big"><span>Total</span><span>${fmt(total)}</span></div>
     <button class="btn btn-dark" id="goCheckout">Poner mis datos de envío →</button>
     <a class="btn btn-ghost wa-cart" href="${waURL(waCartText())}" target="_blank" rel="noopener">o pídelo por WhatsApp</a>
-    <p class="note">No se cobra nada aún. Primero te enviamos tu diseño para aprobar.</p>`;
+    <p class="note">Para empezar se paga un anticipo. Antes de producir te mandamos tu diseño para aprobar.</p>`;
 }
 
+/* ---------- datos y anticipo ----------
+   Paso 1 (checkout): datos de contacto. Paso 2 (anticipo): paga el % y sube el comprobante.
+   El pedido y el comprobante viajan juntos. Si en Config "Anticipo antes de enviar" = No, se salta el paso 2.
+   El % y los datos bancarios llegan con el contenido del sitio (?api=sitio). */
+const pagoInfo = () => ({ pct: 50, banco: '', antes: true, ...leer(KEY_PAGO, {}) });
 let checkoutAt = 0; // cuándo se mostró el formulario: el servidor rechaza envíos "instantáneos" de bots
+let coData = null;  // datos del paso 1 mientras se paga
+let anticipoData = '';
 function renderCheckout(total) {
-  const d = leer(KEY_CONTACT, {});
-  checkoutAt = performance.now();
-  $('#dBody').innerHTML = `<button class="back" id="backCart">← Volver al pedido</button>
+  const d = coData || leer(KEY_CONTACT, {}), antes = pagoInfo().antes;
+  if (!checkoutAt) checkoutAt = performance.now();
+  $('#dTitle').textContent = 'Tus datos';
+  $('#dBody').innerHTML = `${antes ? '<ol class="co-pasos" aria-label="Pasos"><li aria-current="step">1. Tus datos</li><li>2. Anticipo</li></ol>' : ''}<button class="back" id="backCart">← Volver al pedido</button>
     <form class="co" id="coForm" novalidate>
       <label>Nombre completo<input name="name" autocomplete="name" required value="${esc(d.name)}"></label>
       <div class="row2">
@@ -677,17 +687,34 @@ function renderCheckout(total) {
       </div>
       <div class="row2">
         <label>Ciudad<input name="city" autocomplete="address-level2" required value="${esc(d.city)}"></label>
-        <label>¿Para cuándo?<input name="date" type="date"></label>
+        <label>¿Para cuándo?<input name="date" type="date" value="${esc(d.date)}"></label>
       </div>
-      <label>Notas para el diseño<textarea name="notes" placeholder="Ej. él usa lentes redondos, ella tiene fleco…"></textarea></label>
-      <label class="chk"><input type="checkbox" name="remember" ${leer(KEY_CONSENT, '') !== 'minimo' ? 'checked' : ''}> Recordar mis datos y mis pedidos en este dispositivo</label>
-      <label class="chk"><input type="checkbox" name="consent" required> Acepto el <a href="privacidad.html" target="_blank" rel="noopener">aviso de privacidad</a>: usan mis datos solo para hacer, enviar y darle seguimiento a mi pedido.</label>
+      <label>Notas para el diseño<textarea name="notes" placeholder="Ej. él usa lentes redondos, ella tiene fleco…">${esc(d.notes)}</textarea></label>
+      <label class="chk"><input type="checkbox" name="remember" ${(coData ? coData.remember : leer(KEY_CONSENT, '') !== 'minimo') ? 'checked' : ''}> Recordar mis datos y mis pedidos en este dispositivo</label>
+      <label class="chk"><input type="checkbox" name="consent" required ${coData?.consent ? 'checked' : ''}> Acepto el <a href="privacidad.html" target="_blank" rel="noopener">aviso de privacidad</a>: usan mis datos solo para hacer, enviar y darle seguimiento a mi pedido.</label>
       <label class="hp" aria-hidden="true">No llenar<input name="website" tabindex="-1" autocomplete="off"></label>
       <div class="err" id="coErr" role="alert"></div>
     </form>`;
   $('#dFoot').innerHTML = `<div class="tot big"><span>Total estimado</span><span>${fmt(total)}</span></div>
-    <button class="btn btn-dark" id="sendOrder">Enviar pedido ✦</button>
-    <p class="note">Te confirmamos por correo y te escribimos por WhatsApp con tu diseño.</p>`;
+    <button class="btn btn-dark" id="${antes ? 'goPago' : 'sendOrder'}">${antes ? 'Siguiente: pagar anticipo →' : 'Enviar pedido ✦'}</button>
+    <p class="note">${antes ? `Para empezar tu pedido se paga el ${pagoInfo().pct}%.` : 'Te confirmamos por correo y te escribimos por WhatsApp con tu diseño.'}</p>`;
+}
+
+function renderAnticipo(total) {
+  const { pct, banco } = pagoInfo(), monto = Math.round(total * pct / 100);
+  $('#dTitle').textContent = 'Paga tu anticipo';
+  $('#dBody').innerHTML = `<ol class="co-pasos" aria-label="Pasos"><li>1. Tus datos</li><li aria-current="step">2. Anticipo</li></ol>
+    <button class="back" id="backDatos">← Mis datos</button>
+    <div class="pago">
+      <h3>Transfiere ${fmt(monto)} (${pct}% de ${fmt(total)})</h3>
+      ${banco ? `<p class="banco">${esc(banco)}</p>` : `<p class="note" style="text-align:left">Pídenos la cuenta por <a class="wa-link" href="${waURL(`${HOLA} Quiero pagar el anticipo de mi pedido.`)}" target="_blank" rel="noopener">WhatsApp</a>.</p>`}
+      <label class="drop${anticipoData ? ' lleno' : ''}" id="anticipoDrop"><input type="file" id="anticipoFile" accept="image/jpeg,image/png,image/webp,application/pdf"><span class="drop-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg></span><span id="anticipoTxt">${anticipoData ? '<b>Comprobante listo</b><small>Toca para cambiarlo</small>' : '<b>Sube la foto o PDF de tu comprobante</b><small>JPG, PNG o PDF · máx. 5&nbsp;MB</small>'}</span></label>
+      <p class="note" style="text-align:left;margin:0">El saldo (${fmt(total - monto)}) se paga al entregar. Te mandamos tu diseño para aprobar antes de producir.</p>
+    </div>
+    <div class="err" id="coErr" role="alert"></div>`;
+  $('#dFoot').innerHTML = `<div class="tot big"><span>Anticipo</span><span>${fmt(monto)}</span></div>
+    <button class="btn btn-dark" id="sendOrder" ${anticipoData ? '' : 'disabled'}>Enviar pedido y comprobante ✦</button>
+    <p class="note">Leemos el monto de tu comprobante y te confirmamos por WhatsApp.</p>`;
 }
 
 $('#drawer')?.addEventListener('click', e => {
@@ -703,14 +730,27 @@ $('#drawer')?.addEventListener('click', e => {
   }
   else if (t.dataset.edit !== undefined) { editItem(+t.dataset.edit); }
   else if (t.id === 'goCheckout') { view = 'checkout'; renderDrawer(); }
-  else if (t.id === 'backCart') { view = 'cart'; renderDrawer(); }
-  else if (t.id === 'sendOrder') handleSend(t);
+  else if (t.id === 'backCart') { coData = leerDatos(); view = 'cart'; renderDrawer(); $('#dTitle').textContent = 'Tu pedido'; }
+  else if (t.id === 'goPago') { const d = validarDatos(); if (d) { coData = d; view = 'anticipo'; renderDrawer(); $('#dBody').scrollTop = 0; } }
+  else if (t.id === 'backDatos') { view = 'checkout'; renderDrawer(); }
+  else if (t.id === 'sendOrder') { const d = view === 'anticipo' ? coData : validarDatos(); if (d) enviarPedido(t, d); }
 });
 $('#drawer')?.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && e.target.matches('#coForm input')) { e.preventDefault(); $('#sendOrder')?.click(); }
+  if (e.key === 'Enter' && e.target.matches('#coForm input')) { e.preventDefault(); ($('#goPago') || $('#sendOrder'))?.click(); }
+});
+$('#drawer')?.addEventListener('change', async e => {
+  if (e.target.id !== 'anticipoFile' || !e.target.files[0]) return;
+  const file = e.target.files[0];
+  try {
+    anticipoData = await leerVoucher(file); $('#coErr').textContent = '';
+    $('#anticipoTxt').innerHTML = `<b>${esc(file.name)}</b><small>Listo · toca para cambiarlo</small>`;
+    $('#anticipoDrop').classList.add('lleno'); $('#sendOrder').disabled = false;
+  } catch (x) { anticipoData = ''; $('#coErr').textContent = x.message; $('#sendOrder').disabled = true; }
 });
 
-async function handleSend(btn) {
+const leerDatos = () => { const f = $('#coForm'); return f ? Object.fromEntries(new FormData(f)) : coData; };
+// revisa el paso 1; marca cada campo con su error y regresa los datos o null
+function validarDatos() {
   const f = $('#coForm'), err = $('#coErr');
   const data = Object.fromEntries(new FormData(f));
   const checks = {
@@ -728,12 +768,16 @@ async function handleSend(btn) {
     m.textContent = msg; el.setAttribute('aria-invalid', !!msg);
     if (msg && !first) first = el;
   });
-  if (first) { err.textContent = 'Revisa los campos marcados.'; first.focus(); return; }
+  if (first) { err.textContent = 'Revisa los campos marcados.'; first.focus(); return null; }
   err.textContent = '';
   // solo se recuerdan si la persona lo pidió; si no, se borra lo que hubiera
   if (data.remember) guardar(KEY_CONTACT, { name: data.name, phone: data.phone, email: data.email, city: data.city }); else borrar(KEY_CONTACT);
+  return data;
+}
 
+async function enviarPedido(btn, data) {
   const { rows, gross, disc, total } = cartTotals();
+  const label = btn.textContent;
   btn.disabled = true; btn.textContent = 'Preparando tu diseño…';
   const previews = await Promise.all(rows.map(r => previewImage(r.p, r.i.cfg).catch(() => '')));
   const { website, remember, consent, ...customer } = data;
@@ -748,6 +792,7 @@ async function handleSend(btn) {
       bom: bomOf(r.p, r.i.cfg, r.i.qty),
     })),
     subtotal: gross, discount: disc, total,
+    comprobante: anticipoData,
   };
 
   btn.textContent = 'Enviando…';
@@ -755,12 +800,14 @@ async function handleSend(btn) {
     const res = await api('pedido', order);
     const id = res.id || '';
     if (id && data.remember) guardar(KEY_ORDERS, [{ id, phone: data.phone, fecha: new Date().toISOString().slice(0, 10) }, ...leer(KEY_ORDERS, []).filter(o => o.id !== id)].slice(0, 20));
-    cart = []; saveCart(); view = 'cart'; closeDrawer();
-    $('#doneTxt').innerHTML = `${id ? `Tu número de pedido es <b>${esc(id)}</b>.<br>` : ''}Total estimado <b>${fmt(total)}</b>.<br>Te escribimos a <b>${esc(data.phone)}</b> con tu diseño para aprobar.${id ? `<br><a href="pedido.html?id=${encodeURIComponent(id)}">Ver mi pedido y pagar el anticipo →</a>` : ''}`;
+    cart = []; saveCart(); view = 'cart'; coData = null; anticipoData = ''; checkoutAt = 0; closeDrawer();
+    const pago = res.pago ? (res.pago.resultado === 'Coincide' ? `<br>Recibimos tu anticipo de <b>${fmt(res.pago.monto)}</b>. ✓` : '<br>Recibimos tu comprobante; lo revisamos y te confirmamos.') : '';
+    $('#doneTxt').innerHTML = `${id ? `Tu número de pedido es <b>${esc(id)}</b>.<br>` : ''}Total <b>${fmt(total)}</b>.${pago}<br>Te escribimos a <b>${esc(data.phone)}</b> con tu diseño para aprobar.${id ? `<br><a href="pedido.html?id=${encodeURIComponent(id)}">Ver mis pedidos →</a>` : ''}`;
     openModal('#done');
   } catch (e) {
     $('#coErr').innerHTML = `No se pudo enviar (${esc(e.message || 'sin conexión')}). Intenta de nuevo o <a href="${waURL(waCartText())}" target="_blank" rel="noopener">mándalo por WhatsApp</a>.`;
-  } finally { btn.disabled = false; btn.textContent = 'Enviar pedido ✦'; }
+    btn.disabled = false; btn.textContent = label;
+  }
 }
 
 /* ===== ENVÍO DEL PEDIDO A GOOGLE SHEETS =====
@@ -1038,7 +1085,7 @@ addEventListener('scroll', () => {
   });
 }, { passive: true });
 
-/* ---------- Rastrear pedido (pedido.html) ----------
+/* ---------- Mis pedidos (pedido.html) ----------
    Pide número + WhatsApp, muestra estado y montos, y recibe el comprobante del anticipo.
    El servidor (apps-script/Pagos.gs) valida que el WhatsApp sea el del pedido y lee el monto del comprobante. */
 // mismo orden que ESTADOS en apps-script/Config.gs
@@ -1083,14 +1130,29 @@ async function leerVoucher(file) {
 
 if ($('#seguir')) {
   const f = $('#seguir'), q = new URLSearchParams(location.search);
-  const mis = leer(KEY_ORDERS, []);
+  let mis = leer(KEY_ORDERS, []);
   if (q.get('id')) f.elements.id.value = q.get('id');
   const conocido = mis.find(o => o.id === f.elements.id.value);
   if (conocido) f.elements.phone.value = conocido.phone;
-  if (mis.length) {
-    $('#misPedidos').hidden = false;
-    $('#misPedidos').innerHTML = `<b>Tus pedidos en este dispositivo</b>${mis.map(o => `<button type="button" class="chip" data-mio="${esc(o.id)}">${esc(o.id)}<small>${esc(o.fecha || '')}</small></button>`).join('')}`;
+  // tarjetas de "Mis pedidos": todos los de este dispositivo con su estado y lo que falta pagar
+  async function pintarMis() {
+    const box = $('#misLista');
+    if (!mis.length) { box.innerHTML = '<p class="mis-vacio">Aquí aparecen los pedidos que hagas desde este teléfono o computadora. ¿Pediste desde otro lado? Búscalo abajo con su número y tu WhatsApp.</p>'; return; }
+    box.innerHTML = mis.map(o => `<div class="mio esqueleto"><b>${esc(o.id)}</b><small>Cargando…</small></div>`).join('');
+    try {
+      const { pedidos } = await api('misPedidos', { pedidos: mis.map(o => ({ id: o.id, phone: o.phone })) });
+      box.innerHTML = pedidos.length ? pedidos.map(p => `<button type="button" class="mio" data-mio="${esc(p.id)}">
+          <span class="mio-top"><b>${esc(p.id)}</b><span class="tag-est${p.estado === 'Cancelado' ? ' no' : p.estado === 'Entregado' ? ' ok' : ''}">${esc(PASO_TXT[p.estado] || p.estado)}</span></span>
+          <small>${p.fecha ? esc(fmtDate(p.fecha)) + ' · ' : ''}${esc(String(p.productos).split('\n')[0])}${String(p.productos).includes('\n') ? ' y más' : ''}</small>
+          <span class="mio-pago">${p.porPagarAnticipo > 0 ? `<em>Falta tu anticipo: ${fmt(p.porPagarAnticipo)}</em>` : `Pagado ${fmt(p.pagado)} de ${fmt(p.total)}`}</span>
+        </button>`).join('') : '<p class="mis-vacio">No encontramos tus pedidos guardados. Búscalos abajo.</p>';
+    } catch (x) { box.innerHTML = `<p class="mis-vacio">No pudimos cargar tus pedidos (${esc(x.message)}). Intenta de nuevo en un momento.</p>`; }
   }
+  pintarMis();
+  $('#misLista').addEventListener('click', e => {
+    const b = e.target.closest('[data-mio]'); if (!b) return;
+    const o = mis.find(x => x.id === b.dataset.mio); f.elements.id.value = o.id; f.elements.phone.value = o.phone; f.requestSubmit();
+  });
   f.addEventListener('submit', async e => {
     e.preventDefault();
     const id = f.elements.id.value.trim().toUpperCase(), phone = f.elements.phone.value.trim(), err = $('#seguirErr');
@@ -1100,14 +1162,12 @@ if ($('#seguir')) {
     try {
       const r = await api('seguimiento', { id, phone });
       seguido = { id, phone }; pintarPedido(r.pedido);
+      // pedido encontrado a mano: se suma a "Mis pedidos" (si la persona no pidió "solo el carrito")
+      if (!mis.some(o => o.id === id) && leer(KEY_CONSENT, '') !== 'minimo') { mis = [{ id, phone, fecha: r.pedido.fecha }, ...mis].slice(0, 20); guardar(KEY_ORDERS, mis); pintarMis(); }
       const u = new URL(location.href); u.searchParams.set('id', id); history.replaceState(null, '', u); // el WhatsApp nunca va en la dirección
       $('#estadoPedido').scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' });
     } catch (x) { err.textContent = x.message; $('#estadoPedido').innerHTML = ''; }
-    finally { $('#seguirBtn').disabled = false; $('#seguirBtn').textContent = 'Ver mi pedido'; }
-  });
-  $('#misPedidos').addEventListener('click', e => {
-    const b = e.target.closest('[data-mio]'); if (!b) return;
-    const o = mis.find(x => x.id === b.dataset.mio); f.elements.id.value = o.id; f.elements.phone.value = o.phone; f.requestSubmit();
+    finally { $('#seguirBtn').disabled = false; $('#seguirBtn').textContent = 'Buscar pedido'; }
   });
   $('#estadoPedido').addEventListener('change', async e => {
     if (e.target.id !== 'voucher' || !e.target.files[0]) return;
@@ -1147,7 +1207,7 @@ document.addEventListener('click', e => {
 });
 
 $('#borrarDatos')?.addEventListener('click', () => {
-  [KEY_CART, KEY_CONTACT, KEY_ORDERS, KEY_CONSENT, KEY_SITIO].forEach(borrar); cart = []; saveCart();
+  [KEY_CART, KEY_CONTACT, KEY_ORDERS, KEY_CONSENT, KEY_SITIO, KEY_PAGO].forEach(borrar); cart = []; saveCart();
   try { sessionStorage.clear(); } catch { }
   toast('Listo: borramos todo lo que este sitio guardó en tu navegador.');
 });

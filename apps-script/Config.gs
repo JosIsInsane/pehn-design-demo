@@ -58,6 +58,7 @@ const CONFIG_DEFAULTS = [
   ['Carpeta de Drive', '', 'Se llena sola. Aquí se guardan fotos y vistas previas.'],
   ['Moneda', 'HNL', 'Lempiras.'],
   ['Sitio web', '', 'Dirección de la página (ej. https://pehndesign.com). El CRM la usa para "Ver sitio".'],
+  ['Anticipo antes de enviar', 'Sí', 'Sí = el cliente sube el comprobante del anticipo antes de mandar el pedido. No = puede pagar después.'],
   ['Anticipo (%)', 50, 'Porcentaje que se paga para empezar el pedido. El sitio lo muestra en Mi pedido.'],
   ['Datos bancarios', '', 'Cuenta para el anticipo. Se muestra al cliente en Mi pedido (ej. BAC · Ahorro · 123456789 · Pehn Design).'],
 ];

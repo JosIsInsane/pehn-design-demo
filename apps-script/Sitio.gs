@@ -42,7 +42,7 @@ const SITIO_DEFAULTS = [
   ['faq.3.p', '¿Veo el diseño antes de que lo hagan?', 'texto', 'Pregunta 3.'],
   ['faq.3.r', 'Sí. Te mandamos una vista previa para aprobar antes de producir.', 'largo', 'Respuesta 3.'],
   ['faq.4.p', '¿Cómo pago?', 'texto', 'Pregunta 4.'],
-  ['faq.4.r', 'Pagas el 50% de anticipo para empezar y el resto al entregar. Puedes subir tu comprobante en Rastrear pedido.', 'largo', 'Respuesta 4.'],
+  ['faq.4.r', 'Pagas el 50% de anticipo al hacer tu pedido (subes el comprobante ahí mismo) y el resto al entregar. Tus pagos quedan en Mis pedidos.', 'largo', 'Respuesta 4.'],
   ['faq.5.p', '¿Hacen envíos?', 'texto', 'Pregunta 5.'],
   ['faq.5.r', 'Sí, enviamos a todo el país. El costo se calcula según tu ciudad.', 'largo', 'Respuesta 5.'],
   ['faq.6.p', '', 'texto', 'Pregunta 6 (opcional).'],
@@ -87,7 +87,10 @@ function sitioPublico_() {
     const v = valorSitio_(tipo, r.Valor);
     if (v !== null) out[k] = v;
   });
-  const res = { ok: true, sitio: out, v: Date.now() };
+  // datos de pago para el paso "Paga tu anticipo" del carrito (públicos a propósito)
+  const cfg = config_();
+  const pago = { pct: Number(cfg['Anticipo (%)']) || 50, banco: String(cfg['Datos bancarios'] || ''), antes: yes_(cfg['Anticipo antes de enviar'] ?? 'Sí') };
+  const res = { ok: true, sitio: out, pago, v: Date.now() };
   cache.put(SITIO_CACHE, JSON.stringify(res), 300);
   return res;
 }

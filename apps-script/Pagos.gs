@@ -52,18 +52,32 @@ function recibirComprobante_(d, cfg) {
   const pago = resumenPago_(p, cfg);
   const esperado = pago.porPagarAnticipo || pago.saldo;
 
-  return conCandado_(() => {
-    const carpeta = carpetaDePedido_(p);
-    const archivo = guardarImagen_(carpeta, d.file, `Comprobante ${Utilities.formatDate(now_(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH.mm')}`);
-    if (!archivo) throw new Error('El archivo debe ser foto (JPG, PNG) o PDF de menos de 5 MB.');
-    const lectura = leerTexto_(archivo.blob);
-    const monto = lectura === null ? null : elegirMonto_(montosEn_(lectura), esperado);
-    const resultado = lectura === null ? 'Sin lectura' : monto == null ? 'Revisar: sin monto' : Math.abs(monto - esperado) <= 1 ? 'Coincide' : 'Revisar: no coincide';
-    sheet_('pagos').appendRow(fila_([now_(), p.ID, monto == null ? '' : monto, esperado, resultado, archivo.url,
-      texto_(lectura || '', 2000), '', '']));
-    avisarComprobante_(p, monto, esperado, resultado, archivo.url, cfg);
-    return { resultado: resultado === 'Coincide' ? 'Coincide' : 'Revisión', monto, esperado };
-  });
+  return conCandado_(() => procesarComprobante_(p, d.file, esperado, carpetaDePedido_(p), cfg));
+}
+
+// ¿el archivo parece un comprobante válido? (se revisa antes de crear nada)
+const comprobanteValido_ = s => { const m = /^data:([\w/+.-]+);base64,([A-Za-z0-9+/=]+)$/.exec(String(s || '')); return !!m && !!TIPOS_OK[m[1]] && m[2].length <= LIMITS.imageChars; };
+
+// Guarda el comprobante, lee el monto y lo anota en Pagos. Quien llama ya tiene el candado.
+// p: { ID, Cliente, Moneda } del pedido
+function procesarComprobante_(p, dataUrl, esperado, carpeta, cfg) {
+  const archivo = guardarImagen_(carpeta, dataUrl, `Comprobante ${Utilities.formatDate(now_(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH.mm')}`);
+  if (!archivo) throw new Error('El comprobante debe ser foto (JPG, PNG) o PDF de menos de 5 MB.');
+  const lectura = leerTexto_(archivo.blob);
+  const monto = lectura === null ? null : elegirMonto_(montosEn_(lectura), esperado);
+  const resultado = lectura === null ? 'Sin lectura' : monto == null ? 'Revisar: sin monto' : Math.abs(monto - esperado) <= 1 ? 'Coincide' : 'Revisar: no coincide';
+  sheet_('pagos').appendRow(fila_([now_(), p.ID, monto == null ? '' : monto, esperado, resultado, archivo.url,
+    texto_(lectura || '', 2000), '', '']));
+  avisarComprobante_(p, monto, esperado, resultado, archivo.url, cfg);
+  return { resultado: resultado === 'Coincide' ? 'Coincide' : 'Revisión', monto, esperado };
+}
+
+// "Mis pedidos": varios pedidos de este dispositivo a la vez (cada uno con su WhatsApp)
+function misPedidos_(d) {
+  const lista = (Array.isArray(d.pedidos) ? d.pedidos : []).slice(0, 20);
+  const out = [];
+  lista.forEach(x => { try { out.push(seguimiento_(x)); } catch (e) { /* ese ya no coincide o no existe: se omite */ } });
+  return out;
 }
 
 function carpetaDePedido_(p) {

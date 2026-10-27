@@ -15,7 +15,7 @@
     ['catalogo.html', 'Catálogo', 'catalog'],
     ['index.html#trabajos', 'Pedidos reales'],
     ['index.html#como', 'Cómo funciona'],
-    ['pedido.html', 'Rastrear pedido', 'pedido'],
+    ['pedido.html', 'Mis pedidos', 'pedido'],
     ['index.html#faq', 'Preguntas'],
   ];
   const link = ([href, txt, p]) => `<a href="${a(href)}"${p && p === pagina ? ' aria-current="page"' : ''}>${txt}</a>`;
@@ -40,7 +40,7 @@
     <div class="foot-grid">
       <div class="foot-brand">${BRAND}<p data-edit="pie">Cuadros con minifiguras y regalos personalizados, hechos a mano para historias únicas.</p></div>
       <nav aria-label="Tienda"><b>Tienda</b><a href="catalogo.html">Catálogo</a><a href="catalogo.html?cat=cuadros">Cuadros</a><a href="catalogo.html?cat=ropa">Ropa</a><a href="catalogo.html?cat=vasos">Vasos y tazas</a></nav>
-      <nav aria-label="Pehn"><b>Pehn</b><a href="${a('index.html#historia')}">Historia</a><a href="${a('index.html#faq')}">Preguntas</a><a href="pedido.html">Rastrear pedido</a><a href="privacidad.html">Privacidad</a></nav>
+      <nav aria-label="Pehn"><b>Pehn</b><a href="${a('index.html#historia')}">Historia</a><a href="${a('index.html#faq')}">Preguntas</a><a href="pedido.html">Mis pedidos</a><a href="privacidad.html">Privacidad</a></nav>
       <nav aria-label="Contacto"><b>Contacto</b><a class="wa-link" href="#" target="_blank" rel="noopener">WhatsApp</a><a class="ig-link" href="https://www.instagram.com/pehn.designn/" target="_blank" rel="noopener">Instagram</a></nav>
     </div>
     <div class="copy"><span>© <span id="yr"></span> Pehn Design</span><span><a href="privacidad.html">Aviso de privacidad</a> · <button type="button" class="linkish" data-aviso-abrir>Preferencias</button></span></div>

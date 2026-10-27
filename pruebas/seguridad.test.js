@@ -17,10 +17,12 @@ function pedido(sim, extra = {}) {
     token: sim.config('Token del sitio'), fillMs: 9000, website: '',
     customer: { name: 'Ana López', phone: '9876 5432', email: 'ana@correo.com', city: 'Tegucigalpa', date: '2026-11-20', notes: 'Fondo rosa' },
     items: [{ product: 'Cuadro con minifiguras', qty: 1, unitPrice: 750, discount: 0, total: 750, options: [['Marco', 'Blanco']], bom: [{ key: 'Figura · Cuerpo', qty: 2 }], preview: JPG }],
-    total: 750, currency: 'HNL', ...extra,
+    total: 750, currency: 'HNL', comprobante: JPG, ...extra,
   };
 }
 const nuevo = (o = {}) => cargar({ silencio: true, ...o });
+// tienda que deja pagar después (para probar el comprobante subido en Mis pedidos)
+const sinAnticipo = () => { const s = nuevo(); s.run(`setConfig_('Anticipo antes de enviar', 'No')`); return s; };
 
 // ---------- entrada de pedidos ----------
 prueba('Pedido normal se guarda con ID y foto', () => {
@@ -122,6 +124,42 @@ prueba('IDs no se repiten aunque se borre una fila', () => {
   ok(r.id.endsWith('-003'), r.id);
 });
 
+// ---------- anticipo antes de enviar ----------
+prueba('Sin comprobante no se puede enviar el pedido', () => {
+  const s = nuevo(); const r = s.post(pedido(s, { comprobante: '' }));
+  ok(!r.ok && /comprobante/.test(r.error), r.error); ok(s.hoja('Pedidos').length === 0);
+});
+
+prueba('Comprobante junto con el pedido: queda en Pagos y cuenta como pagado', () => {
+  const s = nuevo(); s.ctx.__ocr = 'Transferencia L 375.00';
+  const r = s.post(pedido(s));
+  ok(r.ok && r.pago && r.pago.resultado === 'Coincide', JSON.stringify(r));
+  const seg = s.post({ token: s.config('Token del sitio'), accion: 'seguimiento', id: r.id, phone: '98765432' });
+  ok(seg.pedido.pagado === 375 && seg.pedido.porPagarAnticipo === 0);
+});
+
+prueba('Comprobante inválido no crea el pedido', () => {
+  const s = nuevo(); const html = 'data:text/html;base64,' + Buffer.from('<script>').toString('base64');
+  ok(!s.post(pedido(s, { comprobante: html })).ok); ok(s.hoja('Pedidos').length === 0);
+});
+
+prueba('Con "Anticipo antes de enviar = No" se puede pedir sin comprobante', () => {
+  const s = nuevo(); s.run(`setConfig_('Anticipo antes de enviar', 'No')`);
+  ok(s.post(pedido(s, { comprobante: '' })).ok);
+});
+
+prueba('Mis pedidos: solo devuelve los que coinciden con su WhatsApp', () => {
+  const s = nuevo(); const t = s.config('Token del sitio');
+  const a = s.post(pedido(s)).id, b = s.post(pedido(s, { customer: { name: 'Otro', phone: '91112222', city: 'X' } })).id;
+  const r = s.post({ token: t, accion: 'misPedidos', pedidos: [{ id: a, phone: '98765432' }, { id: b, phone: '98765432' }, { id: 'PEHN-x', phone: '1' }] });
+  ok(r.ok && r.pedidos.length === 1 && r.pedidos[0].id === a, JSON.stringify(r));
+});
+
+prueba('API del sitio entrega datos de pago para el carrito', () => {
+  const s = nuevo(); s.run(`setConfig_('Datos bancarios', 'BAC 123')`);
+  const r = s.get({ api: 'sitio' }); ok(r.pago && r.pago.pct === 50 && r.pago.banco === 'BAC 123' && r.pago.antes === true, JSON.stringify(r.pago));
+});
+
 // ---------- Mi pedido (seguimiento) ----------
 prueba('Seguimiento con WhatsApp correcto devuelve solo estado y montos', () => {
   const s = nuevo(); const { id } = s.post(pedido(s));
@@ -153,7 +191,7 @@ prueba('Seguimiento: ID con caracteres raros se rechaza', () => {
 
 // ---------- comprobantes ----------
 prueba('Comprobante con monto correcto: "Coincide"', () => {
-  const s = nuevo(); const { id } = s.post(pedido(s));
+  const s = sinAnticipo(); const { id } = s.post(pedido(s, { comprobante: '' }));
   s.ctx.__ocr = 'BAC Credomatic\nTransferencia exitosa\n27/10/2026 14:22\nCuenta 1234 5678\nMonto: L 375.00\nReferencia 99812';
   const r = s.post({ token: s.config('Token del sitio'), accion: 'comprobante', id, phone: '98765432', file: JPG });
   ok(r.ok && r.pago.resultado === 'Coincide' && r.pago.monto === 375, JSON.stringify(r));
@@ -178,7 +216,7 @@ prueba('Comprobante sin Drive API: se guarda y queda "Sin lectura"', () => {
 });
 
 prueba('Comprobante de pedido ajeno se rechaza', () => {
-  const s = nuevo(); const { id } = s.post(pedido(s));
+  const s = sinAnticipo(); const { id } = s.post(pedido(s, { comprobante: '' }));
   ok(!s.post({ token: s.config('Token del sitio'), accion: 'comprobante', id, phone: '91112222', file: JPG }).ok);
   ok(s.hoja('Pagos').length === 0);
 });

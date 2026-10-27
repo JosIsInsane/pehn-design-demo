@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="light">
-<title>Rastrear pedido · Pehn Design</title>
-<meta name="description" content="Revisa el estado de tu pedido de Pehn Design y sube el comprobante de tu anticipo.">
+<title>Mis pedidos · Pehn Design</title>
+<meta name="description" content="Tus pedidos de Pehn Design: estado, pagos y comprobantes.">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#FBF7F2">
 <link rel="icon" href="logo.png">
@@ -21,22 +21,25 @@
 <main id="main">
   <section class="cat-hero">
     <div class="wrap">
-      <nav class="crumbs" aria-label="Ruta"><a href="index.html">Inicio</a><span aria-hidden="true">/</span><span>Rastrear pedido</span></nav>
-      <h1>Rastrear mi pedido</h1>
-      <p class="lead">Mira en qué va tu pedido y sube el comprobante de tu anticipo. Solo necesitas tu número de pedido y el WhatsApp con el que lo hiciste.</p>
+      <nav class="crumbs" aria-label="Ruta"><a href="index.html">Inicio</a><span aria-hidden="true">/</span><span>Mis pedidos</span></nav>
+      <h1>Mis pedidos</h1>
+      <p class="lead">Mira en qué va cada pedido, cuánto llevas pagado y sube tus comprobantes.</p>
     </div>
   </section>
 
   <section class="sec seguir-sec">
+    <div class="wrap">
+      <div class="mis-lista" id="misLista" aria-live="polite"></div>
+    </div>
     <div class="wrap seguir">
       <form class="co seguir-form" id="seguir" novalidate>
+        <h2 class="seguir-h">Buscar un pedido</h2>
         <div class="row2">
           <label>Número de pedido<input name="id" required autocomplete="off" spellcheck="false" autocapitalize="characters" placeholder="PEHN-261027-001…" inputmode="text"></label>
           <label>WhatsApp<input name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="9876 5432…"></label>
         </div>
-        <button class="btn btn-dark" type="submit" id="seguirBtn">Ver mi pedido</button>
+        <button class="btn btn-dark" type="submit" id="seguirBtn">Buscar pedido</button>
         <div class="err" id="seguirErr" role="alert"></div>
-        <div class="mis" id="misPedidos" hidden></div>
       </form>
       <div id="estadoPedido" aria-live="polite"></div>
     </div>

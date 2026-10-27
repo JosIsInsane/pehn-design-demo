@@ -724,6 +724,25 @@ body[data-page="catalog"]{scroll-padding-top:calc(var(--nav-h) + 140px)}
   .pasos li::before{display:none}
 }
 
+/* ---------- Mis pedidos y pasos del carrito ---------- */
+.mis-lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:clamp(24px,3vw,40px)}
+.mio{display:grid;gap:6px;text-align:left;padding:16px 18px;border-radius:var(--r);background:var(--surface);border:1px solid var(--line);box-shadow:var(--sh-1);transition:border-color .2s,transform .2s,box-shadow .2s}
+.mio:hover{border-color:var(--line-2);transform:translateY(-2px);box-shadow:var(--sh-2)}
+.mio small{color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mio-top{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.mio-top b{font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.mio-pago{font-size:13.5px;font-weight:600;font-variant-numeric:tabular-nums}
+.mio-pago em{font-style:normal;color:var(--brand-ink)}
+.mio.esqueleto{opacity:.6}
+.tag-est{flex:none;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--brand-soft);color:var(--brand-ink)}
+.tag-est.ok{background:#E2F3EA;color:var(--green)}.tag-est.no{background:#F8E1DC;color:var(--danger)}
+.mis-vacio{grid-column:1/-1;margin:0;padding:16px 18px;border-radius:var(--r);background:var(--surface-2);border:1px dashed var(--line-2);color:var(--ink-2)}
+.seguir-h{font-size:22px}
+.co-pasos{display:flex;gap:6px;list-style:none;margin:0 0 6px;padding:0;font-size:12.5px;font-weight:600;color:var(--ink-3)}
+.co-pasos li{flex:1;padding:6px 10px;border-radius:999px;background:var(--bg-2);text-align:center}
+.co-pasos li[aria-current="step"]{background:var(--ink);color:#fff}
+.d-body .pago{margin-top:6px}
+
 /* ---------- páginas de texto (privacidad) ---------- */
 .legal{max-width:760px;font-size:16px;line-height:1.7;color:var(--ink-2)}
 .legal h2{font-family:var(--serif);font-weight:500;font-size:clamp(22px,2.4vw,28px);color:var(--ink);letter-spacing:-.015em;margin:36px 0 8px}
@@ -731,3 +750,4 @@ body[data-page="catalog"]{scroll-padding-top:calc(var(--nav-h) + 140px)}
 .legal li{margin:6px 0}
 .legal a{color:var(--ink);text-decoration:underline;text-underline-offset:2px}
 .legal-fecha{font-size:13.5px;color:var(--ink-3)}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}

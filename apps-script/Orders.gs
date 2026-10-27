@@ -34,9 +34,10 @@ function doPost(e) {
     const cfg = config_();
     if (!cfg['Token del sitio'] || data.token !== cfg['Token del sitio']) throw new Error('Token inválido.');
     switch (data.accion || 'pedido') {
-      case 'pedido': return json_({ ok: true, id: recibirPedido_(data, cfg).id });
+      case 'pedido': { const r = recibirPedido_(data, cfg); return json_({ ok: true, id: r.id, pago: r.pago }); }
       case 'seguimiento': return json_({ ok: true, pedido: seguimiento_(data) });
       case 'comprobante': return json_({ ok: true, pago: recibirComprobante_(data, cfg) });
+      case 'misPedidos': return json_({ ok: true, pedidos: misPedidos_(data) });
       default: throw new Error('Acción desconocida.');
     }
   } catch (err) {
@@ -77,13 +78,17 @@ function limpiarPedido_(d) {
     preview: typeof it.preview === 'string' ? it.preview : '',
     images: (Array.isArray(it.images) ? it.images : []).filter(x => typeof x === 'string').slice(0, LIMITS.imagesPerItem),
   }));
-  return { customer, items, total: num(d.total, 0, 1e7), currency: /^[A-Z]{3}$/.test(d.currency) ? d.currency : 'HNL' };
+  return { customer, items, total: num(d.total, 0, 1e7), currency: /^[A-Z]{3}$/.test(d.currency) ? d.currency : 'HNL',
+    comprobante: typeof d.comprobante === 'string' ? d.comprobante : '' };
 }
 
 function json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
 
 function recibirPedido_(raw, cfg) {
   const d = limpiarPedido_(raw), c = d.customer;
+  // anticipo antes de enviar (Config › Anticipo antes de enviar = Sí)
+  if (d.comprobante && !comprobanteValido_(d.comprobante)) throw new Error('El comprobante debe ser foto (JPG, PNG) o PDF de menos de 5 MB.');
+  if (!d.comprobante && yes_(cfg['Anticipo antes de enviar'] ?? 'Sí')) throw new Error('Sube el comprobante de tu anticipo para enviar el pedido.');
   limite_('p_' + telKey_(c.phone), LIMITS.perContact, 600, 'Demasiados pedidos seguidos. Escríbenos por WhatsApp.');
   limite_('p_hora', LIMITS.perHour, 3600, 'Estamos recibiendo muchos pedidos. Intenta en unos minutos o escríbenos por WhatsApp.');
 
@@ -124,13 +129,21 @@ function recibirPedido_(raw, cfg) {
       sp.setRowHeight(pr, 110);
     });
 
+    // anticipo que mandó junto con el pedido
+    let pago = null;
+    if (d.comprobante) {
+      const esperado = Math.round(d.total * (Number(cfg['Anticipo (%)']) || 50) / 100);
+      try { pago = procesarComprobante_({ ID: id, Cliente: c.name, Moneda: d.currency }, d.comprobante, esperado, folder, cfg); }
+      catch (err) { console.error('Comprobante no procesado:', err); } // el pedido no se pierde por esto
+    }
+
     // claves nuevas que todavía no tienen pieza asignada
     registrarClavesNuevas_(d.items);
     try { guardarCliente_(c, fecha); } catch (err) { console.error(err); } // nunca frena un pedido
 
     // si el correo falla (límite de 100 al día) el pedido ya quedó guardado
     try { correos_(id, d, partidas, disp, cfg); } catch (err) { console.error('Correo no enviado:', err); }
-    return { id };
+    return { id, pago };
   });
 }
 
