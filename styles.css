@@ -348,7 +348,7 @@ p{margin:0;text-wrap:pretty}
   .toolbar{display:none}
   .shop{display:grid;grid-template-columns:248px minmax(0,1fr);gap:clamp(28px,3.6vw,56px);align-items:start;margin-top:36px}
   .shop .grid{grid-template-columns:repeat(auto-fill,minmax(212px,1fr))}
-  .drawer.fside{position:sticky;top:calc(var(--nav-h) + 20px);inset:auto;z-index:auto;display:block;max-height:calc(100dvh - var(--nav-h) - 40px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;margin:-4px -10px -4px -4px;padding:4px 10px 4px 4px}
+  .drawer.fside{position:sticky;inset:auto;top:calc(var(--nav-h) + 20px);z-index:auto;display:block;max-height:calc(100dvh - var(--nav-h) - 40px);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;margin:-4px -10px -4px -4px;padding:4px 10px 4px 4px}
   .fside .modal-bg,.side-head,.side-foot{display:none}
   .drawer.fside .side-panel{position:static;width:auto;display:block;background:none;box-shadow:none;animation:none}
   .side-body{display:grid;overflow:visible;padding:0}
