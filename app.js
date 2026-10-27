@@ -975,6 +975,28 @@ const pagoInfo = () => ({ pct: 50, banco: '', antes: true, ...leer(KEY_PAGO, {})
 let checkoutAt = 0; // cuándo se mostró el formulario: el servidor rechaza envíos "instantáneos" de bots
 let coData = null;  // datos del paso 1 mientras se paga
 let anticipoData = '';
+// Turnstile (opcional): solo si datos.js trae turnstileSiteKey. El widget va en el paso donde está el botón de enviar.
+let tsToken = '', tsWidget = null, tsScript = null;
+const tsBox = () => CONFIG.turnstileSiteKey ? '<div id="tsBox" class="ts-box"></div>' : '';
+function montarTurnstile() {
+  tsToken = ''; tsWidget = null;
+  if (!CONFIG.turnstileSiteKey || !$('#tsBox')) return;
+  tsScript = tsScript || new Promise((ok, ko) => {
+    const s = document.createElement('script');
+    s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'; s.async = true;
+    s.onload = () => ok(window.turnstile); s.onerror = () => { tsScript = null; ko(new Error('turnstile')); };
+    document.head.appendChild(s);
+  });
+  tsScript.then(t => {
+    const box = $('#tsBox'); if (!t || !box) return;
+    tsWidget = t.render(box, {
+      sitekey: CONFIG.turnstileSiteKey, language: 'es',
+      callback: tok => { tsToken = tok; }, 'expired-callback': () => { tsToken = ''; }, 'error-callback': () => { tsToken = ''; },
+    });
+  }).catch(() => { const e = $('#coErr'); if (e) e.textContent = 'No se pudo cargar la verificación. Recarga la página o pídelo por WhatsApp.'; });
+}
+// cada token sirve una sola vez: tras un intento se pide otro
+const reiniciarTurnstile = () => { tsToken = ''; try { if (tsWidget !== null) window.turnstile.reset(tsWidget); } catch { /* sin widget */ } };
 function renderCheckout(total) {
   const d = coData || leer(KEY_CONTACT, {}), antes = pagoInfo().antes;
   if (!checkoutAt) checkoutAt = performance.now();
@@ -994,11 +1016,13 @@ function renderCheckout(total) {
       <label class="chk"><input type="checkbox" name="remember" ${(coData ? coData.remember : leer(KEY_CONSENT, '') !== 'minimo') ? 'checked' : ''}> Recordar mis datos y mis pedidos en este dispositivo</label>
       <label class="chk"><input type="checkbox" name="consent" required ${coData?.consent ? 'checked' : ''}> Acepto el <a href="privacidad.html" target="_blank" rel="noopener">aviso de privacidad</a>: usan mis datos solo para hacer, enviar y darle seguimiento a mi pedido.</label>
       <label class="hp" aria-hidden="true">No llenar<input name="website" tabindex="-1" autocomplete="off"></label>
+      ${antes ? '' : tsBox()}
       <div class="err" id="coErr" role="alert"></div>
     </form>`;
   $('#dFoot').innerHTML = `<div class="tot big"><span>Total estimado</span><span>${fmt(total)}</span></div>
     <button class="btn btn-dark" id="${antes ? 'goPago' : 'sendOrder'}">${antes ? 'Siguiente: pagar anticipo →' : 'Enviar pedido ✦'}</button>
     <p class="note">${antes ? `Para empezar tu pedido se paga el ${pagoInfo().pct}%.` : 'Te confirmamos por correo y te escribimos por WhatsApp con tu diseño.'}</p>`;
+  montarTurnstile();
 }
 
 function renderAnticipo(total) {
@@ -1012,10 +1036,12 @@ function renderAnticipo(total) {
       <label class="drop${anticipoData ? ' lleno' : ''}" id="anticipoDrop"><input type="file" id="anticipoFile" accept="image/jpeg,image/png,image/webp,application/pdf"><span class="drop-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg></span><span id="anticipoTxt">${anticipoData ? '<b>Comprobante listo</b><small>Toca para cambiarlo</small>' : '<b>Sube la foto o PDF de tu comprobante</b><small>JPG, PNG o PDF · máx. 5&nbsp;MB</small>'}</span></label>
       <p class="note" style="text-align:left;margin:0">El saldo (${fmt(total - monto)}) se paga al entregar. Te mandamos tu diseño para aprobar antes de producir.</p>
     </div>
+    ${tsBox()}
     <div class="err" id="coErr" role="alert"></div>`;
   $('#dFoot').innerHTML = `<div class="tot big"><span>Anticipo</span><span>${fmt(monto)}</span></div>
     <button class="btn btn-dark" id="sendOrder" ${anticipoData ? '' : 'disabled'}>Enviar pedido y comprobante ✦</button>
     <p class="note">Leemos el monto de tu comprobante y te confirmamos por WhatsApp.</p>`;
+  montarTurnstile();
 }
 
 $('#drawer')?.addEventListener('click', e => {
@@ -1057,7 +1083,7 @@ function validarDatos() {
   const checks = {
     name: v => v.trim() ? '' : 'Escribe tu nombre.',
     phone: v => v.replace(/\D/g, '').replace(/^504/, '').length >= 8 ? '' : 'Escribe tu WhatsApp de 8 dígitos, ej. 9876 5432.',
-    email: v => /^\S+@\S+\.\S+$/.test(v) ? '' : 'Revisa tu correo, ej. ana@correo.com.',
+    email: v => /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(v.trim()) ? '' : 'Revisa tu correo, ej. ana@correo.com.',
     city: v => v.trim() ? '' : 'Escribe tu ciudad.',
     consent: v => v ? '' : 'Necesitamos tu permiso para usar tus datos en el pedido.',
   };
@@ -1077,13 +1103,14 @@ function validarDatos() {
 }
 
 async function enviarPedido(btn, data) {
+  if (CONFIG.turnstileSiteKey && !tsToken) { $('#coErr').textContent = 'Espera un momento: estamos verificando que eres una persona.'; return; }
   const { rows, gross, disc, total } = cartTotals();
   const label = btn.textContent;
   btn.disabled = true; btn.textContent = 'Preparando tu diseño…';
   const previews = await Promise.all(rows.map(r => previewImage(r.p, r.i.cfg).catch(() => '')));
   const { website, remember, consent, ...customer } = data;
   const order = {
-    customer, website: website || '', fillMs: Math.round(performance.now() - checkoutAt),
+    customer, website: website || '', turnstile: tsToken, fillMs: Math.round(performance.now() - checkoutAt),
     currency: CONFIG.currency,
     items: rows.map((r, i) => ({
       product: r.p.name, qty: r.i.qty, unitPrice: r.unit, discount: r.disc, total: r.total,
@@ -1107,7 +1134,7 @@ async function enviarPedido(btn, data) {
     openModal('#done');
   } catch (e) {
     $('#coErr').innerHTML = `No se pudo enviar (${esc(e.message || 'sin conexión')}). Intenta de nuevo o <a href="${waURL(waCartText())}" target="_blank" rel="noopener">mándalo por WhatsApp</a>.`;
-    btn.disabled = false; btn.textContent = label;
+    btn.disabled = false; btn.textContent = label; reiniciarTurnstile();
   }
 }
 

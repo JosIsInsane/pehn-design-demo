@@ -213,7 +213,6 @@ function resumenDiario_() {
     const sinCorreo = nuevos.filter(p => /^Falló|^Sin correo \(/.test(String(p['Correo cliente'])));
 
     const r = reporteStock_();
-    const crm = urlApp_() ? urlApp_() + '?k=' + encodeURIComponent(clave_()) : '';
     let h = `<div style="font-family:system-ui,sans-serif;max-width:640px;color:#1E1611">
       <h2 style="font-family:Georgia,serif;font-weight:500;margin-bottom:4px">Resumen de hoy · ${esc_(negocio)}</h2>
       <p style="margin:0;color:#5C4C41">${nuevos.length ? `<b>${nuevos.length}</b> pedido(s) nuevo(s) · vendido hoy <b>${mon(vendido)}</b>` : '<b>Sin pedidos hoy.</b>'}
@@ -226,7 +225,8 @@ function resumenDiario_() {
     if (r.faltantes.length) h += sec('Inventario: no alcanza para pedidos activos', li(r.faltantes.map(x => `<b>${esc_(x.sku)}</b> ${esc_(x.name)}: faltan ${x.falta} (hay ${x.stock}, se necesitan ${x.apartado})`)));
     if (r.bajos.length) h += sec('Inventario: en el mínimo o debajo', li(r.bajos.map(x => `<b>${esc_(x.sku)}</b> ${esc_(x.name)}: ${x.stock} (mínimo ${x.min})`)));
     if (!r.faltantes.length && !r.bajos.length) h += sec('Inventario', '<p style="margin:0">Todo en orden.</p>');
-    h += `<p style="margin-top:20px">${crm ? `<a href="${esc_(crm)}">Abrir el CRM</a> · ` : ''}<a href="${esc_(ss_().getUrl())}">Abrir la hoja</a></p></div>`;
+    // el correo NO lleva la clave del CRM (los correos se reenvían y se guardan): se abre desde la hoja
+    h += `<p style="margin-top:20px"><a href="${esc_(ss_().getUrl())}">Abrir la hoja</a></p><p style="color:#8B7B6F;font-size:13px">Abre el CRM desde Pehn › Abrir CRM.</p></div>`;
     return { h, n: nuevos.length };
   });
   MailApp.sendEmail({

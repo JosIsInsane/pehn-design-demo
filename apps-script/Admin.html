@@ -500,8 +500,8 @@
    - Un cambio "No se pudo guardar": el CRM vuelve a leer la hoja solo; el motivo sale en el aviso.
    - Fotos en gris: el archivo de Drive se borró o se movió (ver columna Archivo vista previa en Partidas).
    PARA CRECER: una vista nueva = botón en #nav + <section id="v-nombre"> + función rNombre en render(). */
-const K = <?!= JSON.stringify(k) ?>;
-let D = <?!= inicial.split('</').join('<\\/') ?>;
+const K = <?!= JSON.stringify(k).replace(/</g, '\\u003c') ?>;
+let D = <?!= inicial.replace(/</g, '\\u003c') ?>;
 const ERROR = <?!= JSON.stringify(error).replace(/</g, '\\u003c') ?>;
 
 const $ = s => document.querySelector(s);
@@ -806,7 +806,7 @@ function openPedido(p, keep) {
       <div><small>Pagado</small><span class="money">${money(pagadoDe(p.id), p.moneda)}</span> <span class="muted">de ${money(Math.round(p.total * D.anticipo / 100), p.moneda)} de anticipo</span></div><div><small>Saldo</small><span class="money">${money(Math.max(0, p.total - pagadoDe(p.id)), p.moneda)}</span></div>
     </div>
     <div class="actions">${cli ? `<button class="btn sm" data-cli="${esc(cli.tel || cli.nombre)}">${ICON.user.replace('<svg', '<svg width="15" height="15"')} Ficha del cliente · ${cli.pedidos.length} pedido${cli.pedidos.length > 1 ? 's' : ''}</button>` : ''}
-      ${p.correo ? `<a class="btn sm" href="mailto:${esc(p.correo)}?subject=${encodeURIComponent('Tu pedido ' + p.id)}">Correo</a>` : ''}
+      ${p.correo ? `<a class="btn sm" href="mailto:${encodeURIComponent(p.correo)}?subject=${encodeURIComponent('Tu pedido ' + p.id)}">Correo</a>` : ''}
       ${urlSegura(p.carpeta) ? `<a class="btn sm" target="_blank" rel="noopener noreferrer" href="${esc(urlSegura(p.carpeta))}">Carpeta en Drive ↗</a>` : ''}</div>
     ${p.notasCliente ? `<div class="note"><b>Notas del cliente:</b> ${esc(p.notasCliente)}</div>` : ''}
     <h3 class="sec">Productos</h3>
@@ -824,7 +824,7 @@ function openCliente(c, keep) {
   open = { type: 'cliente', key: c.tel || c.nombre };
   const ps = D.pedidos.filter(p => c.pedidos.includes(p.id));
   drawer(`${c.pedidos.length} pedido${c.pedidos.length > 1 ? 's' : ''} · cliente desde ${fdate(c.primero, dshort)}`, c.nombre, `
-    <div class="actions"><a class="btn wa" target="_blank" rel="noopener noreferrer" href="${waLink(c.wa, '¡Hola ' + c.nombre + '! ')}">${ICON.wa.replace('<svg', '<svg width="16" height="16"')} Escribir por WhatsApp</a>${c.correo ? `<a class="btn" href="mailto:${esc(c.correo)}">Correo</a>` : ''}</div>
+    <div class="actions"><a class="btn wa" target="_blank" rel="noopener noreferrer" href="${waLink(c.wa, '¡Hola ' + c.nombre + '! ')}">${ICON.wa.replace('<svg', '<svg width="16" height="16"')} Escribir por WhatsApp</a>${c.correo ? `<a class="btn" href="mailto:${encodeURIComponent(c.correo)}">Correo</a>` : ''}</div>
     <div class="info">
       <div><small>WhatsApp</small>${esc(c.wa)}</div><div><small>Correo</small>${esc(c.correo || '—')}</div>
       <div><small>Ciudad</small>${esc(c.ciudad || '—')}</div><div><small>Total comprado</small><span class="money">${money(c.total)}</span></div>

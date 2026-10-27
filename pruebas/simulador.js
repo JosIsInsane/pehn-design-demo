@@ -65,13 +65,26 @@ function cargar(opts = {}) {
     const id = nid('F');
     const f = {
       id, name, getId: () => id, getUrl: () => 'https://drive.google.com/drive/folders/' + id,
-      createFolder: n => { const s = makeFolder(n); return s; },
+      createFolder: n => { const s = makeFolder(n); return s; }, setTrashed() {}, setName: n => { f.name = n; return f; },
       createFile: blob => { const fid = nid('A'); const file = { setSharing() {}, getId: () => fid, getUrl: () => 'https://drive.google.com/file/d/' + fid, getBlob: () => blob, setTrashed() {}, makeCopy: () => file }; files.set(fid, file); return file; },
       getFoldersByName: () => ({ hasNext: () => false }),
     };
     files.set(id, f);
     return f;
   }
+
+  // plantilla de Apps Script: solo <?!= expr ?> (sin escapar), con las variables que se asignan al objeto
+  function plantilla(n) {
+    const t = {};
+    t.evaluate = () => {
+      const src = fs.readFileSync(path.join(__dirname, '..', 'apps-script', n + '.html'), 'utf8');
+      const html = src.replace(/<\?!=([\s\S]*?)\?>/g, (_, e) => String(new Function(...Object.keys(t), 'return (' + e + ')')(...Object.values(t))));
+      return { setTitle() { return this; }, addMetaTag() { return this; }, setWidth() { return this; }, setHeight() { return this; }, getContent: () => html };
+    };
+    return t;
+  }
+  const props = { ...(opts.propiedades || {}) };
+  const red = { llamadas: [], responder: () => ({ success: true }) }; // UrlFetchApp simulado
 
   const ctx = {
     console: opts.silencio ? { log() {}, warn() {}, error() {} } : console,
@@ -84,6 +97,8 @@ function cargar(opts = {}) {
       getUuid: () => 'abcd1234-ef56-7890-abcd-' + String(++idN).padStart(12, '0'),
       formatDate: (d, tz, f) => { const p = n => String(n).padStart(2, '0'); return f.replace('yyyy', d.getFullYear()).replace('yy', String(d.getFullYear()).slice(2)).replace('MM', p(d.getMonth() + 1)).replace('dd', p(d.getDate())).replace('HH', p(d.getHours())).replace('mm', p(d.getMinutes())); },
       base64Decode: s => Buffer.from(s, 'base64'), base64Encode: b => Buffer.from(b).toString('base64'),
+      computeDigest: (alg, v) => Array.from(require('crypto').createHash('sha256').update(String(v)).digest(), b => (b > 127 ? b - 256 : b)),
+      DigestAlgorithm: { SHA_256: 'SHA_256' },
       newBlob: (bytes, type, name) => ({ bytes, type, name, getContentType: () => type, getBytes: () => bytes, setName() { return this; } }),
     },
     Session: { getScriptTimeZone: () => 'America/Tegucigalpa', getActiveUser: () => ({ getEmail: () => opts.usuario || '' }), getEffectiveUser: () => ({ getEmail: () => 'duenos@pehn.test' }) },
@@ -92,11 +107,13 @@ function cargar(opts = {}) {
     DriveApp: { Access: {}, Permission: {}, createFolder: makeFolder, getFolderById: id => { const f = files.get(id); if (!f || !f.createFolder) throw new Error('no existe'); return f; }, getFileById: id => { const f = files.get(id); if (!f) throw new Error('no existe'); return f; } },
     MailApp: { sendEmail: m => { if (estado.falla) throw new Error(estado.falla); mails.push(m); }, getRemainingDailyQuota: () => estado.cuota },
     ContentService: { MimeType: { JSON: 'json' }, createTextOutput: s => ({ setMimeType() { return this; }, getContent: () => s }) },
-    HtmlService: { createHtmlOutput: h => ({ setTitle() { return this; }, getContent: () => h }), createTemplateFromFile: () => ({ evaluate: () => ({ setTitle() { return this; }, addMetaTag() { return this; } }) }) },
+    HtmlService: { createHtmlOutput: h => ({ setTitle() { return this; }, getContent: () => h }), createTemplateFromFile: n => plantilla(n) },
     ScriptApp: {
       getProjectTriggers: () => triggers.map(t => ({ getHandlerFunction: () => t.fn, _t: t })),
       deleteTrigger: tr => { const i = triggers.indexOf(tr._t); if (i >= 0) triggers.splice(i, 1); },
       newTrigger: fn => { const t = { fn, tipo: '', hora: null }; const b = {}; ['forSpreadsheet', 'onEdit', 'timeBased', 'everyDays', 'onWeekDay', 'atHour', 'inTimezone'].forEach(k => { b[k] = (...a) => { if (k === 'atHour') t.hora = a[0]; if (k === 'timeBased') t.tipo = 'tiempo'; if (k === 'onEdit') t.tipo = 'edit'; return b; }; }); b.create = () => { triggers.push(t); return t; }; return b; }, getService: () => ({ getUrl: () => 'https://script.google.com/macros/s/X/exec' }), WeekDay: { MONDAY: 1 } },
+    PropertiesService: { getScriptProperties: () => ({ getProperty: k => (k in props ? props[k] : null), setProperty: (k, v) => { props[k] = v; } }) },
+    UrlFetchApp: { fetch: (url, o) => { red.llamadas.push({ url, o }); const r = red.responder(url, o); return { getResponseCode: () => 200, getContentText: () => JSON.stringify(r) }; } },
     DocumentApp: { openById: () => ({ getBody: () => ({ getText: () => ctx.__ocr || '' }) }) },
   };
   if (opts.ocr !== false) ctx.Drive = { Files: { create: () => ({ id: nid('D') }) } };
@@ -115,7 +132,7 @@ function cargar(opts = {}) {
   const config = name => vm.runInContext(`config_()[${JSON.stringify(name)}]`, ctx);
   const get = params => JSON.parse(ctx.doGet({ parameter: params }).getContent());
   const post = body => JSON.parse(ctx.doPost({ postData: { contents: typeof body === 'string' ? body : JSON.stringify(body) } }).getContent());
-  return { ctx, hoja, config, post, get, mails, cache, triggers, estado, x: ctx.__x, run: c => vm.runInContext(c, ctx) };
+  return { ctx, props, red, files, hoja, config, post, get, mails, cache, triggers, estado, x: ctx.__x, run: c => vm.runInContext(c, ctx) };
 }
 
 module.exports = { cargar };

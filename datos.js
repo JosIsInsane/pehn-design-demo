@@ -30,6 +30,9 @@ const CONFIG = {
   // Google Sheets: URL de la app web de Apps Script y el token de la hoja Config (Pehn › Ver URL y token)
   sheetsUrl: 'https://script.google.com/macros/s/AKfycbyZ0Z1nr735rQ9tn2YSaYUtXEyDUL7fBQiMF78JuiRdUnRtzCt6BALCHgane8wpnsO5/exec',
   sheetsToken: '5eadaaf740544df59772',
+  // Cloudflare Turnstile (opcional, anti-bots): pega aquí la "site key" del widget. Vacío = sin verificación.
+  // Para activarlo del todo hace falta también TURNSTILE_SECRET en Apps Script (ver apps-script/README.md).
+  turnstileSiteKey: '',
 };
 
 /* ---------- piezas ----------

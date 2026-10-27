@@ -37,7 +37,7 @@ Aun así, el código se protege solo:
 
 ## Correos (Gmail gratis: 100 destinatarios al día)
 
-- **Al cliente: 1 por pedido**, al confirmarlo: ID grande, productos, total, estado del anticipo (50 %), enlace a Mis pedidos y botón de WhatsApp. No hay más correos al cliente.
+- **Al cliente: 1 por pedido y máximo 1 por destinatario** (el mismo correo no recibe otro hasta pasadas unas 6 horas; la columna *Correo cliente* dice "Sin correo (ya se le escribió hoy)" y sale en el resumen para escribirle por WhatsApp). Al confirmarlo: ID grande, productos, total, estado del anticipo (50 %), enlace a Mis pedidos y botón de WhatsApp. No hay más correos al cliente.
 - **Al negocio: 1 al día** (*Config › Correo del negocio*) con el resumen: pedidos y cobros de hoy, comprobantes por revisar, pedidos por estado, entregas de 3 días, correos de cliente que fallaron y el inventario. Sin pedidos manda "Sin pedidos hoy" con el stock.
 - Cambia la hora en *Config › Hora del resumen diario* (0 a 23; 20 = 8 pm). Se reprograma sola al guardar; si no, corre **Pehn › Configurar hojas**. Apágalo con *Resumen diario al negocio = No*.
 - Siempre queda 1 correo de reserva para el resumen. Sin cuota o si Gmail falla, el pedido se guarda igual y la columna *Correo cliente* dice "Sin correo" o "Falló: motivo" (sale en el resumen para escribirle por WhatsApp).
@@ -75,7 +75,7 @@ Aun así, el código se protege solo:
 
 ## Uso diario
 
-- **CRM**: menú **Pehn › Abrir CRM (pestaña nueva)**. Guarda ese enlace en favoritos: lleva la clave de *Config › Clave del CRM*. Compártelo solo con tu equipo; si se filtra, cambia la clave.
+- **CRM**: menú **Pehn › Abrir CRM (pestaña nueva)**. Guarda ese enlace en favoritos: lleva la clave de *Config › Clave del CRM*. Compártelo solo con tu equipo. **El correo diario ya no lleva el enlace del CRM** (los correos se reenvían): ábrelo siempre desde la hoja. Si el enlace se filtra, usa **Pehn › Cambiar clave del CRM**: genera una clave nueva y los enlaces viejos dejan de servir al instante (vuelve a guardar el favorito).
 - Si el CRM no carga, en el editor corre la función **probarCRM** (Ejecutar) y mira el registro.
 - **Estados**: Nuevo → Diseño enviado → Aprobado → **En producción** (descuenta) → Listo → Enviado → Entregado. Cancelado regresa stock.
 - **Exportar:** en Pedidos y Clientes, botón *Exportar CSV* (abre en Excel). Sirve también para llevar los datos a otro sistema.
@@ -102,7 +102,21 @@ Detalle completo y pruebas en `docs/SEGURIDAD.md`.
 - El sitio manda un **token**. Sin él, el pedido se rechaza.
 - Hay un campo oculto contra bots y un límite de 5 pedidos cada 10 minutos por número de WhatsApp.
 - Las fotos quedan **privadas** en tu Drive. La celda usa una copia incrustada; no se comparten.
+- Los archivos (fotos y comprobantes) se aceptan solo si sus primeros bytes coinciden con el tipo (JPG, PNG, WEBP, PDF); el correo del cliente debe cumplir una regla estricta; el sitio solo recibe mensajes de error conocidos (el detalle queda en *Ejecuciones*).
+- Drive, la lectura del comprobante y el correo se hacen **fuera** del candado de la hoja; si un pedido falla a medias, la carpeta temporal se manda a la papelera (si no se puede, queda una carpeta suelta en Drive: se puede borrar sin problema).
 - El token vive en el sitio, así que es visible para quien lo busque. Sirve contra spam simple, no contra ataques dirigidos. Si llega basura, cambia el token en *Config* y en `app.js`.
+
+## Cloudflare Turnstile (opcional, contra bots)
+
+Es un captcha gratis y casi invisible. Sin configurarlo todo funciona como siempre.
+
+1. En Cloudflare: **Turnstile › Add widget**. Pon el dominio del sitio, modo *Managed*. Copia la **Site key** y la **Secret key**.
+2. En `datos.js` pega la site key: `turnstileSiteKey: 'LA_SITE_KEY'`. (Cloudflare Pages ya permite el dominio en `_headers`.)
+3. En Apps Script: **Configuración del proyecto › Propiedades del script › Agregar propiedad**: nombre `TURNSTILE_SECRET`, valor la Secret key.
+4. **Implementar › Gestionar implementaciones › Nueva versión** (pega también el `appsscript.json` nuevo: agrega el permiso `script.external_request` para consultar a Cloudflare. Google pedirá autorizar una vez más: acéptalo corriendo cualquier función desde el editor, por ejemplo *probarCRM*).
+5. Haz un pedido de prueba. Para apagarlo: borra la propiedad `TURNSTILE_SECRET` (el servidor deja de pedirlo) y vacía `turnstileSiteKey`.
+
+Si ya hay site key en el sitio pero falta el secreto, el sitio pide la verificación pero el servidor no la revisa. Con secreto pero sin site key, **todos los pedidos se rechazan**: configura las dos cosas juntas.
 
 ## Límites de Google (cuenta gratis)
 
