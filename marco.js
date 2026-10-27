@@ -5,7 +5,7 @@
      <header data-marco="menu"></header> ... <footer data-marco="pie"></footer> <div data-marco="flotantes"></div>
    y en <body data-page="..."> dice cuál es (home, catalog, pedido, privacidad) para marcar el menú.
 
-   SI EL MENÚ NO APARECE: este archivo debe cargarse ANTES de app.js y DESPUÉS de los huecos (al final del body). */
+   SI EL MENÚ NO APARECE: este archivo debe cargarse ANTES de js/base.js y DESPUÉS de los huecos (al final del body). */
 (function marco() {
   const pagina = document.body.dataset.page || '';
   // en la página de inicio los enlaces a sus secciones no recargan la página

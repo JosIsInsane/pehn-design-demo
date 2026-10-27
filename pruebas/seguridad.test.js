@@ -523,9 +523,10 @@ prueba('Correo: regla estricta (nada de ?bcc=, saltos de línea ni sin punto)', 
   ok(s.hoja('Pedidos').length === 2);
 });
 
-prueba('Admin.html: los mailto: codifican el correo (CN-012)', () => {
-  ok(!/mailto:\$\{esc\(/.test(leerGs('Admin.html')), 'mailto con esc()');
-  ok((leerGs('Admin.html').match(/mailto:\$\{encodeURIComponent\(/g) || []).length === 2);
+prueba('Admin*.html: los mailto: codifican el correo (CN-012)', () => {
+  const crm = fsx.readdirSync(pathx.join(__dirname, '..', 'apps-script')).filter(f => /^Admin.*\.html$/.test(f)).map(leerGs).join('\n');
+  ok(!/mailto:\$\{esc\(/.test(crm), 'mailto con esc()');
+  ok((crm.match(/mailto:\$\{encodeURIComponent\(/g) || []).length === 2);
 });
 
 prueba('Archivos: la firma de bytes debe coincidir con el tipo declarado', () => {

@@ -172,69 +172,72 @@ function resumenDiario_() {
   const cfg = config_(), to = cfg['Correo del negocio'];
   if (!resumenActivo_(cfg) || !to) return;
   if (MailApp.getRemainingDailyQuota() < 1) { console.error('Sin cuota de correo para el resumen.'); return; }
-  const tz = Session.getScriptTimeZone(), negocio = cfg['Nombre del negocio'] || 'Pehn Design';
-  const html = conMemo_(() => {
-    const hoy = dia_(now_()), en3 = dia_(new Date(now_().getTime() + 3 * 864e5));
-    const pedidos = rows_('pedidos'), pagos = rows_('pagos');
-    const porId = {}; pedidos.forEach(p => { porId[String(p.ID)] = p; });
-    const mon = (n, p) => money_(n, (p && p.Moneda) || cfg.Moneda || 'HNL');
-    const li = a => `<ul style="padding-left:18px">${a.map(x => `<li>${x}</li>`).join('')}</ul>`;
-    const sec = (t, cuerpo) => `<h3 style="margin:18px 0 4px;font-size:15px">${t}</h3>${cuerpo}`;
-
-    // pedidos nuevos de hoy
-    const nuevos = pedidos.filter(p => dia_(p.Fecha) === hoy);
-    const vendido = nuevos.filter(p => p.Estado !== 'Cancelado').reduce((s, p) => s + (Number(p.Total) || 0), 0);
-    const filaPedido = p => {
-      const pg = resumenPago_(p, cfg);
-      return `<b>${esc_(p.ID)}</b> · ${esc_(p.Cliente)} · ${mon(p.Total, p)} · anticipo recibido ${mon(pg.pagado, p)} · ${esc_(p.Ciudad || '—')}${p['Para cuándo'] ? ' · para ' + esc_(dia_(p['Para cuándo']) || p['Para cuándo']) : ''}`;
-    };
-
-    // cobros de hoy: el primero que cubre el anticipo cuenta como anticipo; lo que sigue, como saldo
-    let anticipos = 0, saldos = 0;
-    const acum = {};
-    pagos.filter(x => PAGO_OK.includes(x.Resultado)).forEach(x => {
-      const p = porId[String(x.Pedido)], antes = acum[x.Pedido] || 0, m = Number(x['Monto leído']) || 0;
-      acum[x.Pedido] = antes + m;
-      if (dia_(x.Fecha) !== hoy) return;
-      const meta = p ? Math.round((Number(p.Total) || 0) * (Number(cfg['Anticipo (%)']) || 50) / 100) : 0;
-      if (antes < meta - 1) anticipos += m; else saldos += m;
-    });
-
-    // comprobantes por revisar (no coinciden / sin lectura; lo confirmado o rechazado ya no cuenta)
-    const revisar = pagos.filter(x => !PAGO_OK.includes(x.Resultado) && x.Resultado !== 'Rechazado');
-
-    // activos por estado y entregas próximas
-    const activos = pedidos.filter(p => !['Entregado', 'Cancelado'].includes(p.Estado));
-    const porEstado = ESTADOS.map(e => [e, activos.filter(p => (p.Estado || 'Nuevo') === e).length]).filter(x => x[1]);
-    const entregas = activos.filter(p => { const d = dia_(p['Para cuándo']); return d && d >= hoy && d <= en3; })
-      .sort((a, b) => dia_(a['Para cuándo']).localeCompare(dia_(b['Para cuándo'])));
-
-    // correos de cliente que no salieron hoy (falló o no hubo cuota)
-    const sinCorreo = nuevos.filter(p => /^Falló|^Sin correo \(/.test(String(p['Correo cliente'])));
-
-    const r = reporteStock_();
-    let h = `<div style="font-family:system-ui,sans-serif;max-width:640px;color:#1E1611">
-      <h2 style="font-family:Georgia,serif;font-weight:500;margin-bottom:4px">Resumen de hoy · ${esc_(negocio)}</h2>
-      <p style="margin:0;color:#5C4C41">${nuevos.length ? `<b>${nuevos.length}</b> pedido(s) nuevo(s) · vendido hoy <b>${mon(vendido)}</b>` : '<b>Sin pedidos hoy.</b>'}
-        ${anticipos || saldos ? `<br>Cobrado hoy: anticipos <b>${mon(anticipos)}</b> · saldos <b>${mon(saldos)}</b>` : ''}</p>`;
-    if (nuevos.length) h += sec('Pedidos nuevos', li(nuevos.map(filaPedido)));
-    if (revisar.length) h += sec(`Comprobantes por revisar (${revisar.length})`, li(revisar.slice(0, 20).map(x => `<b>${esc_(x.Pedido)}</b> · ${esc_(x.Resultado)} · leído ${x['Monto leído'] === '' ? '—' : mon(x['Monto leído'], porId[String(x.Pedido)])} · esperado ${mon(x.Esperado, porId[String(x.Pedido)])}`)) + '<p style="margin:0;font-size:13px">Confírmalos en el CRM › Pagos.</p>');
-    if (porEstado.length) h += sec('Pedidos activos por estado', li(porEstado.map(([e, n]) => `${esc_(e)}: <b>${n}</b>`)));
-    if (entregas.length) h += sec('Entregas en los próximos 3 días', li(entregas.map(p => `<b>${esc_(p.ID)}</b> · ${esc_(p.Cliente)} · ${esc_(dia_(p['Para cuándo']))} · ${esc_(p.Estado || 'Nuevo')}`)));
-    if (sinCorreo.length) h += sec('Correos al cliente que no salieron', li(sinCorreo.map(p => `<b>${esc_(p.ID)}</b> · ${esc_(p.Cliente)} · ${esc_(p.WhatsApp)} · ${esc_(p['Correo cliente'])} (escríbele por WhatsApp)`)));
-    if (r.faltantes.length) h += sec('Inventario: no alcanza para pedidos activos', li(r.faltantes.map(x => `<b>${esc_(x.sku)}</b> ${esc_(x.name)}: faltan ${x.falta} (hay ${x.stock}, se necesitan ${x.apartado})`)));
-    if (r.bajos.length) h += sec('Inventario: en el mínimo o debajo', li(r.bajos.map(x => `<b>${esc_(x.sku)}</b> ${esc_(x.name)}: ${x.stock} (mínimo ${x.min})`)));
-    if (!r.faltantes.length && !r.bajos.length) h += sec('Inventario', '<p style="margin:0">Todo en orden.</p>');
-    // el correo NO lleva la clave del CRM (los correos se reenvían y se guardan): se abre desde la hoja
-    h += `<p style="margin-top:20px"><a href="${esc_(ss_().getUrl())}">Abrir la hoja</a></p><p style="color:#8B7B6F;font-size:13px">Abre el CRM desde Pehn › Abrir CRM.</p></div>`;
-    return { h, n: nuevos.length };
-  });
+  const negocio = cfg['Nombre del negocio'] || 'Pehn Design';
+  const html = conMemo_(() => { const r = datosResumen_(cfg); return { h: htmlResumen_(r, cfg, negocio), n: r.nuevos.length }; });
   MailApp.sendEmail({
     to,
     subject: html.n ? `Resumen de hoy · ${html.n} pedido(s) · ${negocio}` : `Sin pedidos hoy · ${negocio}`,
     htmlBody: html.h,
     name: negocio,
   });
+}
+
+// cobros de hoy: el primero que cubre el anticipo cuenta como anticipo; lo que sigue, como saldo
+function cobrosDeHoy_(pagos, porId, hoy, cfg) {
+  let anticipos = 0, saldos = 0;
+  const acum = {};
+  pagos.filter(x => PAGO_OK.includes(x.Resultado)).forEach(x => {
+    const p = porId[String(x.Pedido)], antes = acum[x.Pedido] || 0, m = Number(x['Monto leído']) || 0;
+    acum[x.Pedido] = antes + m;
+    if (dia_(x.Fecha) !== hoy) return;
+    const meta = p ? Math.round((Number(p.Total) || 0) * (Number(cfg['Anticipo (%)']) || 50) / 100) : 0;
+    if (antes < meta - 1) anticipos += m; else saldos += m;
+  });
+  return { anticipos, saldos };
+}
+// lo que dice el resumen: pedidos de hoy, cobros, comprobantes, activos por estado, entregas próximas y correos caídos
+function datosResumen_(cfg) {
+  const hoy = dia_(now_()), en3 = dia_(new Date(now_().getTime() + 3 * 864e5));
+  const pedidos = rows_('pedidos'), pagos = rows_('pagos');
+  const porId = {}; pedidos.forEach(p => { porId[String(p.ID)] = p; });
+  const nuevos = pedidos.filter(p => dia_(p.Fecha) === hoy);
+  const vendido = nuevos.filter(p => p.Estado !== 'Cancelado').reduce((s, p) => s + (Number(p.Total) || 0), 0);
+  const { anticipos, saldos } = cobrosDeHoy_(pagos, porId, hoy, cfg);
+  // comprobantes por revisar (no coinciden / sin lectura; lo confirmado o rechazado ya no cuenta)
+  const revisar = pagos.filter(x => !PAGO_OK.includes(x.Resultado) && x.Resultado !== 'Rechazado');
+  // activos por estado y entregas próximas
+  const activos = pedidos.filter(p => !['Entregado', 'Cancelado'].includes(p.Estado));
+  const porEstado = ESTADOS.map(e => [e, activos.filter(p => (p.Estado || 'Nuevo') === e).length]).filter(x => x[1]);
+  const entregas = activos.filter(p => { const d = dia_(p['Para cuándo']); return d && d >= hoy && d <= en3; })
+    .sort((a, b) => dia_(a['Para cuándo']).localeCompare(dia_(b['Para cuándo'])));
+  // correos de cliente que no salieron hoy (falló o no hubo cuota)
+  const sinCorreo = nuevos.filter(p => /^Falló|^Sin correo \(/.test(String(p['Correo cliente'])));
+  return { nuevos, vendido, anticipos, saldos, revisar, porEstado, entregas, sinCorreo, porId, stock: reporteStock_() };
+}
+// el correo: una sección por cada cosa que hay que contar
+function htmlResumen_(r, cfg, negocio) {
+  const mon = (n, p) => money_(n, (p && p.Moneda) || cfg.Moneda || 'HNL');
+  const li = a => `<ul style="padding-left:18px">${a.map(x => `<li>${x}</li>`).join('')}</ul>`;
+  const sec = (t, cuerpo) => `<h3 style="margin:18px 0 4px;font-size:15px">${t}</h3>${cuerpo}`;
+  const filaPedido = p => {
+    const pg = resumenPago_(p, cfg);
+    return `<b>${esc_(p.ID)}</b> · ${esc_(p.Cliente)} · ${mon(p.Total, p)} · anticipo recibido ${mon(pg.pagado, p)} · ${esc_(p.Ciudad || '—')}${p['Para cuándo'] ? ' · para ' + esc_(dia_(p['Para cuándo']) || p['Para cuándo']) : ''}`;
+  };
+  const { nuevos, anticipos, saldos, revisar, porEstado, entregas, sinCorreo, porId, stock } = r;
+  let h = `<div style="font-family:system-ui,sans-serif;max-width:640px;color:#1E1611">
+      <h2 style="font-family:Georgia,serif;font-weight:500;margin-bottom:4px">Resumen de hoy · ${esc_(negocio)}</h2>
+      <p style="margin:0;color:#5C4C41">${nuevos.length ? `<b>${nuevos.length}</b> pedido(s) nuevo(s) · vendido hoy <b>${mon(r.vendido)}</b>` : '<b>Sin pedidos hoy.</b>'}
+        ${anticipos || saldos ? `<br>Cobrado hoy: anticipos <b>${mon(anticipos)}</b> · saldos <b>${mon(saldos)}</b>` : ''}</p>`;
+  if (nuevos.length) h += sec('Pedidos nuevos', li(nuevos.map(filaPedido)));
+  if (revisar.length) h += sec(`Comprobantes por revisar (${revisar.length})`, li(revisar.slice(0, 20).map(x => `<b>${esc_(x.Pedido)}</b> · ${esc_(x.Resultado)} · leído ${x['Monto leído'] === '' ? '—' : mon(x['Monto leído'], porId[String(x.Pedido)])} · esperado ${mon(x.Esperado, porId[String(x.Pedido)])}`)) + '<p style="margin:0;font-size:13px">Confírmalos en el CRM › Pagos.</p>');
+  if (porEstado.length) h += sec('Pedidos activos por estado', li(porEstado.map(([e, n]) => `${esc_(e)}: <b>${n}</b>`)));
+  if (entregas.length) h += sec('Entregas en los próximos 3 días', li(entregas.map(p => `<b>${esc_(p.ID)}</b> · ${esc_(p.Cliente)} · ${esc_(dia_(p['Para cuándo']))} · ${esc_(p.Estado || 'Nuevo')}`)));
+  if (sinCorreo.length) h += sec('Correos al cliente que no salieron', li(sinCorreo.map(p => `<b>${esc_(p.ID)}</b> · ${esc_(p.Cliente)} · ${esc_(p.WhatsApp)} · ${esc_(p['Correo cliente'])} (escríbele por WhatsApp)`)));
+  if (stock.faltantes.length) h += sec('Inventario: no alcanza para pedidos activos', li(stock.faltantes.map(x => `<b>${esc_(x.sku)}</b> ${esc_(x.name)}: faltan ${x.falta} (hay ${x.stock}, se necesitan ${x.apartado})`)));
+  if (stock.bajos.length) h += sec('Inventario: en el mínimo o debajo', li(stock.bajos.map(x => `<b>${esc_(x.sku)}</b> ${esc_(x.name)}: ${x.stock} (mínimo ${x.min})`)));
+  if (!stock.faltantes.length && !stock.bajos.length) h += sec('Inventario', '<p style="margin:0">Todo en orden.</p>');
+  // el correo NO lleva la clave del CRM (los correos se reenvían y se guardan): se abre desde la hoja
+  return h + `<p style="margin-top:20px"><a href="${esc_(ss_().getUrl())}">Abrir la hoja</a></p><p style="color:#8B7B6F;font-size:13px">Abre el CRM desde Pehn › Abrir CRM.</p></div>`;
 }
 
 function revisarStockMenu() {

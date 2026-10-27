@@ -9,7 +9,7 @@
  *   Inventory.gs  recetas, apartados y movimientos de stock
  *   Pagos.gs      Rastrear pedido y comprobantes del anticipo (lee el monto)
  *   Sitio.gs      colores, textos y fotos del sitio que se cambian desde el CRM
- *   Admin.gs      datos y acciones del CRM; Admin.html es la pantalla
+ *   Admin.gs      datos y acciones del CRM; Admin.html y AdminEstilos, AdminVistas y AdminJs*.html son la pantalla
  *
  * SI ALGO FALLA: menú Pehn › Revisar que todo funcione. Dice qué está mal y cómo arreglarlo.
  * Para cambiar una columna: agrégala AL FINAL de HEADERS (nunca en medio) y corre Pehn › Configurar hojas.
@@ -41,7 +41,7 @@ const HEADERS = {
   config: ['Ajuste', 'Valor', 'Para qué sirve'],
 };
 
-// El orden importa: el CRM calcula el avance con él. Si agregas uno, agrégalo también en los colores de Setup.gs y Admin.html (.st-*).
+// El orden importa: el CRM calcula el avance con él. Si agregas uno, agrégalo también en los colores de Setup.gs y AdminEstilos.html (.st-*).
 const ESTADOS = ['Nuevo', 'Diseño enviado', 'Aprobado', 'En producción', 'Listo', 'Enviado', 'Entregado', 'Cancelado'];
 
 // valores iniciales de la hoja Config (se pueden cambiar desde la hoja)
@@ -50,7 +50,7 @@ const CONFIG_DEFAULTS = [
   ['Correo del negocio', '', 'Recibe UN solo correo al día con el resumen (pedidos, cobros, entregas y stock). Los pedidos no avisan uno por uno: míralos en el CRM.'],
   ['Admins', '', 'Correos que pueden abrir el CRM sin la clave, separados por coma.'],
   ['WhatsApp del negocio', '', 'Con código de país, ej. 50498765432.'],
-  ['Token del sitio', '', 'Se genera solo. Cópialo en CONFIG.sheetsToken de app.js.'],
+  ['Token del sitio', '', 'Se genera solo. Cópialo en CONFIG.sheetsToken de datos.js.'],
   ['Clave del CRM', '', 'Se genera sola. Va en el enlace del CRM (?k=…). Cámbiala si el enlace se comparte de más.'],
   ['Estado que descuenta stock', 'En producción', 'Al llegar a este estado se descuentan las piezas.'],
   ['Confirmar al cliente por correo', 'Sí', 'Sí / No. Un solo correo al cliente por pedido, al confirmarlo.'],

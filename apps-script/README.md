@@ -47,7 +47,7 @@ Aun así, el código se protege solo:
 
 1. Crea una hoja nueva en Google Sheets. Menú **Extensiones › Apps Script**.
 2. Copia los archivos de esta carpeta en el editor, con el mismo nombre:
-   `Config.gs`, `Setup.gs`, `Orders.gs`, `Inventory.gs`, `Pagos.gs`, `Sitio.gs`, `Admin.gs` y `Admin.html` (este como archivo HTML).
+   `Config.gs`, `Setup.gs`, `Orders.gs`, `Inventory.gs`, `Pagos.gs`, `Sitio.gs`, `Admin.gs` y los archivos HTML del CRM: `Admin.html`, `AdminEstilos.html`, `AdminVistas.html` y los `AdminJs*.html` (Base, Servidor, Imagenes, Navegacion, Inicio, Pedidos, Ficha, Clientes, Inventario, Pagos, Sitio, Busqueda, Exportar, Eventos, Arranque). Cada uno se crea como archivo HTML con ese nombre (sin `.html`); `Admin.html` los pega con `incluir_()`.
    En **Configuración del proyecto** activa *Mostrar el archivo de manifiesto* y pega `appsscript.json`.
    En **Servicios (+)** agrega **Drive API** (para leer el monto de los comprobantes).
 3. Guarda, recarga la hoja y usa el menú **Pehn › Configurar hojas**. Acepta los permisos.
@@ -55,7 +55,7 @@ Aun así, el código se protege solo:
 4. **Implementar › Nueva implementación › App web**:
    - Ejecutar como: **Yo**
    - Quién tiene acceso: **Cualquier usuario**
-5. Menú **Pehn › Ver URL y token para el sitio**. Pega los dos valores en `app.js`:
+5. Menú **Pehn › Ver URL y token para el sitio**. Pega los dos valores en `datos.js`:
    ```js
    sheetsUrl: 'https://script.google.com/macros/s/…/exec',
    sheetsToken: '…',
@@ -104,7 +104,7 @@ Detalle completo y pruebas en `docs/SEGURIDAD.md`.
 - Las fotos quedan **privadas** en tu Drive. La celda usa una copia incrustada; no se comparten.
 - Los archivos (fotos y comprobantes) se aceptan solo si sus primeros bytes coinciden con el tipo (JPG, PNG, WEBP, PDF); el correo del cliente debe cumplir una regla estricta; el sitio solo recibe mensajes de error conocidos (el detalle queda en *Ejecuciones*).
 - Drive, la lectura del comprobante y el correo se hacen **fuera** del candado de la hoja; si un pedido falla a medias, la carpeta temporal se manda a la papelera (si no se puede, queda una carpeta suelta en Drive: se puede borrar sin problema).
-- El token vive en el sitio, así que es visible para quien lo busque. Sirve contra spam simple, no contra ataques dirigidos. Si llega basura, cambia el token en *Config* y en `app.js`.
+- El token vive en el sitio, así que es visible para quien lo busque. Sirve contra spam simple, no contra ataques dirigidos. Si llega basura, cambia el token en *Config* y en `datos.js`.
 
 ## Cloudflare Turnstile (opcional, contra bots)
 

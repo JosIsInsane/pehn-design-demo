@@ -73,12 +73,15 @@ function cargar(opts = {}) {
     return f;
   }
 
-  // plantilla de Apps Script: solo <?!= expr ?> (sin escapar), con las variables que se asignan al objeto
+  // archivo HTML del proyecto (HtmlService.createHtmlOutputFromFile): se entrega tal cual, sin evaluar
+  const archivoHtml = n => fs.readFileSync(path.join(__dirname, '..', 'apps-script', n + '.html'), 'utf8');
+  // plantilla de Apps Script: solo <?!= expr ?> (sin escapar). La expresión corre en el contexto del proyecto
+  // (así ve incluir_() y demás funciones de los .gs) con las variables que se asignan al objeto.
   function plantilla(n) {
     const t = {};
     t.evaluate = () => {
-      const src = fs.readFileSync(path.join(__dirname, '..', 'apps-script', n + '.html'), 'utf8');
-      const html = src.replace(/<\?!=([\s\S]*?)\?>/g, (_, e) => String(new Function(...Object.keys(t), 'return (' + e + ')')(...Object.values(t))));
+      const src = archivoHtml(n);
+      const html = src.replace(/<\?!=([\s\S]*?)\?>/g, (_, e) => String(vm.runInContext('(function (' + Object.keys(t).join(',') + ') { return (' + e + '); })', ctx)(...Object.values(t))));
       return { setTitle() { return this; }, addMetaTag() { return this; }, setWidth() { return this; }, setHeight() { return this; }, getContent: () => html };
     };
     return t;
@@ -107,7 +110,7 @@ function cargar(opts = {}) {
     DriveApp: { Access: {}, Permission: {}, createFolder: makeFolder, getFolderById: id => { const f = files.get(id); if (!f || !f.createFolder) throw new Error('no existe'); return f; }, getFileById: id => { const f = files.get(id); if (!f) throw new Error('no existe'); return f; } },
     MailApp: { sendEmail: m => { if (estado.falla) throw new Error(estado.falla); mails.push(m); }, getRemainingDailyQuota: () => estado.cuota },
     ContentService: { MimeType: { JSON: 'json' }, createTextOutput: s => ({ setMimeType() { return this; }, getContent: () => s }) },
-    HtmlService: { createHtmlOutput: h => ({ setTitle() { return this; }, getContent: () => h }), createTemplateFromFile: n => plantilla(n) },
+    HtmlService: { createHtmlOutput: h => ({ setTitle() { return this; }, getContent: () => h }), createHtmlOutputFromFile: n => ({ getContent: () => archivoHtml(n) }), createTemplateFromFile: n => plantilla(n) },
     ScriptApp: {
       getProjectTriggers: () => triggers.map(t => ({ getHandlerFunction: () => t.fn, _t: t })),
       deleteTrigger: tr => { const i = triggers.indexOf(tr._t); if (i >= 0) triggers.splice(i, 1); },

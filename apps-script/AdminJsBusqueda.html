@@ -1,0 +1,29 @@
+<script>
+/* Admin — BÚSQUEDA global
+   Cuadro de arriba: pedidos, clientes y piezas. Depende de: Base. */
+// ---------- búsqueda global ----------
+let gsSel = 0;
+function globalSearch() {
+  const q = $('#gs').value.trim().toLowerCase(), box = $('#gsRes');
+  if (!q) { box.hidden = true; $('.gs').setAttribute('aria-expanded', 'false'); return; }
+  const P = D.pedidos.filter(p => [p.id, p.cliente, p.wa, p.productos].join(' ').toLowerCase().includes(q)).slice(0, 5);
+  const C = D.clientes.filter(c => [c.nombre, c.wa, c.correo, c.ciudad, c.etiquetas].join(' ').toLowerCase().includes(q)).slice(0, 5);
+  const I = D.inventario.filter(i => (i.sku + ' ' + i.pieza).toLowerCase().includes(q)).slice(0, 5);
+  const sec = (t, a, f) => a.length ? `<h4>${t}</h4>` + a.map(f).join('') : '';
+  box.innerHTML = sec('Pedidos', P, p => `<button role="option" data-ped="${p.row}"><b>${esc(p.id)}</b> ${esc(p.cliente)}<small>${esc(p.estado)}</small></button>`)
+    + sec('Clientes', C, c => `<button role="option" data-cli="${esc(c.tel || c.nombre)}"><b>${esc(c.nombre)}</b> ${esc(c.wa)}<small>${c.pedidos.length} pedido${c.pedidos.length > 1 ? 's' : ''}</small></button>`)
+    + sec('Inventario', I, i => `<button role="option" data-go="inventario" data-iq="${esc(i.sku)}"><b>${esc(i.sku)}</b> ${esc(i.pieza)}<small>Stock ${i.stock}</small></button>`)
+    || '<p class="muted" style="padding:10px;margin:0">Sin resultados para esa búsqueda.</p>';
+  box.hidden = false; $('.gs').setAttribute('aria-expanded', 'true'); gsSel = 0; markSel();
+}
+function markSel() { const b = [...$('#gsRes').querySelectorAll('button')]; b.forEach((x, i) => x.classList.toggle('on', i === gsSel)); }
+$('#gs').addEventListener('input', globalSearch);
+$('#gs').addEventListener('keydown', e => {
+  const b = [...$('#gsRes').querySelectorAll('button')];
+  if (e.key === 'ArrowDown') { gsSel = Math.min(b.length - 1, gsSel + 1); markSel(); e.preventDefault(); }
+  else if (e.key === 'ArrowUp') { gsSel = Math.max(0, gsSel - 1); markSel(); e.preventDefault(); }
+  else if (e.key === 'Enter' && b[gsSel]) { b[gsSel].click(); e.preventDefault(); }
+  else if (e.key === 'Escape') { $('#gs').value = ''; globalSearch(); }
+});
+document.addEventListener('click', e => { if (!e.target.closest('.gs')) { $('#gsRes').hidden = true; $('.gs').setAttribute('aria-expanded', 'false'); } });
+</script>

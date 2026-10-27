@@ -1,0 +1,110 @@
+<script>
+/* Admin — FICHAS (cajón lateral)
+   Ficha de un pedido o de un cliente y mensajes de WhatsApp. Depende de: Base, Servidor, Pagos (pagadoDe). */
+function waNum(t) { const n = String(t).replace(/\D/g, ''); return n.length === 8 ? '504' + n : n; }
+// Google borra todo lo que sigue a dos barras seguidas en el código de la página: nunca escribirlas aquí
+const SL2 = String.fromCharCode(47, 47);
+const waLink = (t, txt) => `https:${SL2}wa.me/${waNum(t)}?text=${encodeURIComponent(txt)}`;
+const MSG = {
+  'Nuevo': p => `¡Hola ${p.cliente}! Recibimos tu pedido ${p.id} (${money(p.total, p.moneda)}). En un momento te mandamos tu diseño para aprobarlo.`,
+  'Diseño enviado': p => `¡Hola ${p.cliente}! Aquí va el diseño de tu pedido ${p.id}. ¿Lo aprobamos o cambiamos algo?`,
+  'Aprobado': p => `¡Listo ${p.cliente}! Tu diseño ${p.id} quedó aprobado. Te pasamos los datos de pago.`,
+  'En producción': p => `${p.cliente}, ya estamos armando tu pedido ${p.id}.`,
+  'Listo': p => `¡${p.cliente}, tu pedido ${p.id} está listo! ¿Coordinamos la entrega?`,
+  'Enviado': p => `${p.cliente}, tu pedido ${p.id} ya va en camino.`,
+  'Entregado': p => `¡Gracias ${p.cliente}! Esperamos que te encante tu pedido ${p.id}.`,
+  'Cancelado': p => `Hola ${p.cliente}, cancelamos tu pedido ${p.id}. Cualquier duda aquí estamos.`,
+};
+
+function drawer(sub, title, html, keep) {
+  $('#dSub').textContent = sub; $('#dTitle').textContent = title;
+  const sc = $('#dBody').scrollTop;
+  $('#dBody').innerHTML = html;
+  if (keep) $('#dBody').scrollTop = sc;
+  else { $('#det').classList.add('open'); $('#det').setAttribute('aria-hidden', 'false'); setTimeout(() => $('#det .x').focus(), 40); }
+  watchImgs();
+}
+function closeDrawer() { $('#det').classList.remove('open'); $('#det').setAttribute('aria-hidden', 'true'); UI.open = null; }
+
+// ---------- ficha de un pedido: cada bloque es una función ----------
+const pipelineHTML = p => { const E = D.estados, i = E.indexOf(p.estado); return `<div class="pipe" role="group" aria-label="Estado del pedido">${E.map((s, j) => `<button aria-pressed="${s === p.estado}" class="${j < i && p.estado !== 'Cancelado' ? 'done' : ''} ${s === D.gatillo ? 'trig' : ''}" data-mv="${p.row}" data-to="${esc(s)}">${esc(s)}</button>`).join('')}</div>`; };
+function accionesEstadoHTML(p) {
+  const nx = nextOf(p.estado);
+  return `<div class="actions" style="margin-top:14px">
+      ${nx ? `<button class="btn dark" data-mv="${p.row}" data-to="${esc(nx)}">Pasar a ${esc(nx)} →</button>` : ''}
+      <a class="btn wa" target="_blank" rel="noopener noreferrer" href="${waLink(p.wa, (MSG[p.estado] || MSG.Nuevo)(p))}">${ICON.wa.replace('<svg', '<svg width="16" height="16"')} WhatsApp: mensaje de “${esc(p.estado)}”</a>
+</div>`;
+}
+const infoPedidoHTML = p => `<div class="info">
+<div><small>WhatsApp</small>${esc(p.wa)}</div><div><small>Correo</small>${esc(p.correo || '—')}</div>
+      <div><small>Ciudad</small>${esc(p.ciudad || '—')}</div><div><small>Para cuándo</small>${esc(p.para || '—')}</div>
+      <div><small>Total</small><span class="money">${money(p.total, p.moneda)}</span></div><div><small>Inventario</small>${stockTag(p.stock)}</div>
+      <div><small>Pagado</small><span class="money">${money(pagadoDe(p.id), p.moneda)}</span> <span class="muted">de ${money(Math.round(p.total * D.anticipo / 100), p.moneda)} de anticipo</span></div><div><small>Saldo</small><span class="money">${money(Math.max(0, p.total - pagadoDe(p.id)), p.moneda)}</span></div>
+    </div>`;
+function enlacesPedidoHTML(p) {
+  const cli = D.clientes.find(c => c.tel === p.tel);
+  return `<div class="actions">${cli ? `<button class="btn sm" data-cli="${esc(cli.tel || cli.nombre)}">${ICON.user.replace('<svg', '<svg width="15" height="15"')} Ficha del cliente · ${cli.pedidos.length} pedido${cli.pedidos.length > 1 ? 's' : ''}</button>` : ''}
+      ${p.correo ? `<a class="btn sm" href="mailto:${encodeURIComponent(p.correo)}?subject=${encodeURIComponent('Tu pedido ' + p.id)}">Correo</a>` : ''}
+      ${urlSegura(p.carpeta) ? `<a class="btn sm" target="_blank" rel="noopener noreferrer" href="${esc(urlSegura(p.carpeta))}">Carpeta en Drive ↗</a>` : ''}</div>`;
+}
+const itemsPedidoHTML = p => `${p.items.map((it, j) => `<div class="item"><div class="ph">${p.previews[j] ? `<img data-img="${p.previews[j]}" data-zoom="${p.previews[j]}" data-name="${esc(p.id + '-' + (j + 1))}" alt="Vista previa de ${esc(it.product)}">` : '<span class="muted">Sin foto</span>'}</div>
+      <div><b>${esc(it.qty)} × ${esc(it.product)}</b> · <span class="money">${money(it.total, p.moneda)}</span>
+      <ul>${it.options.map(o => `<li>${o[1] ? `<b>${esc(o[0])}:</b> ${esc(o[1])}` : esc(o[0])}</li>`).join('')}</ul></div></div>`).join('') || '<p class="muted">Sin detalle de productos.</p>'}`;
+const notasInternasHTML = p => `<h3 class="sec">Piezas de inventario</h3>
+    <p style="white-space:pre-line;margin:0;color:var(--ink2)">${esc(p.piezas || '—')}</p>
+    <h3 class="sec">Notas internas</h3>
+    <textarea id="nota" aria-label="Notas internas" placeholder="Solo las ve tu equipo…">${esc(p.notas)}</textarea>
+    <p style="margin:8px 0 0"><button class="btn sm dark" id="saveNota" data-row="${p.row}">Guardar nota</button><span class="saved" id="notaOk"></span></p>`;
+function openPedido(p, keep) {
+  UI.open = { type: 'pedido', key: p.row };
+  drawer(`${p.id} · ${fdate(p.fecha)}`, p.cliente, `
+    ${pipelineHTML(p)}
+    ${accionesEstadoHTML(p)}
+    <p class="muted" style="font-size:12.5px;margin:8px 0 0">Al pasar a <b>${esc(D.gatillo)}</b> se descuenta el inventario. Al cancelar, se regresa.</p>
+    ${infoPedidoHTML(p)}
+    ${enlacesPedidoHTML(p)}
+    ${p.notasCliente ? `<div class="note"><b>Notas del cliente:</b> ${esc(p.notasCliente)}</div>` : ''}
+    <h3 class="sec">Productos</h3>
+    ${itemsPedidoHTML(p)}
+    ${notasInternasHTML(p)}`, keep);
+}
+
+function openCliente(c, keep) {
+  UI.open = { type: 'cliente', key: c.tel || c.nombre };
+  const ps = D.pedidos.filter(p => c.pedidos.includes(p.id));
+  drawer(`${c.pedidos.length} pedido${c.pedidos.length > 1 ? 's' : ''} · cliente desde ${fdate(c.primero, dshort)}`, c.nombre, `
+    <div class="actions"><a class="btn wa" target="_blank" rel="noopener noreferrer" href="${waLink(c.wa, '¡Hola ' + c.nombre + '! ')}">${ICON.wa.replace('<svg', '<svg width="16" height="16"')} Escribir por WhatsApp</a>${c.correo ? `<a class="btn" href="mailto:${encodeURIComponent(c.correo)}">Correo</a>` : ''}</div>
+    <div class="info">
+      <div><small>WhatsApp</small>${esc(c.wa)}</div><div><small>Correo</small>${esc(c.correo || '—')}</div>
+      <div><small>Ciudad</small>${esc(c.ciudad || '—')}</div><div><small>Total comprado</small><span class="money">${money(c.total)}</span></div>
+    </div>
+    <h3 class="sec">Etiquetas</h3>
+    <input class="in" id="cTags" value="${esc(c.etiquetas)}" placeholder="Ej. frecuente, mayoreo, boda…" autocomplete="off" aria-label="Etiquetas separadas por coma">
+    <h3 class="sec">Notas del cliente</h3>
+    <textarea id="cNotas" aria-label="Notas del cliente" placeholder="Gustos, tallas, fechas importantes…">${esc(c.notas)}</textarea>
+    <p style="margin:8px 0 0"><button class="btn sm dark" id="saveCli" data-key="${esc(c.tel || c.nombre)}">Guardar ficha</button><span class="saved" id="cliOk"></span></p>
+    <h3 class="sec">Pedidos</h3>
+    <div class="list">${ps.map(p => `<button class="li" data-ped="${p.row}"><span class="thumb">${p.previews[0] ? `<img data-img="${p.previews[0]}" alt="">` : ''}</span><div><b>${esc(p.id)} · ${esc(p.productos.split('\n')[0])}</b><small>${fdate(p.fecha)}</small></div><span class="money">${money(p.total, p.moneda)}</span><span class="tag ${stClass(p.estado)}">${esc(p.estado)}</span></button>`).join('')}</div>`, keep);
+}
+
+// ---------- clics ----------
+const ocultaBusqueda = () => { $('#gsRes').hidden = true; };
+async function guardarNota(d) {
+  $('#notaOk').textContent = 'Guardando…';
+  const ok = await act('nota', { row: +d.row, texto: $('#nota').value });
+  if ($('#notaOk')) $('#notaOk').textContent = ok ? 'Guardado ✓' : '';
+}
+async function guardarCliente(d) {
+  const c = D.clientes.find(x => (x.tel || x.nombre) === d.key);
+  const ok = await act('cliente', { row: c.row, tel: c.tel, nombre: c.nombre, correo: c.correo, ciudad: c.ciudad, etiquetas: $('#cTags').value, notas: $('#cNotas').value });
+  if ($('#cliOk')) $('#cliOk').textContent = ok ? 'Guardado ✓' : '';
+}
+CLICS.push(
+  [d => d.ped, d => { ocultaBusqueda(); openPedido(D.pedidos.find(p => p.row === +d.ped)); }],
+  [d => d.pid, d => { const p = D.pedidos.find(x => x.id === d.pid); if (p) openPedido(p); }],
+  [d => d.cli, d => { ocultaBusqueda(); const c = D.clientes.find(x => (x.tel || x.nombre) === d.cli); if (c) openCliente(c); }],
+  [d => d.x !== undefined, closeDrawer],
+  [(d, t) => t.id === 'saveNota', guardarNota],
+  [(d, t) => t.id === 'saveCli', guardarCliente],
+);
+</script>

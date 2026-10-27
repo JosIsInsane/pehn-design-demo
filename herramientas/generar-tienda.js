@@ -147,12 +147,12 @@ TIENDA.forEach(p => { PRODUCTS.push(p); CARDS.push({ id: p.id }); });
 `;
 fs.writeFileSync(path.join(RAIZ, 'datos-tienda.js'), js);
 
-// ---------- recetas (mismas claves que bomOf en app.js) ----------
+// ---------- recetas (mismas claves que bomOf en js/envio.js) ----------
 vm.runInContext(js, ctx); // suma los productos de la tienda a PRODUCTS del contexto
 const rec = new Map();
 // una clave puede gastar varias piezas (skus); sin piezas = no gasta inventario
 const addRec = (key, skus = [], qty = 1) => {
-  key = key.replace(/\u00a0/g, ' ').trim(); // igual que clean() en bomOf (app.js)
+  key = key.replace(/\u00a0/g, ' ').trim(); // igual que clean() en bomOf (js/envio.js)
   skus = [].concat(skus || []).filter(Boolean);
   skus.forEach(sku => { if (!bySku[sku]) throw new Error(`Receta "${key}" usa el SKU ${sku}, que no está en el CSV.`); });
   const prev = rec.get(key);

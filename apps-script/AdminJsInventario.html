@@ -1,0 +1,65 @@
+<script>
+/* Admin — vista INVENTARIO, RECETAS y MOVIMIENTOS
+   Stock por pieza, qué pieza gasta cada opción y el historial. Depende de: Base, Servidor. */
+function rInv() {
+  const I = D.inventario, q = $('#qI').value.trim().toLowerCase();
+  $('#kpiInv').innerHTML = [
+    kpi('Piezas', I.length, { sub: plural(new Set(I.map(i => i.cat).filter(Boolean)).size, 'categoría', 'categorías'), tone: 'brand', icon: 'box' }),
+    kpi('Por reponer', I.filter(i => i.stock <= i.min && i.stock > 0).length, { sub: 'En o bajo el mínimo', nav: 'data-fi="Reponer"', tone: 'sky', icon: 'clock' }),
+    kpi('Agotadas o faltan', I.filter(i => i.stock <= 0 || i.apartado > i.stock).length, { sub: 'Para pedidos activos', bad: true, nav: 'data-fi="Reponer"', tone: 'rose', icon: 'alert' }),
+    kpi('Valor del inventario', money(I.reduce((s, i) => s + i.stock * i.costo, 0)), { sub: 'Stock × costo unitario', tone: 'mint', icon: 'cash' }),
+  ].join('');
+  $('#pSub').textContent = 'Stock de cada pieza. Se descuenta solo cuando un pedido pasa a producción.';
+  const cats = ['Todos', 'Reponer', ...new Set(I.map(i => i.cat).filter(Boolean))];
+  $('#fI').innerHTML = cats.map(c => `<button aria-pressed="${c === UI.fI}" data-fi="${esc(c)}">${esc(c)}</button>`).join('');
+  const list = I.filter(i => UI.fI === 'Todos' || (UI.fI === 'Reponer' ? i.stock <= i.min || i.apartado > i.stock : i.cat === UI.fI)).filter(i => !q || (i.sku + ' ' + i.pieza + ' ' + i.proveedor).toLowerCase().includes(q));
+  $('#nI').textContent = list.length;
+  $('#inv').innerHTML = list.map(i => {
+    const st = i.stock <= 0 ? ['bad', 'Agotado'] : i.apartado > i.stock ? ['bad', `Faltan ${i.apartado - i.stock}`] : i.stock <= i.min ? ['warn', 'Reponer'] : ['ok', 'OK'];
+    return `<tr><td class="nw"><b>${esc(i.sku)}</b></td><td>${esc(i.pieza)}${i.proveedor ? `<br><small class="muted">${esc(i.proveedor)}</small>` : ''}</td><td class="muted">${esc(i.cat)}</td><td class="num">${i.apartado || ''}</td>
+      <td><span class="stepper"><button data-adj="${esc(i.sku)}" data-d="-1" aria-label="Restar 1 a ${esc(i.pieza)}">−</button><b>${i.stock}</b><button data-adj="${esc(i.sku)}" data-d="1" aria-label="Sumar 1 a ${esc(i.pieza)}">+</button></span></td>
+      <td class="num">${i.min}</td><td><span class="tag ${st[0]}">${st[1]}</span></td>
+      <td style="white-space:nowrap"><button class="btn sm" data-in="${esc(i.sku)}">Entrada…</button> <button class="btn sm ghost" data-edit="${esc(i.sku)}">Editar</button></td></tr>`;
+  }).join('') || '<tr><td colspan="8" class="empty">Sin piezas con este filtro.</td></tr>';
+}
+
+function rRec() {
+  const R = D.recetas, q = $('#qR').value.trim().toLowerCase();
+  $('#pSub').textContent = 'Qué pieza del inventario gasta cada opción que eligen en el sitio.';
+  $('#fR').innerHTML = ['Por asignar', 'Con pieza', 'Sin inventario', 'Todas'].map(t => `<button aria-pressed="${t === UI.fR}" data-fr="${t}">${t}<i>${R.filter(r => fit(r, t)).length}</i></button>`).join('');
+  const list = R.filter(r => fit(r, UI.fR)).filter(r => !q || r.clave.toLowerCase().includes(q));
+  $('#rec').innerHTML = list.map(r => `<tr><td>${esc(r.clave)}${r.notas ? `<br><small class="muted">${esc(r.notas)}</small>` : ''}</td>
+    <td><input class="in" list="skus" value="${esc(r.sku)}" data-rsku="${r.row}" aria-label="SKU para ${esc(r.clave)}" placeholder="Vacío = no usa inventario…" autocomplete="off" spellcheck="false"></td>
+    <td><input class="in" type="number" min="1" value="${r.qty}" data-rqty="${r.row}" aria-label="Cantidad"></td>
+    <td><button class="btn sm" data-rsave="${r.row}">Guardar</button></td></tr>`).join('') || `<tr><td colspan="4" class="empty">${UI.fR === 'Por asignar' ? 'Todo asignado. 👌' : 'Sin recetas.'}</td></tr>`;
+}
+function fit(r, t) { return t === 'Todas' || (t === 'Por asignar' ? /^Nueva/.test(r.notas) : t === 'Con pieza' ? !!r.sku : !r.sku && !/^Nueva/.test(r.notas)); }
+
+function rMovs() {
+  const q = $('#qM').value.trim().toLowerCase();
+  $('#pSub').textContent = 'Historial de cada entrada y salida de stock (últimos 120).';
+  $('#movs').innerHTML = D.movs.filter(m => !q || [m.sku, m.pieza, m.pedido, m.motivo].join(' ').toLowerCase().includes(q)).map(m => `<tr><td class="muted">${fdate(m.fecha)}</td><td class="nw"><b>${esc(m.sku)}</b></td><td>${esc(m.pieza)}</td><td class="num" style="color:${m.qty < 0 ? 'var(--bad)' : 'var(--ok)'};font-weight:600">${m.qty > 0 ? '+' : ''}${m.qty}</td><td class="num">${m.despues}</td><td>${esc(m.motivo)}</td><td>${m.pedido ? `<button class="btn sm ghost" data-pid="${esc(m.pedido)}">${esc(m.pedido)}</button>` : ''}</td><td class="muted">${esc(m.usuario)}</td></tr>`).join('') || '<tr><td colspan="8" class="empty">Sin movimientos todavía.</td></tr>';
+}
+
+// ---------- eventos ----------
+async function entradaDeMercancia(sku) {
+  const n = await ask({ title: `Entrada de ${sku}`, text: '¿Cuántas piezas llegaron?', input: 10, ok: 'Sumar al stock' });
+  if (n && +n) act('ajuste', { sku, delta: +n, motivo: 'Entrada de mercancía' }, `+${n} ${sku}`);
+}
+// pasa los datos de una pieza al formulario para editarla
+function editarPieza(sku) {
+  const i = D.inventario.find(x => x.sku === sku), f = $('#fPieza');
+  $('#addPieza').open = true;
+  ['sku', 'pieza', 'cat', 'stock', 'min', 'costo', 'proveedor'].forEach(k => { f.elements[k].value = i[k] ?? ''; });
+  f.elements.pieza.focus();
+}
+$('#fPieza').addEventListener('submit', async e => { e.preventDefault(); const f = Object.fromEntries(new FormData(e.target)); e.target.reset(); $('#addPieza').open = false; act('pieza', f, `${f.sku.toUpperCase()} guardada`); });
+[['#qI', rInv], ['#qR', rRec], ['#qM', rMovs]].forEach(([s, fn]) => $(s).addEventListener('input', fn));
+CLICS.push(
+  [d => d.adj, d => act('ajuste', { sku: d.adj, delta: +d.d, motivo: +d.d > 0 ? 'Ajuste +1 desde el CRM' : 'Ajuste −1 desde el CRM' }, 'Stock actualizado')],
+  [d => d.in, d => entradaDeMercancia(d.in)],
+  [d => d.edit, d => editarPieza(d.edit)],
+  [d => d.fr, d => { UI.fR = d.fr; rRec(); }],
+  [d => d.rsave, d => act('receta', { row: +d.rsave, sku: document.querySelector(`[data-rsku="${d.rsave}"]`).value, qty: +document.querySelector(`[data-rqty="${d.rsave}"]`).value }, 'Receta guardada')],
+);
+</script>

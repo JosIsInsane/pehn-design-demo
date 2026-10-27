@@ -69,7 +69,7 @@ function formatPedidos_() {
   sh.getRange(2, COL.pedidos.Fecha, sh.getMaxRows() - 1, 1).setNumberFormat('dd/mm/yyyy hh:mm');
   sh.hideColumns(COL.pedidos.Datos);
 
-  // mismos tonos que .st-* en Admin.html
+  // mismos tonos que .st-* en AdminEstilos.html
   const colors = { 'Nuevo': '#FDEBD6', 'Diseño enviado': '#E8E0F7', 'Aprobado': '#DCEAF6', 'En producción': '#FBEFC4', 'Listo': '#E0EBDB', 'Enviado': '#D6F0E4', 'Entregado': '#C9E8D2', 'Cancelado': '#F3D6D2' };
   const range = sh.getRange(2, COL.pedidos.Estado, sh.getMaxRows() - 1, 1);
   const rules = sh.getConditionalFormatRules().filter(r => !r.getRanges().some(x => x.getColumn() === COL.pedidos.Estado));
@@ -219,7 +219,7 @@ function revisarSistema() {
 function mostrarConexion() {
   const url = urlApp_() || '(primero publica: Implementar › Nueva implementación › App web)';
   const html = HtmlService.createHtmlOutput(`<div style="font:14px/1.6 system-ui;padding:8px">
-    <p><b>1.</b> En <code>app.js</code> pega:</p>
+    <p><b>1.</b> En <code>datos.js</code> pega:</p>
     <pre style="background:#F4EDE4;padding:12px;border-radius:10px;white-space:pre-wrap">sheetsUrl: '${url}',\nsheetsToken: '${config_()['Token del sitio']}',</pre>
     <p><b>2.</b> La app web debe estar publicada como <i>Ejecutar como: Yo</i> y <i>Quién tiene acceso: Cualquier usuario</i>.</p></div>`).setWidth(560).setHeight(260);
   SpreadsheetApp.getUi().showModalDialog(html, 'Conectar el sitio');

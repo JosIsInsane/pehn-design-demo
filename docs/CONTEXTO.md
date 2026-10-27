@@ -9,9 +9,9 @@ Pega esto al empezar: "Lee docs/CONTEXTO.md del repo JosIsInsane/pehn-design-dem
 - Commits: autor `Claude <noreply@anthropic.com>`.
 
 ## Archivos
-- Sitio: `index.html`, `catalogo.html`, `pedido.html` (Mis pedidos), `privacidad.html`, `marco.js` (menú/pie/carrito comunes), `datos.js` (productos y precios), `dibujos.js` (SVG), `app.js`, `styles.css`, `_headers` (CSP), `_redirects`.
-- Apps Script (`apps-script/`): `Config.gs`, `Setup.gs`, `Orders.gs`, `Inventory.gs`, `Pagos.gs`, `Sitio.gs`, `Admin.gs`, `Admin.html` (CRM), `appsscript.json`. Se pega a mano en el editor + Nueva versión.
-- Pruebas: `node pruebas/seguridad.test.js` (43, simulador de Apps Script) y `node pruebas/sitio.test.js` (punta a punta con Playwright).
+- Sitio: `index.html`, `catalogo.html`, `pedido.html` (Mis pedidos), `privacidad.html`, `marco.js` (menú/pie/carrito comunes), `datos.js` (productos y precios), `dibujos.js` (SVG), `js/` (módulos: `base` utilidades y estado `App`, `producto` precios, `modales`, `carrito`, `whatsapp`, `sitio`, `envio`, `turnstile`, `checkout`, `cajon`, `tarjetas`, `inicio`, `movimiento`, `aviso`, `arranque`, `pedidos`, `catalogo`, `catalogo-movil`, `zoom`, `personalizador` + `-form`, `-movil`, `-vista`, `-eventos`, `-cierre`), `css/` (`base`, `tarjetas`, `inicio`, `catalogo`, `personalizador`, `carrito`, `personalizador-movil`, `pedidos`, `legal`, `movimiento`), `_headers` (CSP y caché), `_redirects`. El orden de carga de cada página está en sus `<script>`; la cabecera de cada módulo dice de qué depende. Regla: nada de código escrito a mano pasa de 400 líneas (`pruebas/tamanos.test.js`).
+- Apps Script (`apps-script/`): `Config.gs`, `Setup.gs`, `Orders.gs`, `Inventory.gs`, `Pagos.gs`, `Sitio.gs`, `Admin.gs`, CRM en HTML partido con `incluir_()` (`Admin.html` esqueleto, `AdminEstilos.html`, `AdminVistas.html`, `AdminJs*.html` uno por vista), `appsscript.json`. Se pega a mano en el editor + Nueva versión.
+- Pruebas: `node pruebas/seguridad.test.js` (79, simulador de Apps Script), `node pruebas/precios.test.js`, `node pruebas/tamanos.test.js` y `node pruebas/sitio.test.js` (punta a punta con Playwright).
 - Docs: `docs/SEGURIDAD.md`, `docs/PLAN-CRM-Y-MENSAJES.md`, `docs/referencias-crm/` (estilo del CRM).
 
 ## Hecho
