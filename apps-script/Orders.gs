@@ -1,6 +1,6 @@
 /**
  * Recepción de pedidos del sitio (doPost): guarda fotos en Drive,
- * escribe Pedidos y Partidas, revisa stock y manda correos.
+ * escribe Pedidos y Partidas, revisa stock y manda UN correo al cliente (al negocio solo le llega el resumen diario).
  *
  * SI EL SITIO DICE "No se pudo enviar":
  *   "Token inválido"   -> el token de app.js no es el de Config › Token del sitio (Pehn › Ver URL y token).
@@ -113,7 +113,7 @@ function recibirPedido_(raw, cfg) {
     const sh = sheet_('pedidos');
     const row = [id, fecha, 'Nuevo', c.name, c.phone, c.email, c.city, c.date, textoProductos, textoPiezas,
       d.total, d.currency, '', folder.getUrl(), disp.texto, c.notes, '', fecha,
-      datosJson_({ items: d.items.map(stripImages_), piezas, descontado: false })];
+      datosJson_({ items: d.items.map(stripImages_), piezas, descontado: false }), ''];
     sh.appendRow(fila_(row));
     const r = sh.getLastRow();
     if (partidas[0] && partidas[0].prev) ponerImagen_(sh.getRange(r, COL.pedidos['Vista previa']), partidas[0].prev);
@@ -131,8 +131,8 @@ function recibirPedido_(raw, cfg) {
 
     // anticipo que mandó junto con el pedido
     let pago = null;
+    const esperado = Math.round(d.total * (Number(cfg['Anticipo (%)']) || 50) / 100);
     if (d.comprobante) {
-      const esperado = Math.round(d.total * (Number(cfg['Anticipo (%)']) || 50) / 100);
       try { pago = procesarComprobante_({ ID: id, Cliente: c.name, Moneda: d.currency }, d.comprobante, esperado, folder, cfg); }
       catch (err) { console.error('Comprobante no procesado:', err); } // el pedido no se pierde por esto
     }
@@ -141,8 +141,11 @@ function recibirPedido_(raw, cfg) {
     registrarClavesNuevas_(d.items);
     try { guardarCliente_(c, fecha); } catch (err) { console.error(err); } // nunca frena un pedido
 
-    // si el correo falla (límite de 100 al día) el pedido ya quedó guardado
-    try { correos_(id, d, partidas, disp, cfg); } catch (err) { console.error('Correo no enviado:', err); }
+    // un solo correo al cliente; si falla o no hay cuota, el pedido ya quedó guardado y se anota en la hoja
+    let marca;
+    try { marca = correoCliente_(id, d, partidas, cfg, pago, !!d.comprobante, esperado); }
+    catch (err) { console.error('Correo no enviado:', err); marca = 'Falló: ' + linea_(err && err.message || err, 80); }
+    try { sh.getRange(r, COL.pedidos['Correo cliente']).setValue(celda_(marca)); } catch (err) { console.error(err); }
     return { id, pago };
   });
 }
@@ -201,41 +204,51 @@ function ponerImagen_(cell, img) {
   }
 }
 
-function correos_(id, d, partidas, disp, cfg) {
+// Correo al cliente: uno solo por pedido. Devuelve la marca que se guarda en "Correo cliente":
+// 'Enviado' / 'Sin correo' / 'Sin correo (sin cuota hoy)'. Si el envío truena, lanza error (lo anota quien llama).
+function correoCliente_(id, d, partidas, cfg, pago, subioComprobante, anticipo) {
+  const c = d.customer;
+  if (!c.email || !yes_(cfg['Confirmar al cliente por correo'])) return 'Sin correo';
+  // deja 1 correo de reserva para el resumen del negocio
+  if (MailApp.getRemainingDailyQuota() < 2) return 'Sin correo (sin cuota hoy)';
   const negocio = cfg['Nombre del negocio'] || 'Pehn Design';
-  const c = d.customer, inline = {};
+  const pct = Number(cfg['Anticipo (%)']) || 50, moneda = d.currency, inline = {};
   const bloques = partidas.map(({ it, prev }, i) => {
     if (prev) inline['p' + i] = prev.blob.setName('p' + i);
     return `<tr><td style="padding:12px 0;vertical-align:top;width:130px">${prev ? `<img src="cid:p${i}" width="120" style="border-radius:10px;display:block">` : ''}</td>
       <td style="padding:12px;vertical-align:top"><b>${esc_(it.qty)} × ${esc_(it.product)}</b><br>
-      <span style="color:#5C4C41;font-size:13px">${esc_(opcionesTexto_(it.options)).replace(/\n/g, '<br>')}</span><br><b>${money_(it.total, d.currency)}</b></td></tr>`;
+      <span style="color:#5C4C41;font-size:13px">${esc_(opcionesTexto_(it.options)).replace(/\n/g, '<br>')}</span><br><b>${money_(it.total, moneda)}</b></td></tr>`;
   }).join('');
-  const tabla = `<table style="width:100%;border-collapse:collapse">${bloques}</table><p style="font-size:16px"><b>Total estimado: ${money_(d.total, d.currency)}</b></p>`;
+  const tabla = `<table style="width:100%;border-collapse:collapse">${bloques}</table><p style="font-size:16px"><b>Total: ${money_(d.total, moneda)}</b></p>`;
 
-  if (c.email && yes_(cfg['Confirmar al cliente por correo'])) {
-    const wa = cfg['WhatsApp del negocio'] ? `<p><a href="https://wa.me/${cfg['WhatsApp del negocio']}?text=${encodeURIComponent('Hola, mi pedido es ' + id)}" style="background:#1E1611;color:#fff;padding:12px 20px;border-radius:999px;text-decoration:none;display:inline-block">Escribir por WhatsApp</a></p>` : '';
-    MailApp.sendEmail({
-      to: c.email,
-      subject: `Recibimos tu pedido ${id} · ${negocio}`,
-      htmlBody: `<div style="font-family:system-ui,sans-serif;max-width:560px;color:#1E1611">
-        <h2 style="font-family:Georgia,serif;font-weight:500">¡Gracias, ${esc_(c.name)}!</h2>
-        <p>Tu pedido <b>${id}</b> ya está con nosotros. Te escribimos por WhatsApp al <b>${esc_(c.phone)}</b> con tu diseño para que lo apruebes antes de producir.</p>
-        ${tabla}${wa}<p style="color:#8B7B6F;font-size:12px">${negocio} · No se cobra nada hasta que apruebes tu diseño.</p></div>`,
-      inlineImages: inline,
-      name: negocio,
-    });
+  // estado del pago
+  const falta = Math.max(0, d.total - anticipo);
+  let estadoPago;
+  if (subioComprobante && pago && pago.resultado === 'Coincide') {
+    estadoPago = `Recibimos tu anticipo de <b>${money_(anticipo, moneda)}</b> (${pct}%). Falta <b>${money_(falta, moneda)}</b>, que pagas al final cuando tu pedido esté listo.`;
+  } else if (subioComprobante) {
+    estadoPago = `Estamos verificando tu anticipo de <b>${money_(anticipo, moneda)}</b> (${pct}%). Te avisamos por WhatsApp cuando lo confirmemos. El resto (<b>${money_(falta, moneda)}</b>) lo pagas al final, cuando tu pedido esté listo.`;
+  } else {
+    const banco = cfg['Datos bancarios'] ? `<br>${esc_(cfg['Datos bancarios'])}` : '';
+    estadoPago = `Para empezar paga el ${pct}% (<b>${money_(anticipo, moneda)}</b>) y súbelo en Mis pedidos o mándalo por WhatsApp.${banco}<br>El resto (<b>${money_(falta, moneda)}</b>) lo pagas al final, cuando tu pedido esté listo.`;
   }
-  const to = cfg['Correo del negocio'];
-  if (to) {
-    MailApp.sendEmail({
-      to,
-      subject: `Nuevo pedido ${id} · ${c.name} · ${money_(d.total, d.currency)}`,
-      htmlBody: `<div style="font-family:system-ui,sans-serif;max-width:620px">
-        <p><b>${esc_(c.name)}</b> · ${esc_(c.phone)} · ${esc_(c.email || 'sin correo')} · ${esc_(c.city)}${c.date ? ' · para el ' + esc_(c.date) : ''}</p>
-        ${c.notes ? `<p style="background:#FBEFC4;padding:10px;border-radius:8px">${esc_(c.notes)}</p>` : ''}
-        <p>Stock: <b>${esc_(disp.texto)}</b></p>${tabla}
-        <p><a href="${ss_().getUrl()}">Abrir la hoja</a></p></div>`,
-      inlineImages: inline,
-    });
-  }
+
+  const sitio = /^https?:\/\//i.test(String(cfg['Sitio web'] || '').trim()) ? String(cfg['Sitio web']).trim().replace(/\/+$/, '') : '';
+  const rastrear = sitio ? `<p><a href="${esc_(sitio)}/pedido.html?id=${encodeURIComponent(id)}" style="color:#1E1611">Ver mi pedido en Mis pedidos →</a></p>` : '';
+  const wa = cfg['WhatsApp del negocio'] ? `<p><a href="https://wa.me/${encodeURIComponent(cfg['WhatsApp del negocio'])}?text=${encodeURIComponent('Hola, mi pedido es ' + id)}" style="background:#1E1611;color:#fff;padding:12px 20px;border-radius:999px;text-decoration:none;display:inline-block">Escribir por WhatsApp</a></p>` : '';
+  MailApp.sendEmail({
+    to: c.email,
+    subject: `Recibimos tu pedido ${id} · ${negocio}`,
+    htmlBody: `<div style="font-family:system-ui,sans-serif;max-width:560px;color:#1E1611">
+      <h2 style="font-family:Georgia,serif;font-weight:500">¡Gracias, ${esc_(c.name)}!</h2>
+      <p style="margin:0">Recibimos tu pedido</p>
+      <p style="font-size:26px;font-weight:700;letter-spacing:.5px;margin:4px 0 14px">${esc_(id)}</p>
+      <p>Te escribimos por WhatsApp al <b>${esc_(c.phone)}</b> con tu diseño para que lo apruebes antes de producir.</p>
+      ${tabla}
+      <p style="background:#F4EDE4;padding:12px 14px;border-radius:10px">${estadoPago}</p>
+      ${rastrear}${wa}<p style="color:#8B7B6F;font-size:12px">${esc_(negocio)} · Guarda tu número de pedido para darle seguimiento.</p></div>`,
+    inlineImages: inline,
+    name: negocio,
+  });
+  return 'Enviado';
 }
