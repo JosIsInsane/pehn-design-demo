@@ -220,7 +220,7 @@ let tipT;
 function showTip() {
   const t = $('#zoomTip'); if (!t) return;
   try { if (sessionStorage.getItem('pehn_tip')) { t.classList.add('hide'); return; } sessionStorage.setItem('pehn_tip', '1'); } catch { }
-  t.textContent = matchMedia('(pointer: coarse)').matches ? 'Pellizca o toca dos veces para acercar' : 'Usa la rueda o doble clic para acercar';
+  t.textContent = matchMedia('(pointer: coarse)').matches ? 'Pellizca para acercar' : 'Usa la rueda o doble clic para acercar';
   t.classList.remove('hide'); clearTimeout(tipT); tipT = setTimeout(hideTip, 3200);
 }
 function hideTip() { $('#zoomTip')?.classList.add('hide'); }
@@ -282,6 +282,11 @@ function openCustom(id, cfg, qty = 1, editIdx = null, photo = null, photoPos = n
   const p = productoDe(id); if (!p) return;
   cur = { p, cfg: normCfg(p, cfg ? clone(cfg) : defaults(p)), qty, editIdx, fig: 0, step: 0, photo, photoPos, showPhoto: false };
   cur.start = JSON.stringify([cur.cfg, qty]);
+  // en el teléfono (≤ 760 px) es una página con su propio historial; en escritorio sigue el modal de siempre
+  cur.mov = MOV.matches; cur.sub = false; cur.stack = [{ step: 0, sub: false }]; cur.open = new Set(['pcara']);
+  $('#custom').classList.toggle('pg', cur.mov);
+  $('#custom .sheet').classList.remove('mini', 'kb');
+  if (cur.mov) { history.pushState({ pehn: 0 }, ''); cur.draft = editIdx === null ? cargarBorrador(p.id) : null; }
   $('#cCat').textContent = photo ? 'Inspirado en un pedido real' : catName(p.cat);
   $('#cTitle').textContent = p.name;
   $('#cDesc').textContent = p.desc;
@@ -294,6 +299,7 @@ function openCustom(id, cfg, qty = 1, editIdx = null, photo = null, photoPos = n
   openModal('#custom');
   requestAnimationFrame(() => { zReset(false); showTip(); });
   $('#cForm').scrollTop = 0;
+  if (cur.mov) { vvAjusta(); setTimeout(() => $('#cScreen').focus({ preventScroll: true }), 80); }
 }
 
 const plus = n => n > 0 ? `+${fmt(n)}` : n < 0 ? `−${fmt(-n)}` : '';
@@ -362,6 +368,7 @@ const qtyHTML = () => `<div class="grp row"><div class="grp-h"><span class="l">C
 const isLast = () => !cur.p.steps || cur.step === cur.p.steps.length - 1;
 
 function buildForm(dir = 0) {
+  if (cur.mov) return buildFormMov(dir);
   const { p } = cur;
   const form = $('#cForm');
   let html;
@@ -374,22 +381,197 @@ function buildForm(dir = 0) {
   form.innerHTML = html;
   if (dir) {
     const b = form.querySelector('.step-body');
-    b && b.animate([{ opacity: 0, transform: `translateX(${dir * 24}px)` }, { opacity: 1, transform: 'none' }], { duration: 260, easing: 'cubic-bezier(.22,1,.36,1)' });
+    b && slideIn(b, dir);
   }
   updateCTA();
 }
 
+// entra deslizando (con "menos movimiento" solo se funde)
+function slideIn(el, dir) {
+  el.animate([{ opacity: 0, transform: REDUCED ? 'none' : `translateX(${dir * 28}px)` }, { opacity: 1, transform: 'none' }], { duration: REDUCED ? 160 : 280, easing: 'cubic-bezier(.22,1,.36,1)' });
+}
+
 function updateCTA() {
   const label = $('#addLabel');
-  if (!isLast()) label.textContent = `Siguiente: ${cur.p.steps[cur.step + 1]}`;
+  if (cur.mov) { $('#backBtn').hidden = cur.sub || cur.step === 0; }
+  if (cur.mov && cur.sub) label.textContent = 'Listo';
+  else if (!isLast()) label.textContent = `Siguiente: ${cur.p.steps[cur.step + 1]}`;
   else label.textContent = !CONFIG.ordersEnabled ? 'Pedir por WhatsApp' : cur.editIdx === null ? 'Agregar al pedido' : 'Guardar cambios';
-  $('#addBtn').classList.toggle('is-next', !isLast());
+  $('#addBtn').classList.toggle('is-next', !isLast() && !(cur.mov && cur.sub));
+}
+
+/* ---------- personalizador en el teléfono: una página con historial ----------
+   Cada pantalla (paso o figura) es una entrada del historial: el botón Atrás del navegador o del gesto de Android
+   regresa una pantalla y, desde la primera, cierra la página. Lo elegido se conserva; si se sale con cambios
+   sin guardar en el carrito, queda un borrador en sessionStorage y se ofrece al volver a abrir ese producto. */
+const MOV = matchMedia('(max-width:760px)');
+const KEY_BORRADOR = 'pehn_borrador';
+const bor = () => { try { return JSON.parse(sessionStorage.getItem(KEY_BORRADOR)) || {}; } catch { return {}; } };
+const cargarBorrador = id => { const d = bor()[id]; return d && d.cfg ? d : null; };
+function guardarBorrador() {
+  try { sessionStorage.setItem(KEY_BORRADOR, JSON.stringify({ ...bor(), [cur.p.id]: { cfg: cur.cfg, qty: cur.qty, step: cur.step } })); } catch { /* sin almacenamiento: no hay borrador */ }
+}
+function quitarBorrador(id) { try { const b = bor(); delete b[id]; sessionStorage.setItem(KEY_BORRADOR, JSON.stringify(b)); } catch { } }
+
+// secciones de una figura (ids de FIG_GROUPS)
+const SECS = [
+  ['cara', 'Cara y cabello', ['skin', 'hair', 'hairColor', 'face', 'extras']],
+  ['ropa', 'Ropa', ['outfit', 'torso', 'printText', 'legs']],
+  ['acc', 'Accesorios', ['hat', 'hand']],
+  ['nombre', 'Nombre', ['name']],
+];
+const figLab = (f, id) => optLabel(FIG_GROUPS.find(g => g.id === id), f[id]);
+function secSum(k, f) {
+  if (k === 'cara') return `Peinado: ${figLab(f, 'hair')} · ${figLab(f, 'face')}`;
+  if (k === 'ropa') return figLab(f, 'outfit');
+  if (k === 'acc') {
+    const l = [f.hat && f.hat !== 'ninguno' && `Sombrero: ${figLab(f, 'hat')}`, f.hand && f.hand !== 'ninguno' && figLab(f, 'hand')].filter(Boolean);
+    return l.length ? l.join(' · ') : 'Sin accesorios';
+  }
+  return String(f.name || '').trim() || 'Sin nombre';
+}
+function secHTML(groups, cfg, sc) {
+  const used = new Set();
+  const secs = SECS.map(([k, t, ids]) => {
+    const gs = groups.filter(g => ids.includes(g.id)); gs.forEach(g => used.add(g.id));
+    if (!gs.some(g => visible(g, cfg))) return '';
+    const key = sc + k, open = cur.open.has(key);
+    return `<section class="fsec${open ? ' open' : ''}"><h3><button type="button" class="sec-h" data-sec="${key}" aria-expanded="${open}" aria-controls="sec_${key}"><span class="sec-t">${t}</span><span class="sec-s" data-secsum="${k}" data-sc="${sc}">${esc(secSum(k, cfg))}</span><span class="chev" aria-hidden="true">▾</span></button></h3><div class="sec-b" id="sec_${key}"${open ? '' : ' hidden'}>${gs.map(g => groupHTML(g, cfg, sc)).join('')}</div></section>`;
+  }).join('');
+  return secs + groups.filter(g => !used.has(g.id)).map(g => groupHTML(g, cfg, sc)).join('');
+}
+const figName = j => String(cur.cfg.figs[j].name || '').trim();
+function figListHTML(g) {
+  const v = cur.cfg.figs;
+  return `<div class="grp figs-grp"><div class="grp-h"><span class="l">${g.label}</span><em>${v.length} de ${g.max} · ${fmt(g.pricePer)} c/u</em></div>
+    <ul class="figlist">${v.map((x, j) => `<li><button type="button" class="figrow" data-figopen="${j}"><span class="av">${headSVG(x)}</span><span class="fi"><b>Figura ${j + 1}${figName(j) ? ' · ' + esc(figName(j)) : ''}</b><small>${esc(figLab(x, 'hair'))}, ${esc(figLab(x, 'outfit'))}</small></span><span class="go" aria-hidden="true">Editar ›</span></button></li>`).join('')}</ul>
+    ${v.length < g.max ? `<button type="button" class="btn btn-ghost add-fig-m" data-sc="p" data-g="${g.id}" data-d="1">+ Agregar figura</button>` : ''}</div>`;
+}
+function figSubHTML() {
+  const g = cur.p.groups.find(x => x.type === 'figs'), v = cur.cfg.figs, f = v[cur.fig];
+  return `<div class="looks-wrap"><p class="looks-t">Estilos rápidos</p><div class="looks">${LOOKS.map((l, j) => `<button type="button" data-look="${j}">${l.label}</button>`).join('')}</div></div>
+    ${secHTML(FIG_GROUPS, f, 'f')}
+    ${v.length > g.min ? `<button type="button" class="rm del-fig" data-sc="p" data-g="${g.id}" data-d="-1">Quitar ${esc(figName(cur.fig) || 'esta figura')}</button>` : ''}`;
+}
+function draftHTML() {
+  return `<div class="draft" role="group" aria-label="Diseño sin terminar"><p><b>Tienes un diseño sin terminar</b><br>Lo dejaste a medias la última vez.</p>
+    <div><button type="button" class="btn btn-dark btn-sm" data-draft="si">Seguir con tu diseño</button><button type="button" class="btn btn-ghost btn-sm" data-draft="no">Empezar de nuevo</button></div></div>`;
+}
+
+function buildFormMov(dir = 0) {
+  const { p } = cur, form = $('#cForm'), y = form.scrollTop;
+  let html = cur.draft ? draftHTML() : '';
+  if (cur.sub) html += `<div class="step-body sub">${figSubHTML()}</div>`;
+  else {
+    const s = cur.step, inline = p.groups.some(g => g.id === 'extras');
+    const gs = p.steps ? p.groups.filter(g => (g.step || 0) === s) : p.groups;
+    if (p.steps) html += `<nav class="steps-nav" aria-label="Pasos"><span class="bar" style="--p:${(s + 1) / p.steps.length}"></span>${p.steps.map((t, i) => `<button type="button" data-step="${i}" ${i === s ? 'aria-current="step"' : ''} class="${i < s ? 'done' : ''}"><i>${i < s ? '✓' : i + 1}</i><span>${t}</span></button>`).join('')}</nav>`;
+    const body = inline ? secHTML(gs, cur.cfg, 'p') : gs.map(g => g.type === 'figs' ? figListHTML(g) : groupHTML(g, cur.cfg, 'p')).join('');
+    html += `<div class="step-body">${body}${!p.steps || isLast() ? qtyHTML() : ''}</div>`;
+  }
+  form.innerHTML = html;
+  if (dir) { const b = form.querySelector('.step-body'); b && slideIn(b, dir); form.scrollTop = 0; } else form.scrollTop = y;
+  updateCTA(); updateBar();
+}
+function updateBar() {
+  const { p } = cur, n = p.steps ? p.steps.length : 0;
+  $('#cScreen').textContent = cur.sub ? `Figura ${cur.fig + 1}` : p.name;
+  const paso = n ? `Paso ${cur.step + 1} de ${n} · ${p.steps[cur.step]}` : (cur.photo ? 'Inspirado en un pedido real' : catName(p.cat));
+  $('#cSub').textContent = cur.sub ? `${figName(cur.fig) ? figName(cur.fig) + ' · ' : ''}${paso}` : paso;
+}
+// después de cada cambio: los encabezados de las secciones muestran la elección actual
+function syncSecs() {
+  document.querySelectorAll('#cForm [data-secsum]').forEach(el => { el.textContent = secSum(el.dataset.secsum, el.dataset.sc === 'f' ? cur.cfg.figs[cur.fig] : cur.cfg); });
+  if (cur.sub) updateBar();
+}
+
+// ir a otra pantalla: se agrega al historial para que Atrás regrese aquí
+function irA(step, sub = false) {
+  const dir = sub || step > cur.step ? 1 : -1;
+  cur.step = step; cur.sub = sub; cur.stack.push({ step, sub });
+  history.pushState({ pehn: cur.stack.length - 1 }, '');
+  pantalla(dir);
+}
+function pantalla(dir) {
+  if (cur.sub) cur.open = new Set(['fcara']);
+  if (cur.sub || cur.step) cur.draft = null;
+  buildForm(dir);
+  $('#cScreen').focus({ preventScroll: true });
+  $('#custom .sheet').classList.remove('mini'); $('#custom .sheet').classList.toggle('sub', cur.sub);
+  if (cur.sub) enfocaFig(); else if (Z.s > 1) zReset();
+}
+function atras() { if (cur.stack.length > 1) history.back(); else cerrarPagina(); }
+// cierra la página: se regresa en el historial a donde estaba antes de abrirla (el popstate hace el resto)
+function cerrarPagina() {
+  if (!cur.mov) return tryCloseCustom();
+  history.go(-cur.stack.length);
+  setTimeout(() => { if ($('#custom').classList.contains('open')) salirPagina(); }, 600);
+}
+function salirPagina() {
+  if (!$('#custom').classList.contains('open')) return;
+  if (dirty() && !cur.done) { guardarBorrador(); toast('Guardamos tu diseño para que sigas luego'); }
+  closeModal('#custom');
+}
+addEventListener('popstate', e => {
+  if (!cur || !cur.mov || !$('#custom').classList.contains('open')) return;
+  const i = e.state && e.state.pehn;
+  if (typeof i !== 'number') return salirPagina();
+  if (i >= cur.stack.length) { history.replaceState({ pehn: cur.stack.length - 1 }, ''); return; } // "adelante" del navegador: no hay nada más
+  cur.stack.length = i + 1;
+  const t = cur.stack[i]; cur.step = t.step; cur.sub = t.sub;
+  pantalla(-1);
+});
+addEventListener('pagehide', () => { if (cur?.mov && $('#custom').classList.contains('open') && dirty() && !cur.done) guardarBorrador(); });
+
+(function initPaginaMov() {
+  const form = $('#cForm'), sheet = $('#custom .sheet'), prev = $('#cPreview'); if (!form) return;
+  // la vista previa se encoge al bajar por las opciones, y al tocarla vuelve a crecer
+  form.addEventListener('scroll', () => {
+    if (!cur?.mov || sheet.classList.contains('kb')) return;
+    const st = form.scrollTop, mini = sheet.classList.contains('mini');
+    if (!mini && st > 70 && form.scrollHeight - form.clientHeight - (prev.offsetHeight - 84) > 90) sheet.classList.add('mini');
+    else if (mini && st < 10) sheet.classList.remove('mini');
+  }, { passive: true });
+  prev.addEventListener('click', e => {
+    if (!cur?.mov || !sheet.classList.contains('mini') || e.target.closest('button')) return;
+    form.scrollTo({ top: 0, behavior: REDUCED ? 'auto' : 'smooth' });
+  });
+  // teclado: la vista previa se achica y el campo se centra para que no lo tape
+  form.addEventListener('focusin', e => {
+    if (!cur?.mov || !e.target.matches('input,textarea')) return;
+    sheet.classList.add('kb');
+    setTimeout(() => e.target.scrollIntoView({ block: 'center', behavior: REDUCED ? 'auto' : 'smooth' }), 250);
+  });
+  form.addEventListener('focusout', () => setTimeout(() => { if (!document.activeElement?.matches?.('#cForm input,#cForm textarea')) sheet.classList.remove('kb'); }, 120));
+  // el teclado del teléfono recorta la vista: la página mide lo que de verdad se ve
+  window.visualViewport?.addEventListener('resize', vvAjusta);
+  window.visualViewport?.addEventListener('scroll', vvAjusta);
+  $('#cBack').addEventListener('click', atras);
+  $('#backBtn').addEventListener('click', atras);
+  if (window.ResizeObserver) new ResizeObserver(() => { if (cur?.mov) cur.sub ? enfocaFig() : zApply(); }).observe(zArea());
+})();
+function vvAjusta() {
+  const v = window.visualViewport, s = $('#custom').style;
+  if (!cur?.mov || !v) { s.removeProperty('--vvh'); s.removeProperty('--vvt'); return; }
+  s.setProperty('--vvh', Math.round(v.height) + 'px'); s.setProperty('--vvt', Math.round(v.offsetTop) + 'px');
+}
+// acerca la vista previa a la figura que se edita (solo en el cuadro)
+function enfocaFig() {
+  const area = zArea(), svg = $('#cStage svg.frame-svg');
+  if (!area || !svg || cur.p.render !== 'frame' || !cur.cfg.figs[cur.fig]) return;
+  const W = area.clientWidth, H = area.clientHeight, a = area.getBoundingClientRect();
+  Z.s = 1; Z.x = 0; Z.y = 0; zApply(false);
+  const r = svg.getBoundingClientRect(), k = Math.min(r.width, r.height) / 300;
+  const ox = r.left - a.left + (r.width - 300 * k) / 2, oy = r.top - a.top + (r.height - 300 * k) / 2;
+  const b = frameFigBox(cur.cfg, cur.fig);
+  const s = Math.max(1.3, Math.min(3.4, H * .86 / (b.h * k)));
+  Z.s = s; Z.x = W / 2 - (ox + (b.x + b.w / 2) * k) * s; Z.y = H / 2 - (oy + (b.y + b.h * .5) * k) * s; zApply(true);
 }
 
 const target = sc => sc === 'f' ? cur.cfg.figs[cur.fig] : cur.cfg;
 const groupsOf = sc => sc === 'f' ? FIG_GROUPS : cur.p.groups;
 
-let lastPrice = null, priceRAF = 0;
+let lastPrice = null, priceRAF = 0, liveT;
 function animatePrice(to) {
   const el = $('#cTotal');
   if (lastPrice === null || lastPrice === to) { el.textContent = fmt(to); lastPrice = to; return; }
@@ -417,6 +599,7 @@ function update(first = false, quiet = false) {
   const { lines, unit } = priceOf(p, cfg);
   const t = lineTotal(unit, qty);
   animatePrice(t.total);
+  clearTimeout(liveT); liveT = setTimeout(() => { const l = $('#cLive'); if (l) l.textContent = `Total ${fmt(t.total)}`; }, 700);
   $('#cBreak').innerHTML = `<ul>${lines.map(l => `<li><span>${esc(l.label)}</span><b>${l.price < 0 ? '−' + fmt(-l.price) : fmt(l.price)}</b></li>`).join('')}
     ${qty > 1 ? `<li><span>Cantidad</span><b>× ${qty}</b></li>` : ''}${t.disc ? `<li class="disc"><span>Descuento ${CONFIG.bulkPct}%</span><b>−${fmt(t.disc)}</b></li>` : ''}</ul>`;
 }
@@ -424,7 +607,23 @@ function update(first = false, quiet = false) {
 $('#cForm')?.addEventListener('click', e => {
   const b = e.target.closest('button'); if (!b) return;
   if (b.dataset.tab !== undefined) { cur.fig = +b.dataset.tab; buildForm(); return; }
-  if (b.dataset.step !== undefined) { const n = +b.dataset.step, d = Math.sign(n - cur.step); cur.step = n; buildForm(d); $('#cForm').scrollTop = 0; return; }
+  if (b.dataset.sec) { // sección plegable
+    const k = b.dataset.sec, open = !cur.open.has(k), body = document.getElementById('sec_' + k);
+    open ? cur.open.add(k) : cur.open.delete(k);
+    b.setAttribute('aria-expanded', open); b.closest('.fsec').classList.toggle('open', open); body.hidden = !open;
+    if (open && !REDUCED) body.animate([{ opacity: 0, transform: 'translateY(-6px)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: 'ease-out' });
+    return;
+  }
+  if (b.dataset.figopen !== undefined) { cur.fig = +b.dataset.figopen; irA(cur.step, true); return; }
+  if (b.dataset.draft) { // borrador de la vez pasada
+    const d = cur.draft; cur.draft = null;
+    if (b.dataset.draft === 'si') {
+      cur.cfg = normCfg(cur.p, clone(d.cfg)); cur.qty = d.qty || 1; cur.fig = 0;
+      if (cur.p.steps && d.step > 0 && d.step < cur.p.steps.length) { cur.step = d.step; cur.stack[0].step = d.step; }
+    } else quitarBorrador(cur.p.id);
+    buildForm(); update(); return;
+  }
+  if (b.dataset.step !== undefined) { if (cur.mov) { if (+b.dataset.step !== cur.step) irA(+b.dataset.step); return; } const n = +b.dataset.step, d = Math.sign(n - cur.step); cur.step = n; buildForm(d); $('#cForm').scrollTop = 0; return; }
   if (b.dataset.qty) { cur.qty = Math.max(1, Math.min(99, cur.qty + +b.dataset.qty)); buildForm(); update(false, true); return; }
   if (b.dataset.look !== undefined) {
     const f = cur.cfg.figs[cur.fig];
@@ -459,15 +658,18 @@ $('#cForm')?.addEventListener('click', e => {
   if (b.dataset.clear) { obj[id] = ''; obj[id + 'Name'] = ''; }
   else if (b.dataset.d && g.type === 'figs') {
     const arr = obj[id];
-    if (+b.dataset.d > 0 && arr.length < g.max) { arr.push(figDefault(arr.length)); cur.fig = arr.length - 1; }
+    if (+b.dataset.d > 0 && arr.length < g.max) { arr.push(figDefault(arr.length)); cur.fig = arr.length - 1; if (cur.mov) { buildForm(); update(); irA(cur.step, true); return; } }
     else if (+b.dataset.d < 0 && arr.length > g.min) {
       const at = cur.fig, [gone] = arr.splice(at, 1); cur.fig = Math.max(0, at - 1);
       toast(`Quitaste a ${String(gone.name || '').trim() || 'la figura ' + (at + 1)}`, { label: 'Deshacer', run: () => { arr.splice(at, 0, gone); cur.fig = at; buildForm(); update(); } });
+      if (cur.mov && cur.sub) { update(); history.back(); return; } // la figura ya no existe: de vuelta a la lista
     }
   } else if (b.dataset.d) obj[id] = Math.max(g.min, Math.min(g.max, obj[id] + Number(b.dataset.d)));
   const y = $('#cForm').scrollTop; buildForm(); $('#cForm').scrollTop = y; update();
 });
 $('#cForm')?.addEventListener('submit', e => e.preventDefault());
+// teléfono: los encabezados de las secciones siguen lo que se elige (corre después de los manejadores de arriba)
+$('#cForm')?.addEventListener('click', () => { if (cur?.mov) syncSecs(); });
 $('#cForm')?.addEventListener('input', e => {
   const el = e.target; if (!el.dataset.t) return;
   const sc = el.dataset.sc, id = el.dataset.g, g = groupsOf(sc).find(x => x.id === id);
@@ -478,6 +680,7 @@ $('#cForm')?.addEventListener('input', e => {
   // nombre de figura: refresca la pestaña sin perder el foco
   if (sc === 'f' && id === 'name') { const tab = document.querySelector(`[data-tab="${cur.fig}"] .nm`); if (tab) tab.textContent = el.value.trim() || 'Figura ' + (cur.fig + 1); }
   update(false, true);
+  if (cur.mov) syncSecs();
 });
 $('#cForm')?.addEventListener('change', e => {
   const el = e.target; if (!el.dataset.file || !el.files[0]) return;
@@ -517,7 +720,8 @@ $('#refBtn')?.addEventListener('click', () => {
 });
 
 $('#addBtn')?.addEventListener('click', () => {
-  if (!isLast()) { cur.step++; buildForm(1); $('#cForm').scrollTop = 0; return; }
+  if (cur.mov && cur.sub) return atras(); // "Listo": de vuelta a la lista de figuras
+  if (!isLast()) { if (cur.mov) return irA(cur.step + 1); cur.step++; buildForm(1); $('#cForm').scrollTop = 0; return; }
   if (!CONFIG.ordersEnabled) {
     window.open(waURL(waText(cur.p, cur.cfg, cur.qty)), '_blank', 'noopener');
     return;
@@ -526,8 +730,9 @@ $('#addBtn')?.addEventListener('click', () => {
   cur.start = JSON.stringify([cur.cfg, cur.qty]);
   const isNew = cur.editIdx === null;
   if (isNew) cart.push(item); else cart[cur.editIdx] = item;
+  cur.done = true; quitarBorrador(cur.p.id);
   flyToCart();
-  saveCart(); closeModal('#custom');
+  saveCart(); cur.mov ? cerrarPagina() : closeModal('#custom');
   toast(isNew ? '¡Agregado a tu pedido! ✦' : 'Cambios guardados');
 });
 
@@ -920,10 +1125,11 @@ async function api(accion, data) {
 /* ---------- cambios sin guardar ---------- */
 const dirty = () => cur && JSON.stringify([cur.cfg, cur.qty]) !== cur.start;
 function tryCloseCustom() {
+  if (cur?.mov) return cerrarPagina();
   if (!dirty() || !$('#leave')) return closeModal('#custom');
   const l = $('#leave'); l.hidden = false; l.querySelector('[data-stay]').focus();
 }
-addEventListener('beforeunload', e => { if ($('#custom')?.classList.contains('open') && dirty()) { e.preventDefault(); e.returnValue = ''; } });
+addEventListener('beforeunload', e => { if ($('#custom')?.classList.contains('open') && dirty() && !cur.mov) { e.preventDefault(); e.returnValue = ''; } });
 
 /* ---------- modales (entrada y salida animadas) ---------- */
 let lastFocus = null;
@@ -975,7 +1181,7 @@ document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   if ($('#leave') && !$('#leave').hidden) { $('#leave').hidden = true; return; }
   if ($('#done')?.classList.contains('open')) closeModal('#done');
-  if ($('#custom')?.classList.contains('open')) tryCloseCustom();
+  if ($('#custom')?.classList.contains('open')) cur?.mov ? atras() : tryCloseCustom();
   if ($('#drawer')?.classList.contains('open')) closeDrawer();
 });
 $('#cartBtn')?.addEventListener('click', openDrawer);

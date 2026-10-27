@@ -82,6 +82,10 @@
   <div class="modal-bg" data-close></div>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="cTitle" tabindex="-1">
     <button class="x" data-close aria-label="Cerrar">✕</button>
+    <div class="c-bar">
+      <button type="button" class="c-back" id="cBack" aria-label="Atrás"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg></button>
+      <div class="c-bar-t"><h2 id="cScreen" tabindex="-1"></h2><p id="cSub"></p></div>
+    </div>
     <div class="c-preview" id="cPreview">
       <div class="c-stage" id="cZoomArea" tabindex="0" role="group" aria-roledescription="vista previa con zoom" aria-label="Vista previa. Usa + y − para acercar, flechas para moverte y 0 para restablecer.">
         <div class="zoom-layer" id="cStage"></div>
@@ -111,6 +115,8 @@
         <div class="breakdown" id="cBreak" hidden></div>
         <div class="c-buy">
           <button type="button" class="c-price" id="brkBtn" aria-expanded="false" aria-controls="cBreak"><small>Total <span class="chev">▾</span></small><b id="cTotal"></b></button>
+          <span class="sr" id="cLive" role="status" aria-live="polite"></span>
+          <button type="button" class="btn btn-ghost" id="backBtn" hidden>Atrás</button>
           <button class="btn btn-dark add" id="addBtn"><span id="addLabel">Agregar</span></button>
         </div>
       </div>

@@ -755,3 +755,120 @@ body[data-page="catalog"]{scroll-padding-top:calc(var(--nav-h) + 140px)}
 .legal a{color:var(--ink);text-decoration:underline;text-underline-offset:2px}
 .legal-fecha{font-size:13.5px;color:var(--ink-3)}
 .btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+
+/* ---------- personalizador como página (teléfono, ≤ 760 px) ----------
+   app.js le pone la clase .pg al modal #custom cuando abre en pantalla chica: pantalla completa, sin fondo ni esquinas,
+   barra superior propia, vista previa arriba (se encoge al bajar: .mini), opciones al centro y barra de compra abajo. */
+.c-bar{display:none}
+#custom.pg{background:var(--surface)}
+#custom.pg .modal-bg,#custom.pg .x,#custom.pg .c-head,#custom.pg .leave{display:none}
+#custom.pg .sheet{position:absolute;inset:auto;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100dvh);max-width:none;margin:0;display:flex;flex-direction:column;border-radius:0;box-shadow:none;background:var(--surface);animation:none}
+#custom.pg.open .sheet{animation:pgIn .34s var(--ease)}
+#custom.pg.closing .sheet{animation:pgOut .2s var(--ease-in) forwards}
+@keyframes pgIn{from{opacity:0;transform:translateX(28px)}}
+@keyframes pgOut{to{opacity:0;transform:translateX(20px)}}
+#custom.pg .c-bar{display:flex;flex:none;align-items:center;gap:6px;min-height:64px;padding:max(8px,env(safe-area-inset-top)) 16px 8px 6px;background:var(--surface);border-bottom:1px solid var(--line)}
+.c-back{flex:none;width:48px;height:48px;border-radius:50%;display:grid;place-items:center;transition:background-color .2s}
+.c-back:active{background:var(--bg)}
+.c-back svg{width:24px;height:24px}
+.c-bar-t{min-width:0}
+.c-bar-t h2{font-size:19px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.c-bar-t h2:focus{outline:none}
+.c-bar-t p{font-size:15px;line-height:1.3;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* vista previa: ~36 % del alto; mini al bajar o al escribir */
+#custom.pg .c-preview{flex:none;height:clamp(200px,36dvh,360px);transition:height .35s var(--ease)}
+#custom.pg .sheet.mini .c-preview,#custom.pg .sheet.kb .c-preview{height:84px;cursor:zoom-in}
+#custom.pg .sheet.mini .zoom-ctl,#custom.pg .sheet.mini .ref,#custom.pg .sheet.mini .zoom-tip,#custom.pg .sheet.kb .zoom-ctl,#custom.pg .sheet.kb .ref,#custom.pg .sheet.kb .zoom-tip{display:none}
+#custom.pg .sheet.mini .zoom-layer,#custom.pg .sheet.kb .zoom-layer{padding:6px}
+#custom.pg .zoom-layer{padding:3% 6% 14%}
+#custom.pg .zoom-ctl{right:12px;bottom:10px}
+#custom.pg .zoom-ctl button{width:44px;height:44px}
+#custom.pg .zoom-ctl output{display:none}
+#custom.pg .zoom-tip{left:50%;top:10px;transform:translateX(-50%);max-width:calc(100% - 24px)}
+#custom.pg .ref{left:12px;bottom:10px}
+#custom.pg .c-panel{flex:1;min-height:0}
+#custom.pg .c-form{padding:0 20px 32px;scroll-padding:80px 0 120px}
+/* pasos: pegados arriba del área que se desliza */
+#custom.pg .steps-nav{margin:0 -20px 4px;padding:10px 8px 14px;gap:2px;box-shadow:0 1px 0 var(--line)}
+#custom.pg .steps-nav .bar{left:20px;right:20px;height:3px}
+#custom.pg .steps-nav button{flex-direction:column;gap:4px;min-height:58px;padding:4px 0;font-size:13px;border-radius:12px;min-width:0}
+#custom.pg .steps-nav button span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+#custom.pg .steps-nav button i{width:26px;height:26px;font-size:13px}
+/* aire y controles táctiles */
+#custom.pg .grp{padding:26px 0}
+#custom.pg .grp-h{margin-bottom:14px}
+#custom.pg .grp-h .l,#custom.pg .grp-h label{font-size:16px}
+#custom.pg .grp-h em{font-size:15px}
+#custom.pg .sw{gap:12px}
+#custom.pg .sw button{width:44px;height:44px}
+#custom.pg .ch{gap:10px}
+#custom.pg .ch button{min-height:48px;padding:0 16px;font-size:15px}
+#custom.pg .ch button small{font-size:13px;font-weight:500;color:var(--ink-3)}
+#custom.pg .ch button[aria-pressed="true"] small{color:rgba(255,255,255,.72)}
+#custom.pg .ch.multi button[aria-pressed="true"] small{color:var(--ink-3)}
+#custom.pg .c-form input[type=text],#custom.pg .c-form input[type=date],#custom.pg .c-form textarea{min-height:52px;font-size:16px}
+#custom.pg .sug{gap:8px}
+#custom.pg .sug span{flex-basis:100%;font-size:15px}
+#custom.pg .sug button{min-height:44px;padding:0 14px;font-size:15px}
+#custom.pg .step-n{gap:12px}
+#custom.pg .step-n button{width:44px;height:44px}
+#custom.pg .file{min-height:60px;font-size:15px}
+#custom.pg .rm{font-size:15px;min-height:44px;padding:8px 4px}
+#custom.pg .del-fig{margin:12px auto 8px}
+/* estilos rápidos: una sola fila que se desliza */
+#custom.pg .looks-wrap{padding:22px 0 6px}
+#custom.pg .looks-t{font-size:15px;font-weight:600;margin-bottom:12px}
+#custom.pg .looks{flex-wrap:nowrap;overflow-x:auto;gap:10px;margin:0 -20px;padding:2px 20px 6px;scrollbar-width:none;scroll-snap-type:x proximity}
+#custom.pg .looks::-webkit-scrollbar{display:none}
+#custom.pg .looks button{flex:none;min-height:46px;padding:0 18px;font-size:15px;scroll-snap-align:start;white-space:nowrap}
+/* secciones plegables de la figura */
+.fsec{border-top:1px solid var(--line)}
+.looks-wrap + .fsec{margin-top:14px}
+.sec-h{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"t c" "s c";gap:2px 12px;align-items:center;min-height:68px;padding:14px 0;text-align:left}
+.sec-t{grid-area:t;font-family:var(--serif);font-size:20px;font-weight:500}
+.sec-s{grid-area:s;font-size:15px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fsec.open .sec-s{display:none}
+.sec-h .chev{grid-area:c;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--bg);font-size:14px;transition:transform .3s var(--ease)}
+.fsec.open .sec-h .chev{transform:rotate(180deg)}
+.sec-b{padding:0 0 12px}
+.sec-b>.grp:first-child{padding-top:10px;border-top:0}
+.sec-b[hidden]{display:none}
+/* lista de figuras del cuadro */
+.figlist{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:12px}
+.figrow{display:flex;align-items:center;gap:14px;width:100%;min-height:80px;padding:12px 14px;border-radius:18px;border:1px solid var(--line-2);background:var(--surface);text-align:left;transition:border-color .2s,transform .25s var(--spring)}
+.figrow:active{transform:scale(.98);border-color:var(--ink)}
+.figrow .av{flex:none;width:60px;height:56px;border-radius:14px;background:var(--brand-soft);display:grid;place-items:center;overflow:hidden}
+.figrow .av svg{width:64px;height:54px}
+.figrow .fi{flex:1;min-width:0;display:grid;gap:2px}
+.figrow .fi b{font-size:16px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.figrow .fi small{font-size:15px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.figrow .go{flex:none;font-size:15px;font-weight:600;color:var(--brand-ink)}
+.add-fig-m{width:100%;min-height:52px;font-size:16px}
+/* borrador */
+.draft{margin:18px 0 0;padding:16px;border-radius:18px;background:var(--brand-soft);font-size:15px;line-height:1.45}
+.draft p{margin-bottom:12px}
+.draft div{display:flex;gap:10px;flex-wrap:wrap}
+.draft .btn{min-height:48px;font-size:15px;flex:1 1 auto}
+/* barra de compra */
+#custom.pg .c-foot{padding:10px 16px calc(10px + env(safe-area-inset-bottom));box-shadow:0 -10px 24px -18px rgba(30,22,17,.45)}
+#custom.pg .c-buy{gap:10px}
+#custom.pg .c-price{min-width:0;min-height:48px;justify-content:center}
+#custom.pg .c-price small{font-size:14px}
+#custom.pg .c-price b{font-size:22px}
+#custom.pg .add{min-height:52px;font-size:16px;padding:0 14px}
+#custom.pg #backBtn{min-height:52px;padding:0 16px;font-size:16px}
+#custom.pg .breakdown ul{max-height:34dvh}
+#custom.pg .sheet.kb .c-foot{padding-top:8px;padding-bottom:8px}
+#custom.pg .sheet.kb #backBtn{display:none}
+body:has(#custom.pg.open) .toast{bottom:calc(112px + env(safe-area-inset-bottom))}
+body:has(#custom.pg.open) .cart-fab,body:has(#custom.pg.open) .wa-float{visibility:hidden}
+@media (prefers-reduced-motion:reduce){
+  #custom.pg.open .sheet,#custom.pg.closing .sheet{animation-name:fade}
+  #custom.pg .c-preview,.sec-h .chev{transition:none}
+  .zoom-layer.anim{transition:none}
+}
+.fsec h3{margin:0}
+#custom .c-buy [hidden]{display:none}
+#custom.pg .sheet.sub .ref{display:none}
+.fsec.open .sec-h{grid-template-areas:"t c";min-height:60px;padding:8px 0}
+.fsec.open .sec-b>.grp:first-child{padding-top:4px}

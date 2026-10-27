@@ -127,6 +127,56 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
   await page.click('#borrarDatos');
   ok(await page.evaluate(() => !localStorage.getItem('pehn_pedidos') && !localStorage.getItem('pehn_contact')), 'Botón borrar limpia el navegador');
 
+  // 8. teléfono: el personalizador es una página con historial (390×844, táctil)
+  {
+    const mctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    const m = await mctx.newPage();
+    m.on('pageerror', e => errores.push('móvil: ' + e.message));
+    await m.route(/fonts\.(googleapis|gstatic)\.com|script\.google\.com/, r => r.fulfill({ status: 200, body: '{}' }));
+    await m.addInitScript(() => localStorage.setItem('pehn_aviso', '1'));
+    await m.goto(base + 'catalogo.html');
+    await m.evaluate(() => { document.querySelector('[data-aviso="ok"]')?.click(); openCard(0); }); await m.waitForTimeout(600);
+    ok(await m.evaluate(() => document.querySelector('#custom').classList.contains('pg')), 'Móvil: el cuadro abre como página');
+    ok((await m.textContent('#cSub')).includes('Paso 1 de 4'), 'Móvil: barra superior con "Paso 1 de 4"');
+    const pasos = await m.evaluate(() => { const r = document.querySelector('.steps-nav').getBoundingClientRect(); return r.right <= innerWidth && document.documentElement.scrollWidth <= innerWidth; });
+    ok(pasos, 'Móvil: barra de pasos entera, sin scroll horizontal');
+    await m.click('.figrow'); await m.waitForTimeout(400);
+    ok((await m.textContent('#cScreen')) === 'Figura 1', 'Móvil: la figura 1 se edita en su sub-pantalla');
+    ok(await m.evaluate(() => document.activeElement.id === 'cScreen'), 'Móvil: el foco va al título de la pantalla');
+    await m.click('.fsec.open [data-g="hair"][data-v]:not([aria-pressed="true"])'); await m.waitForTimeout(200);
+    await m.click('.sec-h[data-sec="fcara"]'); // plegar
+    const etiqueta = await m.evaluate(() => figLab(cur.cfg.figs[0], 'hair'));
+    ok((await m.textContent('[data-secsum="cara"]')).includes('Peinado: ' + etiqueta), 'Móvil: el encabezado plegado muestra la elección (Peinado: ' + etiqueta + ')');
+    const peinado = await m.evaluate(() => cur.cfg.figs[0].hair);
+    await m.evaluate(() => history.back()); await m.waitForTimeout(500);
+    ok(await m.evaluate(() => !cur.sub && document.querySelectorAll('.figrow').length === 2), 'Móvil: Atrás del navegador vuelve a la lista de figuras');
+    ok(await m.evaluate(h => cur.cfg.figs[0].hair === h, peinado), 'Móvil: lo elegido se conserva');
+    for (let i = 0; i < 3; i++) { await m.click('#addBtn'); await m.waitForTimeout(250); }
+    ok((await m.textContent('#addLabel')) === 'Agregar al pedido', 'Móvil: último paso con "Agregar al pedido"');
+    const tam = await m.evaluate(() => [...document.querySelectorAll('#cForm button, #addBtn, #backBtn, #brkBtn')].filter(e => e.offsetParent).every(e => { const r = e.getBoundingClientRect(); return r.height >= 43.5 && r.width >= 43.5; }));
+    ok(tam, 'Móvil: botones táctiles de al menos 44 px');
+    await m.click('#addBtn'); await m.waitForTimeout(900);
+    ok(await m.evaluate(() => !document.querySelector('#custom').classList.contains('open') && JSON.parse(localStorage.getItem('pehn_cart') || '[]').length === 1), 'Móvil: agregar al pedido cierra la página y queda en el carrito');
+    // borrador: salir sin agregar ofrece seguir
+    await m.evaluate(() => openCard(0)); await m.waitForTimeout(500);
+    await m.click('.figrow'); await m.waitForTimeout(300);
+    await m.click('.sec-h[data-sec="fropa"]'); await m.click('.fsec.open [data-g="outfit"][data-v]:not([aria-pressed="true"])');
+    await m.click('#cBack'); await m.waitForTimeout(300); await m.click('#cBack'); await m.waitForTimeout(900);
+    await m.evaluate(() => openCard(0)); await m.waitForTimeout(600);
+    ok(await m.isVisible('[data-draft="si"]'), 'Móvil: al volver ofrece "Seguir con tu diseño"');
+    await m.close();
+    // 360 px: nada se sale de la pantalla en ningún paso
+    const c360 = await b.newContext({ viewport: { width: 360, height: 740 }, isMobile: true, hasTouch: true });
+    const q = await c360.newPage();
+    await q.route(/fonts\.(googleapis|gstatic)\.com|script\.google\.com/, r => r.fulfill({ status: 200, body: '{}' }));
+    await q.addInitScript(() => localStorage.setItem('pehn_aviso', '1'));
+    await q.goto(base + 'catalogo.html'); await q.evaluate(() => { document.querySelector('[data-aviso="ok"]')?.click(); openCard(0); }); await q.waitForTimeout(500);
+    let sinScroll = true;
+    for (let i = 0; i < 4; i++) { sinScroll = sinScroll && await q.evaluate(() => document.documentElement.scrollWidth <= innerWidth && document.querySelector('#cForm').scrollWidth <= document.querySelector('#cForm').clientWidth + 1); if (i < 3) { await q.click('#addBtn'); await q.waitForTimeout(250); } }
+    ok(sinScroll, 'Móvil 360 px: sin scroll horizontal en los 4 pasos');
+    await mctx.close(); await c360.close();
+  }
+
   ok(!(await page.evaluate(() => window.__xss)), 'Ningún texto del cliente ejecutó código');
   ok(!errores.length, 'Sin errores de JavaScript' + (errores.length ? ': ' + errores.join(' | ') : ''));
   await b.close(); server.close();
