@@ -65,7 +65,7 @@ function cargar(opts = {}) {
     const id = nid('F');
     const f = {
       id, name, getId: () => id, getUrl: () => 'https://drive.google.com/drive/folders/' + id,
-      createFolder: n => { const s = makeFolder(n); return s; }, setName: n => { f.name = n; return f; },
+      createFolder: n => { const s = makeFolder(n); return s; }, setTrashed() {}, setName: n => { f.name = n; return f; },
       createFile: blob => { const fid = nid('A'); const file = { setSharing() {}, getId: () => fid, getUrl: () => 'https://drive.google.com/file/d/' + fid, getBlob: () => blob, setTrashed() {}, makeCopy: () => file }; files.set(fid, file); return file; },
       getFoldersByName: () => ({ hasNext: () => false }),
     };
@@ -132,7 +132,7 @@ function cargar(opts = {}) {
   const config = name => vm.runInContext(`config_()[${JSON.stringify(name)}]`, ctx);
   const get = params => JSON.parse(ctx.doGet({ parameter: params }).getContent());
   const post = body => JSON.parse(ctx.doPost({ postData: { contents: typeof body === 'string' ? body : JSON.stringify(body) } }).getContent());
-  return { ctx, props, red, hoja, config, post, get, mails, cache, triggers, estado, x: ctx.__x, run: c => vm.runInContext(c, ctx) };
+  return { ctx, props, red, files, hoja, config, post, get, mails, cache, triggers, estado, x: ctx.__x, run: c => vm.runInContext(c, ctx) };
 }
 
 module.exports = { cargar };

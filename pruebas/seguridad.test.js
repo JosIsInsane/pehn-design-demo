@@ -11,7 +11,8 @@ function prueba(nombre, fn) {
 const ok = (c, msg) => { if (!c) throw new Error(msg || 'falló'); };
 const formulas = filas => filas.flatMap(f => Object.entries(f).filter(([, v]) => v && typeof v === 'object' && 'FORMULA' in v).map(([k, v]) => `${k}=${v.FORMULA}`));
 
-const JPG = 'data:image/jpeg;base64,' + Buffer.from('foto').toString('base64');
+const bytes = (cab, resto = 'foto') => Buffer.concat([Buffer.from(cab), Buffer.from(resto)]).toString('base64');
+const JPG = 'data:image/jpeg;base64,' + bytes([0xFF, 0xD8, 0xFF, 0xE0]);
 function pedido(sim, extra = {}) {
   return {
     token: sim.config('Token del sitio'), fillMs: 9000, website: '',
@@ -488,6 +489,140 @@ prueba('Resumen diario: el correo ya no lleva la clave del CRM', () => {
   const m = s.mails.find(x => /Resumen de hoy/.test(x.subject)); ok(m, 'no salió el resumen: ' + JSON.stringify(s.mails.map(x => x.subject)));
   ok(!/k=/.test(m.htmlBody) && !m.htmlBody.includes(s.run('clave_()')), 'lleva la clave');
   ok(/Abrir la hoja/.test(m.htmlBody) && /Abrir CRM/.test(m.htmlBody));
+});
+
+// ---------- Abuso del token público (CN-004) y errores (CN-007) ----------
+const PNG = 'data:image/png;base64,' + bytes([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A]);
+const WEBP = 'data:image/webp;base64,' + bytes('RIFF\u0000\u0000\u0000\u0000WEBPVP8 ');
+const PDF = 'data:application/pdf;base64,' + bytes('%PDF-1.4');
+const conCliente = (extra = {}) => ({ customer: { name: 'Ana López', phone: '9876 5432', email: 'ana@correo.com', city: 'Tegucigalpa', date: '', notes: '', ...extra } });
+
+prueba('Correo: el 2.º pedido al mismo correo el mismo día no manda otro correo', () => {
+  const s = nuevo();
+  ok(s.post(pedido(s)).ok); ok(s.post(pedido(s, conCliente({ email: 'ANA@Correo.com' }))).ok);
+  const p = s.hoja('Pedidos');
+  ok(p[0]['Correo cliente'] === 'Enviado', p[0]['Correo cliente']);
+  ok(p[1]['Correo cliente'] === 'Sin correo (ya se le escribió hoy)', p[1]['Correo cliente']);
+  ok(s.mails.length === 1, 'salieron ' + s.mails.length);
+  ok(![...s.cache.keys()].some(k => /ana|correo/i.test(k)), 'el correo quedó en la caché sin hash');
+  ok(s.post(pedido(s, conCliente({ email: 'otra@correo.com' }))).ok && s.mails.length === 2, 'otro destinatario sí recibe');
+});
+
+prueba('Correo: el resumen diario avisa de los correos que no salieron por límite diario', () => {
+  const s = nuevo(); s.post(pedido(s)); s.post(pedido(s));
+  s.mails.length = 0; s.run('resumenDiario_()');
+  ok(/ya se le escribió hoy/.test(s.mails[0].htmlBody), 'no aparece');
+});
+
+prueba('Correo: regla estricta (nada de ?bcc=, saltos de línea ni sin punto)', () => {
+  const s = nuevo();
+  ['ana@correo.com?bcc=jefe@x.com', 'ana@correo.com,otro@x.com', 'ana@correo', 'ana@correo.c', 'a b@correo.com', 'ana@correo.com\nbcc:x@y.zz', 'ana@@correo.com', '"ana"@correo.com', 'ana@correo.com>'].forEach(email => {
+    const r = s.post(pedido(s, conCliente({ email }))); ok(!r.ok && /correo/i.test(r.error), email + ' -> ' + JSON.stringify(r));
+  });
+  ['ana.l+pehn@correo.com.hn', 'a_b-c%d@sub.dominio.org'].forEach(email => ok(s.post(pedido(s, conCliente({ email, phone: '9' + Math.random().toString().slice(2, 9) }))).ok, email));
+  ok(s.hoja('Pedidos').length === 2);
+});
+
+prueba('Admin.html: los mailto: codifican el correo (CN-012)', () => {
+  ok(!/mailto:\$\{esc\(/.test(leerGs('Admin.html')), 'mailto con esc()');
+  ok((leerGs('Admin.html').match(/mailto:\$\{encodeURIComponent\(/g) || []).length === 2);
+});
+
+prueba('Archivos: la firma de bytes debe coincidir con el tipo declarado', () => {
+  const s = nuevo();
+  const falso = t => `data:${t};base64,` + bytes('esto no es una imagen');
+  ['image/png', 'image/jpeg', 'image/webp', 'application/pdf'].forEach(t => ok(s.run(`dataUrlValido_(${JSON.stringify(falso(t))})`) === null, t + ' falso aceptado'));
+  [JPG, PNG, WEBP, PDF].forEach(u => ok(s.run(`dataUrlValido_(${JSON.stringify(u)})`) !== null, u.slice(0, 22) + ' válido rechazado'));
+  // un JPG real con etiqueta de PNG tampoco pasa
+  ok(s.run(`dataUrlValido_(${JSON.stringify(JPG.replace('image/jpeg', 'image/png'))})`) === null);
+  // WEBP: "RIFF" solo no basta
+  ok(s.run(`dataUrlValido_(${JSON.stringify('data:image/webp;base64,' + bytes('RIFF\u0000\u0000\u0000\u0000WAVEfmt '))})`) === null);
+});
+
+prueba('Archivos: un PNG con bytes falsos como comprobante rechaza el pedido; como imagen se ignora', () => {
+  const s = nuevo();
+  const falso = 'data:image/png;base64,' + bytes('hola, no soy un png');
+  const r = s.post(pedido(s, { comprobante: falso }));
+  ok(!r.ok && /comprobante/.test(r.error) && s.hoja('Pedidos').length === 0, JSON.stringify(r));
+  const t = sinAnticipo(); const b = pedido(t, { comprobante: '' }); b.items[0].images = [falso, PNG];
+  ok(t.post(b).ok);
+  ok(t.hoja('Partidas')[0]['Imágenes del cliente'].split('\n').filter(Boolean).length === 1, 'solo el PNG real debe guardarse');
+});
+
+prueba('Archivos: comprobante falso en Mis pedidos se rechaza y no escribe en Pagos', () => {
+  const s = sinAnticipo(); const id = s.post(pedido(s, { comprobante: '' })).id;
+  const r = s.post({ token: s.config('Token del sitio'), accion: 'comprobante', id, phone: '98765432', file: 'data:application/pdf;base64,' + bytes('MZ-ejecutable') });
+  ok(!r.ok && s.hoja('Pagos').length === 0, JSON.stringify(r));
+  ok(s.post({ token: s.config('Token del sitio'), accion: 'comprobante', id, phone: '98765432', file: PDF }).ok, 'PDF real debe pasar');
+});
+
+prueba('Candado: Drive, OCR y correo corren fuera del candado; la carpeta se renombra con el ID', () => {
+  const s = nuevo(); let sujeto = false; const dentro = [];
+  const base = s.ctx.LockService.getScriptLock;
+  s.ctx.LockService.getScriptLock = () => { const l = base(); return { tryLock: () => { sujeto = true; return l.tryLock(); }, releaseLock: () => { sujeto = false; l.releaseLock(); } }; };
+  const ocr = s.ctx.Drive.Files.create; s.ctx.Drive.Files.create = (...a) => { if (sujeto) dentro.push('OCR'); return ocr(...a); };
+  const mail = s.ctx.MailApp.sendEmail; s.ctx.MailApp.sendEmail = m => { if (sujeto) dentro.push('correo'); return mail(m); };
+  const raiz = s.run('folder_()'), crear = raiz.createFolder;
+  raiz.createFolder = n => { const f = crear(n); const cf = f.createFile; f.createFile = b => { if (sujeto) dentro.push('Drive'); return cf(b); }; return f; };
+  const r = s.post(pedido(s)); ok(r.ok, JSON.stringify(r));
+  ok(!dentro.length, 'dentro del candado: ' + dentro.join(', '));
+  const url = s.hoja('Pedidos')[0].Carpeta, carpeta = s.ctx.DriveApp.getFolderById(url.split('/').pop());
+  ok(carpeta.name.startsWith(r.id + ' · '), carpeta.name);
+  ok(s.hoja('Pedidos')[0]['Correo cliente'] === 'Enviado' && s.hoja('Pagos').length === 1);
+});
+
+prueba('Candado: si el pedido falla, la carpeta temporal va a la papelera y nada queda en la hoja', () => {
+  const s = nuevo(); let carpeta;
+  const raiz = s.run('folder_()'), crear = raiz.createFolder;
+  raiz.createFolder = n => { carpeta = crear(n); carpeta.setTrashed = () => { carpeta.papelera = true; }; return carpeta; };
+  s.run(`consumoDePedido_ = () => { throw new Error('fallo interno'); }`);
+  ok(!s.post(pedido(s)).ok && s.hoja('Pedidos').length === 0);
+  ok(carpeta && carpeta.papelera === true, 'la carpeta quedó huérfana');
+});
+
+prueba('Errores: al sitio solo llegan mensajes conocidos; el resto es genérico', () => {
+  const s = nuevo();
+  s.run(`consumoDePedido_ = () => { throw new Error('Falta la hoja "Inventario" SKU-123 token=ABC'); }`);
+  const r = s.post(pedido(s)); ok(!r.ok && !/Inventario|SKU|ABC/.test(r.error), r.error);
+  ok(/No se pudo procesar/.test(r.error));
+  ok(/Token inválido/.test(s.post({ ...pedido(s), token: 'x' }).error), 'los conocidos se conservan');
+  ok(/Faltan datos/.test(s.post(pedido(s, conCliente({ name: '' }))).error));
+});
+
+prueba('Errores: cada mensaje de limite_/throw de Orders y Pagos que ve el cliente está en la lista pública', () => {
+  const lista = JSON.parse(JSON.stringify(nuevo().run('MENSAJES_PUBLICOS')));
+  const fuente = leerGs('Orders.gs') + leerGs('Pagos.gs');
+  const msgs = [...fuente.matchAll(/(?:throw new Error|limite_\([^\n]*?,)\s*\(?'([^'\n]+)'/g)].map(m => m[1]);
+  ok(msgs.length > 15, 'regex no encontró mensajes: ' + msgs.length);
+  const faltan = msgs.filter(m => !lista.includes(m) && m !== 'ya' && !/^(Cambios|Formato|Demasiado grande)/.test(m));
+  ok(!faltan.length, 'faltan en MENSAJES_PUBLICOS: ' + faltan.join(' | '));
+});
+
+// ---------- Turnstile (opcional) ----------
+prueba('Turnstile: sin TURNSTILE_SECRET todo sigue como hoy (no se consulta a Cloudflare)', () => {
+  const s = nuevo(); const r = s.post(pedido(s)); ok(r.ok, JSON.stringify(r));
+  ok(s.red.llamadas.length === 0, 'consultó a Cloudflare');
+});
+
+prueba('Turnstile: con secreto, el token malo, vacío o sin respuesta rechaza el pedido', () => {
+  const s = nuevo({ propiedades: { TURNSTILE_SECRET: 'sec-123' } });
+  s.red.responder = () => ({ success: false, 'error-codes': ['invalid-input-response'] });
+  const r = s.post(pedido(s, { turnstile: 'token-malo' }));
+  ok(!r.ok && /Verificación fallida/.test(r.error) && s.hoja('Pedidos').length === 0, JSON.stringify(r));
+  ok(s.red.llamadas.length === 1 && s.red.llamadas[0].url === 'https://challenges.cloudflare.com/turnstile/v0/siteverify');
+  ok(s.red.llamadas[0].o.payload.secret === 'sec-123' && s.red.llamadas[0].o.payload.response === 'token-malo');
+  ok(!s.post(pedido(s)).ok && s.red.llamadas.length === 1, 'sin token ni se consulta');
+  ok(!s.post(pedido(s, { turnstile: { x: 1 } })).ok);
+  s.red.responder = () => { throw new Error('sin red'); };
+  ok(!s.post(pedido(s, { turnstile: 'cualquiera' })).ok, 'sin respuesta de Cloudflare debe rechazar');
+  ok(s.hoja('Pedidos').length === 0);
+});
+
+prueba('Turnstile: con secreto y token bueno el pedido pasa', () => {
+  const s = nuevo({ propiedades: { TURNSTILE_SECRET: 'sec-123' } });
+  s.red.responder = () => ({ success: true });
+  const r = s.post(pedido(s, { turnstile: 'token-bueno' })); ok(r.ok, JSON.stringify(r));
+  ok(s.hoja('Pedidos').length === 1);
 });
 
 console.log(`\n${n - fallas} de ${n} pruebas pasaron.`);

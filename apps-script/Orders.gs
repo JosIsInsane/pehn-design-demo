@@ -41,10 +41,23 @@ function doPost(e) {
       default: throw new Error('Acción desconocida.');
     }
   } catch (err) {
-    console.error(err);
-    return json_({ ok: false, error: String(err.message || err) });
+    console.error(err); // el detalle completo queda en Ejecuciones; al sitio solo van mensajes conocidos
+    const msg = String(err && err.message || err);
+    return json_({ ok: false, error: MENSAJES_PUBLICOS.includes(msg) ? msg : 'No se pudo procesar. Intenta de nuevo o escríbenos por WhatsApp.' });
   }
 }
+
+// Únicos mensajes de error que ve el cliente. Cualquier otro (nombres de hojas, SKU, fallos de Google) se oculta.
+// Si agregas un throw nuevo que el cliente deba leer, súmalo aquí.
+const MENSAJES_PUBLICOS = [
+  'Demasiado grande.', 'Formato inválido.', 'Token inválido.', 'Acción desconocida.', 'Rechazado.',
+  'Faltan datos del cliente.', 'Revisa el número de WhatsApp.', 'Revisa el correo.', 'Pedido vacío o demasiado grande.',
+  'El comprobante debe ser foto (JPG, PNG) o PDF de menos de 5 MB.', 'Sube el comprobante de tu anticipo para enviar el pedido.',
+  'Demasiados pedidos seguidos. Escríbenos por WhatsApp.', 'Estamos recibiendo muchos pedidos. Intenta en unos minutos o escríbenos por WhatsApp.',
+  'Revisa el número de pedido y tu WhatsApp.', 'Demasiados intentos. Espera unos minutos.', 'No encontramos un pedido con ese número y ese WhatsApp.',
+  'Ya recibimos varios comprobantes de este pedido. Escríbenos por WhatsApp.', 'Este pedido está cancelado. Escríbenos por WhatsApp.',
+  'La hoja está ocupada con otro cambio. Espera unos segundos e intenta de nuevo.', 'Verificación fallida. Recarga la página e intenta de nuevo.',
+];
 
 // cuenta en caché: más de "max" en "seg" segundos = rechazo
 function limite_(clave, max, seg, msg) {
@@ -65,7 +78,7 @@ function limpiarPedido_(d) {
   if (!customer.name || !customer.city) throw new Error('Faltan datos del cliente.');
   const dig = customer.phone.replace(/\D/g, '');
   if (dig.length < 8 || dig.length > 15) throw new Error('Revisa el número de WhatsApp.');
-  if (customer.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)) throw new Error('Revisa el correo.');
+  if (customer.email && !/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(customer.email)) throw new Error('Revisa el correo.');
   if (!Array.isArray(d.items) || !d.items.length || d.items.length > LIMITS.items) throw new Error('Pedido vacío o demasiado grande.');
   const num = (v, min, max) => Math.min(max, Math.max(min, Number(v) || 0));
   const items = d.items.map(it => ({
@@ -84,70 +97,108 @@ function limpiarPedido_(d) {
 
 function json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
 
+// Turnstile (opcional): si la propiedad de script TURNSTILE_SECRET existe, el pedido debe traer un token válido.
+// Sin la propiedad no se pide nada (ver apps-script/README.md › Turnstile).
+function verificarTurnstile_(token) {
+  const secret = PropertiesService.getScriptProperties().getProperty('TURNSTILE_SECRET');
+  if (!secret) return;
+  const falla = new Error('Verificación fallida. Recarga la página e intenta de nuevo.');
+  token = String(token || '');
+  if (!token || token.length > 2048) throw falla;
+  let r;
+  try {
+    r = JSON.parse(UrlFetchApp.fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify',
+      { method: 'post', payload: { secret, response: token }, muteHttpExceptions: true }).getContentText());
+  } catch (err) { console.error('Turnstile no respondió:', err); throw falla; } // sin respuesta = no pasa
+  if (!r || r.success !== true) throw falla;
+}
+
+// Lo lento (Drive, OCR, correo) va FUERA del candado; dentro solo ID, filas y stock.
+// Si algo falla antes de guardar el pedido, la carpeta temporal se manda a la papelera (si no se puede, queda huérfana sin daño).
 function recibirPedido_(raw, cfg) {
   const d = limpiarPedido_(raw), c = d.customer;
   // anticipo antes de enviar (Config › Anticipo antes de enviar = Sí)
   if (d.comprobante && !comprobanteValido_(d.comprobante)) throw new Error('El comprobante debe ser foto (JPG, PNG) o PDF de menos de 5 MB.');
   if (!d.comprobante && yes_(cfg['Anticipo antes de enviar'] ?? 'Sí')) throw new Error('Sube el comprobante de tu anticipo para enviar el pedido.');
+  verificarTurnstile_(raw.turnstile);
   limite_('p_' + telKey_(c.phone), LIMITS.perContact, 600, 'Demasiados pedidos seguidos. Escríbenos por WhatsApp.');
   limite_('p_hora', LIMITS.perHour, 3600, 'Estamos recibiendo muchos pedidos. Intenta en unos minutos o escríbenos por WhatsApp.');
 
-  return conCandado_(() => {
-    const id = nuevoId_();
-    const folder = folder_().createFolder(`${id} · ${String(c.name).slice(0, 40)}`);
-    const fecha = now_();
-
-    // imágenes: vista previa por partida + archivos que subió el cliente
+  // 1) sin candado: carpeta temporal (se renombra con el ID dentro del candado), fotos y lectura del comprobante
+  const folder = folder_().createFolder(`Nuevo · ${String(c.name).slice(0, 40)}`);
+  let guardado = false;
+  try {
     const partidas = d.items.map((it, i) => {
       const prev = it.preview ? guardarImagen_(folder, it.preview, `${i + 1} vista previa`) : null;
       const subidas = (it.images || []).slice(0, 4).map((src, j) => guardarImagen_(folder, src, `${i + 1} imagen cliente ${j + 1}`)).filter(Boolean);
       return { it, prev, subidas };
     });
-
-    const piezas = consumoDePedido_(d.items);
-    const disp = disponibilidad_(piezas);
-    const textoProductos = d.items.map(it => `${it.qty} × ${it.product}`).join('\n');
-    const textoPiezas = piezas.map(p => `${p.qty} × ${p.sku} ${p.name || ''}`.trim()).join('\n') || '(sin receta)';
-
-    // Pedidos
-    const sh = sheet_('pedidos');
-    const row = [id, fecha, 'Nuevo', c.name, c.phone, c.email, c.city, c.date, textoProductos, textoPiezas,
-      d.total, d.currency, '', folder.getUrl(), disp.texto, c.notes, '', fecha,
-      datosJson_({ items: d.items.map(stripImages_), piezas, descontado: false }), ''];
-    sh.appendRow(fila_(row));
-    const r = sh.getLastRow();
-    if (partidas[0] && partidas[0].prev) ponerImagen_(sh.getRange(r, COL.pedidos['Vista previa']), partidas[0].prev);
-    sh.setRowHeight(r, 110);
-
-    // Partidas
-    const sp = sheet_('partidas');
-    partidas.forEach(({ it, prev, subidas }, i) => {
-      sp.appendRow(fila_([id, i + 1, it.product, it.qty, it.unitPrice, it.discount, it.total, opcionesTexto_(it.options), '',
-        subidas.map(s => s.url).join('\n'), prev ? prev.url : '']));
-      const pr = sp.getLastRow();
-      if (prev) ponerImagen_(sp.getRange(pr, COL.partidas['Vista previa']), prev);
-      sp.setRowHeight(pr, 110);
-    });
-
-    // anticipo que mandó junto con el pedido
-    let pago = null;
     const esperado = Math.round(d.total * (Number(cfg['Anticipo (%)']) || 50) / 100);
+    let leido = null;
     if (d.comprobante) {
-      try { pago = procesarComprobante_({ ID: id, Cliente: c.name, Moneda: d.currency }, d.comprobante, esperado, folder, cfg); }
+      try { leido = prepararComprobante_(folder, d.comprobante); }
       catch (err) { console.error('Comprobante no procesado:', err); } // el pedido no se pierde por esto
     }
 
-    // claves nuevas que todavía no tienen pieza asignada
-    registrarClavesNuevas_(d.items);
-    try { guardarCliente_(c, fecha); } catch (err) { console.error(err); } // nunca frena un pedido
+    // 2) con candado: ID, filas y stock
+    const { id, pago } = conCandado_(() => {
+      const id = nuevoId_();
+      folder.setName(`${id} · ${String(c.name).slice(0, 40)}`);
+      const fecha = now_();
+      const piezas = consumoDePedido_(d.items);
+      const disp = disponibilidad_(piezas);
+      const textoProductos = d.items.map(it => `${it.qty} × ${it.product}`).join('\n');
+      const textoPiezas = piezas.map(p => `${p.qty} × ${p.sku} ${p.name || ''}`.trim()).join('\n') || '(sin receta)';
 
-    // un solo correo al cliente; si falla o no hay cuota, el pedido ya quedó guardado y se anota en la hoja
+      // Pedidos
+      const sh = sheet_('pedidos');
+      const row = [id, fecha, 'Nuevo', c.name, c.phone, c.email, c.city, c.date, textoProductos, textoPiezas,
+        d.total, d.currency, '', folder.getUrl(), disp.texto, c.notes, '', fecha,
+        datosJson_({ items: d.items.map(stripImages_), piezas, descontado: false }), ''];
+      sh.appendRow(fila_(row));
+      guardado = true;
+      const r = sh.getLastRow();
+      if (partidas[0] && partidas[0].prev) ponerImagen_(sh.getRange(r, COL.pedidos['Vista previa']), partidas[0].prev);
+      sh.setRowHeight(r, 110);
+
+      // Partidas
+      const sp = sheet_('partidas');
+      partidas.forEach(({ it, prev, subidas }, i) => {
+        sp.appendRow(fila_([id, i + 1, it.product, it.qty, it.unitPrice, it.discount, it.total, opcionesTexto_(it.options), '',
+          subidas.map(s => s.url).join('\n'), prev ? prev.url : '']));
+        const pr = sp.getLastRow();
+        if (prev) ponerImagen_(sp.getRange(pr, COL.partidas['Vista previa']), prev);
+        sp.setRowHeight(pr, 110);
+      });
+
+      // anticipo que mandó junto con el pedido
+      let pago = null;
+      if (leido) {
+        try { pago = anotarPago_({ ID: id }, leido, esperado); }
+        catch (err) { console.error('Pago no anotado:', err); }
+      }
+
+      // claves nuevas que todavía no tienen pieza asignada
+      registrarClavesNuevas_(d.items);
+      try { guardarCliente_(c, fecha); } catch (err) { console.error(err); } // nunca frena un pedido
+      return { id, pago };
+    });
+
+    // 3) sin candado: un solo correo al cliente; si falla o no hay cuota, el pedido ya quedó guardado y se anota en la hoja
     let marca;
     try { marca = correoCliente_(id, d, partidas, cfg, pago, !!d.comprobante, esperado); }
     catch (err) { console.error('Correo no enviado:', err); marca = 'Falló: ' + linea_(err && err.message || err, 80); }
-    try { sh.getRange(r, COL.pedidos['Correo cliente']).setValue(celda_(marca)); } catch (err) { console.error(err); }
+    try {
+      conCandado_(() => {
+        const fila = rows_('pedidos').find(p => String(p.ID) === id);
+        if (fila) sheet_('pedidos').getRange(fila._row, COL.pedidos['Correo cliente']).setValue(celda_(marca));
+      });
+    } catch (err) { console.error(err); }
     return { id, pago };
-  });
+  } catch (err) {
+    if (!guardado) { try { folder.setTrashed(true); } catch (e) { /* queda huérfana: sin daño */ } }
+    throw err;
+  }
 }
 
 // ficha del cliente (una por WhatsApp); las notas y etiquetas se editan en el CRM
@@ -186,9 +237,28 @@ function datosJson_(o) {
 // data:image/...;base64,... -> archivo privado en la carpeta del pedido.
 // Solo fotos comunes (no SVG: puede traer código) y base64 válido.
 const TIPOS_OK = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'application/pdf': 'pdf' };
+// Los primeros bytes del archivo deben coincidir con el tipo que dice ser (un "PNG" que es otra cosa se rechaza).
+function firmaOk_(mime, b64) {
+  let b;
+  try { b = Array.from(Utilities.base64Decode(String(b64).slice(0, 16))).map(x => x & 255); } catch (e) { return false; }
+  const igual = (i, arr) => arr.every((v, j) => b[i + j] === v);
+  const letras = (i, t) => igual(i, Array.from(t, ch => ch.charCodeAt(0)));
+  switch (mime) {
+    case 'image/jpeg': return igual(0, [0xFF, 0xD8, 0xFF]);
+    case 'image/png': return igual(0, [0x89, 0x50, 0x4E, 0x47]);
+    case 'image/webp': return letras(0, 'RIFF') && letras(8, 'WEBP');
+    case 'application/pdf': return letras(0, '%PDF');
+    default: return false;
+  }
+}
+// data URL de un tipo permitido, de tamaño razonable y con firma real -> coincidencia del regex; si no, null
+function dataUrlValido_(s) {
+  const m = /^data:([\w/+.-]+);base64,([A-Za-z0-9+/=]+)$/.exec(String(s || ''));
+  return m && TIPOS_OK[m[1]] && m[2].length <= LIMITS.imageChars && firmaOk_(m[1], m[2]) ? m : null;
+}
 function guardarImagen_(folder, dataUrl, name) {
-  const m = /^data:([\w/+.-]+);base64,([A-Za-z0-9+/=]+)$/.exec(String(dataUrl || ''));
-  if (!m || !TIPOS_OK[m[1]] || m[2].length > LIMITS.imageChars) return null;
+  const m = dataUrlValido_(dataUrl);
+  if (!m) return null;
   const ext = TIPOS_OK[m[1]];
   const blob = Utilities.newBlob(Utilities.base64Decode(m[2]), m[1], `${name}.${ext}`);
   const file = folder.createFile(blob);
@@ -204,6 +274,8 @@ function ponerImagen_(cell, img) {
   }
 }
 
+const hashCorreo_ = email => Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(email).trim().toLowerCase()));
+
 // Correo al cliente: uno solo por pedido. Devuelve la marca que se guarda en "Correo cliente":
 // 'Enviado' / 'Sin correo' / 'Sin correo (sin cuota hoy)'. Si el envío truena, lanza error (lo anota quien llama).
 function correoCliente_(id, d, partidas, cfg, pago, subioComprobante, anticipo) {
@@ -211,6 +283,9 @@ function correoCliente_(id, d, partidas, cfg, pago, subioComprobante, anticipo) 
   if (!c.email || !yes_(cfg['Confirmar al cliente por correo'])) return 'Sin correo';
   // deja 1 correo de reserva para el resumen del negocio
   if (MailApp.getRemainingDailyQuota() < 2) return 'Sin correo (sin cuota hoy)';
+  // máximo 1 correo por destinatario (el token del sitio es público: así no sirve para llenar de correos a un tercero).
+  // Se guarda un hash, no el correo. La caché de Google aguanta como máximo 6 h (21600 s).
+  try { limite_('m_' + hashCorreo_(c.email), 1, 21600, 'ya'); } catch (err) { return 'Sin correo (ya se le escribió hoy)'; }
   const negocio = cfg['Nombre del negocio'] || 'Pehn Design';
   const pct = Number(cfg['Anticipo (%)']) || 50, moneda = d.currency, inline = {};
   const bloques = partidas.map(({ it, prev }, i) => {
