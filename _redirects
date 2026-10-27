@@ -1,0 +1,5 @@
+# Carpetas internas del repo que no son parte de la página: Cloudflare las manda al inicio.
+/apps-script/*  /  302
+/pruebas/*      /  302
+/docs/*         /  302
+/README.md      /  302
