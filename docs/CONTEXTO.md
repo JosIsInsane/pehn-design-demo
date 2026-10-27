@@ -1,0 +1,28 @@
+# Contexto para seguir en una sesión nueva
+
+Pega esto al empezar: "Lee docs/CONTEXTO.md del repo JosIsInsane/pehn-design-demo y seguimos."
+
+## El proyecto
+- Sitio + CRM para **Pehn Design** (cuadros con minifiguras y regalos personalizados, Honduras, @pehn.designn). Trato cerrado: L 6,500.
+- Repo `JosIsInsane/pehn-design-demo`, rama `main`. **Push a main = sale en vivo** (Cloudflare Pages).
+- Usuario prefiere respuestas cortas (modo caveman): hacer y explicar lo mínimo.
+- Commits: autor `Claude <noreply@anthropic.com>`.
+
+## Archivos
+- Sitio: `index.html`, `catalogo.html`, `pedido.html` (Mis pedidos), `privacidad.html`, `marco.js` (menú/pie/carrito comunes), `datos.js` (productos y precios), `dibujos.js` (SVG), `app.js`, `styles.css`, `_headers` (CSP), `_redirects`.
+- Apps Script (`apps-script/`): `Config.gs`, `Setup.gs`, `Orders.gs`, `Inventory.gs`, `Pagos.gs`, `Sitio.gs`, `Admin.gs`, `Admin.html` (CRM), `appsscript.json`. Se pega a mano en el editor + Nueva versión.
+- Pruebas: `node pruebas/seguridad.test.js` (43, simulador de Apps Script) y `node pruebas/sitio.test.js` (punta a punta con Playwright).
+- Docs: `docs/SEGURIDAD.md`, `docs/PLAN-CRM-Y-MENSAJES.md`, `docs/referencias-crm/` (estilo del CRM).
+
+## Hecho
+- CRM estilo panel (menú café oscuro), cambios al instante, vistas: Inicio, Pedidos, Clientes, Pagos, Inventario, Recetas, Movimientos, Sitio web.
+- Seguridad: anti-fórmulas en la hoja, validación en servidor, anti-bots (trampa, tiempo, límites), CSP, sin fugas de la clave del CRM.
+- Carrito en 2 pasos: datos → anticipo (50%) con comprobante; OCR lee el monto (Drive API). Config `Anticipo antes de enviar` Sí/No.
+- Mis pedidos: tarjetas por dispositivo, detalle, subir comprobante del saldo.
+- Aviso de privacidad + consentimiento. Dueños editan colores/textos/fotos/WhatsApp en CRM › Sitio web.
+
+## Pendiente
+1. El usuario debe pegar los `.gs` nuevos en Apps Script, agregar servicio **Drive API**, correr **Pehn › Configurar hojas**, llenar Config › Datos bancarios y Sitio web, sacar Nueva versión.
+2. Recibir datos del cliente (fotos, precios, textos, su hoja con miles de pedidos) y adaptar el CRM a su hoja (importador + archivo + búsqueda en servidor; ver plan).
+3. Módulo de **Finanzas** en el CRM (cobrado L 1,000 en el desglose).
+4. Automatizar WhatsApp/Instagram (opción recomendada: ManyChat; necesita cuentas Meta del cliente).
