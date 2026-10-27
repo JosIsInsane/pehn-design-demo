@@ -174,7 +174,19 @@ function refresh() { state.shown = PAGE; syncURL(); swapContent($('#grid'), () =
 $('#filters')?.addEventListener('click', e => {
   const b = e.target.closest('[data-f]'); if (!b || b.dataset.f === state.cat) return;
   state.cat = b.dataset.f; renderFilters(); refresh();
+  $(`#filters [data-f="${state.cat}"]`)?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: matchMedia('(prefers-reduced-motion:reduce)').matches ? 'auto' : 'smooth' });
 });
+
+// celular: la barra de filtros se esconde al bajar y vuelve al subir (o si algo de ella tiene el foco)
+const toolbar = $('.toolbar');
+if (toolbar) {
+  let lastY = scrollY;
+  addEventListener('scroll', () => {
+    const y = scrollY, movil = innerWidth <= 640, dentro = toolbar.contains(document.activeElement);
+    toolbar.classList.toggle('tuck', movil && !dentro && y > lastY && y > toolbar.parentElement.offsetTop + 160);
+    if (Math.abs(y - lastY) > 4) lastY = y;
+  }, { passive: true });
+}
 let qT;
 $('#q')?.addEventListener('input', e => {
   state.q = e.target.value; $('#qClear').hidden = !state.q;
