@@ -24,7 +24,9 @@ function defaults(p) {
     else if (g.type === 'multi') c[g.id] = [];
     else c[g.id] = '';
   });
+  if (p.variants) varInicio(p, c); // arranca en la variante más barata
   p.init && p.init(c);
+  if (p.variants) varFix(p, c);
   return c;
 }
 const clone = o => JSON.parse(JSON.stringify(o));
@@ -51,7 +53,8 @@ function optPrices(groups, cfg, lines, prefix = '') {
   });
 }
 function priceOf(p, cfg) {
-  const lines = [{ label: 'Base', price: p.base }];
+  // variantes: el precio sale de la talla/color elegidos; si no, es la base + opciones
+  const lines = p.variants ? varLines(p, cfg) : p.base ? [{ label: 'Base', price: p.base }] : [];
   optPrices(p.groups, cfg, lines);
   return { lines, unit: lines.reduce((s, l) => s + l.price, 0) };
 }
@@ -72,7 +75,7 @@ const optLabel = (g, v) => g.options.find(o => o.v === v)?.label || (g.type === 
 function summaryOf(groups, cfg) {
   return groups.filter(g => visible(g, cfg)).flatMap(g => {
     const v = cfg[g.id];
-    if (g.id === 'hat' && v === 'ninguno') return [];
+    if ((g.id === 'hat' || g.id === 'hand') && v === 'ninguno') return [];
     if (g.type === 'swatch' || g.type === 'choice') return v ? [[g.label, optLabel(g, v)]] : [];
     if (g.type === 'file') return v ? [[g.label, cfg[g.id + 'Name'] || 'Imagen adjunta']] : [];
     if (g.type === 'stepper') return v ? [[g.label, v]] : [];
@@ -304,10 +307,11 @@ function groupHTML(g, cfg, sc) {
   const a = `data-sc="${sc}" data-g="${g.id}"`;
   if (g.type === 'swatch' || g.type === 'choice') {
     const sel = g.options.find(o => o.v === v);
+    const off = o => (sc === 'p' && cur.p.variants && !varDisp(cur.p, g.id, o.v, cfg) ? ' disabled' : '');
     const head = `<div class="grp-h"><span class="l">${g.label}</span><em>${sel ? sel.label : ''}</em></div>`;
     const body = g.type === 'swatch'
-      ? `<div class="sw" role="radiogroup" aria-label="${g.label}">${g.options.map(o => `<button type="button" role="radio" title="${o.label}" aria-label="${o.label}" aria-checked="${o.v === v}" aria-pressed="${o.v === v}" style="--c:${o.v === 'none' ? '#fff' : o.v}" class="${o.v === 'none' ? 'none' : ''}" ${a} data-v="${o.v}"></button>`).join('')}</div>`
-      : `<div class="ch" role="radiogroup" aria-label="${g.label}">${g.options.map(o => `<button type="button" role="radio" aria-checked="${o.v === v}" aria-pressed="${o.v === v}" ${a} data-v="${o.v}">${o.label}${o.price ? `<small>${plus(o.price)}</small>` : ''}</button>`).join('')}</div>`;
+      ? `<div class="sw" role="radiogroup" aria-label="${g.label}">${g.options.map(o => `<button type="button" role="radio" title="${o.label}" aria-label="${o.label}" aria-checked="${o.v === v}" aria-pressed="${o.v === v}" style="--c:${o.v === 'none' ? '#fff' : o.v}" class="${o.v === 'none' ? 'none' : ''}" ${a} data-v="${o.v}"${off(o)}></button>`).join('')}</div>`
+      : `<div class="ch" role="radiogroup" aria-label="${g.label}">${g.options.map(o => `<button type="button" role="radio" aria-checked="${o.v === v}" aria-pressed="${o.v === v}" ${a} data-v="${o.v}"${off(o)}>${o.label}${o.price ? `<small>${plus(o.price)}</small>` : ''}</button>`).join('')}</div>`;
     return `<div class="grp">${head}${body}</div>`;
   }
   if (g.type === 'multi') {
@@ -442,12 +446,13 @@ $('#cForm')?.addEventListener('click', e => {
   if (b.dataset.v !== undefined) {
     if (obj[id] === b.dataset.v) return;
     obj[id] = b.dataset.v;
+    if (sc === 'p' && cur.p.variants) varFix(cur.p, cur.cfg); // lo que ya no existe pasa a la primera opción disponible
     // actualiza solo la selección para no perder scroll ni foco
     const wrapEl = b.parentElement;
     wrapEl.querySelectorAll('button').forEach(x => { const on = x === b; x.setAttribute('aria-pressed', on); x.setAttribute('aria-checked', on); });
     const em = b.closest('.grp').querySelector('.grp-h em'); if (em) em.textContent = g.options.find(o => o.v === b.dataset.v)?.label || '';
     // grupos condicionales o pestañas pueden cambiar: reconstruye si hace falta
-    const needs = groupsOf(sc).some(x => x.showIf) || (sc === 'f' && (id === 'torso' || id === 'hair' || id === 'skin' || id === 'hairColor' || id === 'face'));
+    const needs = (sc === 'p' && cur.p.variants) || groupsOf(sc).some(x => x.showIf) || (sc === 'f' && (id === 'torso' || id === 'hair' || id === 'skin' || id === 'hairColor' || id === 'face'));
     if (needs) { const y = $('#cForm').scrollTop; buildForm(); $('#cForm').scrollTop = y; }
     update(); return;
   }
@@ -828,12 +833,15 @@ function bomOf(p, cfg, qty) {
     if (f.outfit === 'vestido') add(`Figura · Vestido · ${L('torso', f.torso)}`);
     else { add(`Figura · Torso · ${L('outfit', f.outfit)} · ${L('torso', f.torso)}`); if (f.legs) add(`Figura · Piernas · ${L('legs', f.legs)}`); }
     if (f.hat && f.hat !== 'ninguno') add(`Figura · Sombrero · ${L('hat', f.hat)}`);
+    if (['lego', 'falda'].includes(f.outfit)) add(`Figura · Ropa · ${L('outfit', f.outfit)}`);
+    if (f.hand && f.hand !== 'ninguno') add(`Figura · Accesorio · ${L('hand', f.hand)}`);
     f.extras.forEach(x => add(`Figura · Detalle · ${L('extras', x) || x}`));
     if (base) add('Figura · Base acrílica');
   };
   const figLike = p.groups.some(g => g.id === 'extras');
   const figIds = new Set(FIG_GROUPS.map(g => g.id));
   const combo = new Set((p.stockKeys || []).flat());
+  if (p.variants) varSets(p).forEach(s => Object.values(s.map).forEach(id => combo.add(id)));
   add(p.name);
   p.groups.forEach(g => {
     if (!visible(g, cfg) || (figLike && figIds.has(g.id))) return;
@@ -843,6 +851,7 @@ function bomOf(p, cfg, qty) {
     else if (g.type === 'multi') (v || []).forEach(x => add(`${p.name} · ${g.label} · ${lab(p.groups, g.id, x)}`));
     else if ((g.type === 'choice' || g.type === 'swatch') && !combo.has(g.id) && !g.noStock && !['font', 'tpl'].includes(g.id) && !skip(lab(p.groups, g.id, v))) add(`${p.name} · ${g.label} · ${lab(p.groups, g.id, v)}`);
   });
+  if (p.variants) varActivos(p, cfg).forEach(s => add(varKey(p, s, cfg)));
   (p.stockKeys || []).forEach(ids => add(`${p.name} · ` + ids.map(id => { const g = p.groups.find(x => x.id === id); return `${g.label} ${lab(p.groups, id, cfg[id])}`; }).join(' · ')));
   if (figLike) figKeys(cfg, p.id !== 'llavero');
   return out;
