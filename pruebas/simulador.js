@@ -97,7 +97,7 @@ function cargar(opts = {}) {
   if (opts.ocr !== false) ctx.Drive = { Files: { create: () => ({ id: nid('D') }) } };
   vm.createContext(ctx);
   const dir = path.join(__dirname, '..', 'apps-script');
-  const code = ['Config', 'Setup', 'Orders', 'Inventory', 'Pagos', 'Sitio', 'Admin'].map(f => fs.readFileSync(path.join(dir, f + '.gs'), 'utf8')).join('\n;\n');
+  const code = ['Config', 'Catalogo', 'Setup', 'Orders', 'Inventory', 'Pagos', 'Sitio', 'Admin'].map(f => fs.readFileSync(path.join(dir, f + '.gs'), 'utf8')).join('\n;\n');
   // las const de arriba quedan visibles para las pruebas
   vm.runInContext(code + '\n;globalThis.__x = { COL, HEADERS, LIMITS, telKey_, celda_, montosEn_, elegirMonto_, numeroDe_ };', ctx);
 
