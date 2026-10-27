@@ -9,7 +9,9 @@
  *   2. "Sin acceso" -> el enlace no trae la clave de Config › Clave del CRM; ábrelo desde Pehn › Abrir CRM.
  *   3. Cambiaste el código y no se ve -> Implementar › Gestionar implementaciones › Nueva versión.
  *   4. URL_APP vieja -> cópiala de Implementar › Gestionar implementaciones y pégala abajo.
- * Para agregar una acción nueva: un case en crm() aquí, y en Admin.html una entrada en LOCAL si debe verse al instante.
+ * Para agregar una acción nueva: un case en crm() aquí, y en AdminJsServidor.html una entrada en LOCAL si debe verse al instante.
+ * La pantalla está partida en archivos HTML: Admin.html (esqueleto con los datos), AdminEstilos, AdminVistas y AdminJs*.
+ * Admin.html los pega con incluir_(); todos deben existir en el proyecto con el mismo nombre (sin .html).
  */
 
 function clave_() {
@@ -49,6 +51,9 @@ function doGet(e) {
   }
   return crmHtml_(k).setTitle('Pehn · CRM').addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
+
+// pega un archivo HTML del proyecto dentro de la plantilla (<?!= incluir_('Nombre') ?>); su contenido no se evalúa
+function incluir_(nombre) { return HtmlService.createHtmlOutputFromFile(nombre).getContent(); }
 
 function crmHtml_(k) {
   const t = HtmlService.createTemplateFromFile('Admin');
@@ -108,19 +113,25 @@ function crmDatosJson_() { return JSON.stringify(crmDatos_()); }
 
 function crmDatos_() { return conMemo_(crmDatosLeer_); }
 
-function crmDatosLeer_() {
-  const cfg = config_(), tz = Session.getScriptTimeZone();
-  const txt = v => v instanceof Date ? Utilities.formatDate(v, tz, 'dd/MM/yyyy') : String(v == null ? '' : v);
-  const dia = v => v instanceof Date ? Utilities.formatDate(v, tz, 'yyyy-MM-dd') : (/^\d{4}-\d{2}-\d{2}/.test(String(v)) ? String(v).slice(0, 10) : '');
-  const iso = v => { const d = v instanceof Date ? v : (v ? new Date(v) : null); return d && !isNaN(d) ? d.toISOString() : ''; };
+// formatos de celda: texto, día (aaaa-mm-dd) y fecha ISO
+function formatosCrm_() {
+  const tz = Session.getScriptTimeZone();
+  return {
+    txt: v => v instanceof Date ? Utilities.formatDate(v, tz, 'dd/MM/yyyy') : String(v == null ? '' : v),
+    dia: v => v instanceof Date ? Utilities.formatDate(v, tz, 'yyyy-MM-dd') : (/^\d{4}-\d{2}-\d{2}/.test(String(v)) ? String(v).slice(0, 10) : ''),
+    iso: v => { const d = v instanceof Date ? v : (v ? new Date(v) : null); return d && !isNaN(d) ? d.toISOString() : ''; },
+  };
+}
 
+// pedidos con sus productos y las fotos de cada uno (el más nuevo primero)
+function crmPedidos_({ txt, dia, iso }) {
   const previews = {};
   rows_('partidas').forEach(r => {
     const id = String(r['Archivo vista previa'] || '').match(/[-\w]{25,}/);
     if (id) (previews[r.Pedido] = previews[r.Pedido] || []).push(id[0]);
   });
 
-  const pedidos = rows_('pedidos').map(p => {
+  return rows_('pedidos').map(p => {
     const d = datos_(p);
     return {
       row: p._row, id: txt(p.ID), fecha: iso(p.Fecha), estado: txt(p.Estado) || 'Nuevo',
@@ -132,8 +143,10 @@ function crmDatosLeer_() {
       previews: previews[p.ID] || [],
     };
   }).reverse();
+}
 
-  // clientes: ficha de la hoja + lo que se calcula de sus pedidos
+// clientes: ficha de la hoja + lo que se calcula de sus pedidos
+function crmClientes_(pedidos, { txt }) {
   const fichas = {};
   const shC = hojaClientes_();
   if (shC) rows_('clientes').forEach(r => { fichas[telKey_(r.WhatsApp)] = r; });
@@ -144,32 +157,45 @@ function crmDatosLeer_() {
     c.pedidos.push(p.id); c.nombre = p.cliente || c.nombre; c.correo = p.correo || c.correo; c.ciudad = p.ciudad || c.ciudad; c.ultimo = p.fecha;
     if (p.estado !== 'Cancelado') c.total += p.total;
   });
-  const clientes = Object.values(map).map(c => {
+  return Object.values(map).map(c => {
     const f = fichas[c.tel] || {};
     return { ...c, row: f._row || 0, etiquetas: txt(f.Etiquetas), notas: txt(f.Notas) };
   }).sort((a, b) => String(b.ultimo).localeCompare(String(a.ultimo)));
+}
 
+function crmInventario_({ txt, iso }) {
   const res = reservado_();
-  const inventario = rows_('inventario').map(i => ({
+  return rows_('inventario').map(i => ({
     row: i._row, sku: txt(i.SKU), pieza: txt(i.Pieza), cat: txt(i['Categoría']), stock: Number(i.Stock) || 0, min: Number(i['Mínimo']) || 0,
     unidad: txt(i.Unidad), costo: Number(i['Costo unitario']) || 0, proveedor: txt(i.Proveedor), actualizado: iso(i.Actualizado), apartado: res[txt(i.SKU)] || 0,
   }));
   const recetas = rows_('recetas').map(r => ({ row: r._row, clave: txt(r.Clave), sku: txt(r.SKU), qty: Number(r.Cantidad) || 1, notas: txt(r.Notas) }));
-  // pagos: si la hoja no existe todavía (instalación vieja) el CRM sigue funcionando sin ellos
-  let pagos = [];
-  try {
-    pagos = rows_('pagos').slice(-300).reverse().map(x => ({ row: x._row, fecha: iso(x.Fecha), pedido: txt(x.Pedido), monto: Number(x['Monto leído']) || 0, leido: txt(x['Monto leído']),
-      esperado: Number(x.Esperado) || 0, resultado: txt(x.Resultado), url: txt(x.Comprobante), revisado: txt(x['Revisado por']), texto: txt(x['Texto leído']).slice(0, 400) }));
-  } catch (e) { console.warn('Sin hoja Pagos: corre Pehn › Configurar hojas.'); }
-  const movs = rows_('movimientos').slice(-120).reverse().map(m => ({ fecha: iso(m.Fecha), sku: txt(m.SKU), pieza: txt(m.Pieza), qty: Number(m.Cantidad) || 0, despues: Number(m['Stock después']) || 0, motivo: txt(m.Motivo), pedido: txt(m.Pedido), usuario: txt(m.Usuario) }));
+}
 
+// pagos: si la hoja no existe todavía (instalación vieja) el CRM sigue funcionando sin ellos
+function crmPagos_({ txt, iso }) {
+  try {
+    return rows_('pagos').slice(-300).reverse().map(x => ({ row: x._row, fecha: iso(x.Fecha), pedido: txt(x.Pedido), monto: Number(x['Monto leído']) || 0, leido: txt(x['Monto leído']),
+      esperado: Number(x.Esperado) || 0, resultado: txt(x.Resultado), url: txt(x.Comprobante), revisado: txt(x['Revisado por']), texto: txt(x['Texto leído']).slice(0, 400) }));
+  } catch (e) { console.warn('Sin hoja Pagos: corre Pehn › Configurar hojas.'); return []; }
+}
+
+function crmMovs_({ txt, iso }) {
+  return rows_('movimientos').slice(-120).reverse().map(m => ({ fecha: iso(m.Fecha), sku: txt(m.SKU), pieza: txt(m.Pieza), qty: Number(m.Cantidad) || 0, despues: Number(m['Stock después']) || 0, motivo: txt(m.Motivo), pedido: txt(m.Pedido), usuario: txt(m.Usuario) }));
+}
+
+function crmDatosLeer_() {
+  const cfg = config_(), f = formatosCrm_(), { txt } = f;
+  const pedidos = crmPedidos_(f);
   return {
     estados: ESTADOS, gatillo: txt(cfg['Estado que descuenta stock']) || 'En producción',
     negocio: txt(cfg['Nombre del negocio']) || 'Pehn Design', waNegocio: txt(cfg['WhatsApp del negocio']),
     hoja: ss_().getUrl(), generado: new Date().toISOString(),
     anticipo: Number(cfg['Anticipo (%)']) || 50, web: txt(cfg['Sitio web']),
     sitio: sitioCrm_(),
-    pedidos, clientes, inventario, recetas, movs, pagos,
+    pedidos, clientes: crmClientes_(pedidos, f), inventario: crmInventario_(f),
+    recetas: rows_('recetas').map(r => ({ row: r._row, clave: txt(r.Clave), sku: txt(r.SKU), qty: Number(r.Cantidad) || 1, notas: txt(r.Notas) })),
+    movs: crmMovs_(f), pagos: crmPagos_(f),
   };
 }
 
@@ -181,61 +207,62 @@ function filaValida_(key, row) {
   return r;
 }
 
+// Una función por acción del CRM. Las que regresan texto JSON lo mandan tal cual; las demás regresan los datos al día.
+function crmImagenes_(args) {
+  const srcs = {};
+  (Array.isArray(args.ids) ? args.ids : []).filter(id => /^[-\w]{25,80}$/.test(id)).slice(0, 6).forEach(id => {
+    try { srcs[id] = dataUrl_(DriveApp.getFileById(String(id)).getBlob()); } catch (e) { /* foto borrada o sin permiso: el CRM muestra "Sin foto" */ }
+  });
+  return JSON.stringify({ srcs });
+}
+function crmEstado_(args) {
+  if (!ESTADOS.includes(args.estado)) throw new Error('Estado inválido.');
+  const row = filaValida_('pedidos', args.row);
+  conCandado_(() => { sheet_('pedidos').getRange(row, COL.pedidos.Estado).setValue(args.estado); aplicarEstado_(row, args.estado); });
+}
+function crmNota_(args) {
+  sheet_('pedidos').getRange(filaValida_('pedidos', args.row), COL.pedidos['Notas internas']).setValue(celda_(texto_(args.texto, 2000)));
+}
+function crmCliente_(args) {
+  const sh = hojaClientes_();
+  if (!sh) throw new Error('Ya existe una hoja "Clientes" con otros datos; no se modifica.');
+  const et = linea_(args.etiquetas, 200), notas = texto_(args.notas, 2000);
+  if (Number(args.row)) sh.getRange(filaValida_('clientes', args.row), COL.clientes.Etiquetas, 1, 2).setValues([fila_([et, notas])]);
+  else sh.appendRow(fila_(["'" + telKey_(args.tel), linea_(args.nombre, 80), linea_(args.correo, 120), linea_(args.ciudad, 60), '', '', et, notas]));
+}
+function crmAjuste_(args) {
+  const delta = Number(args.delta);
+  if (!delta) throw new Error('Cantidad inválida.');
+  conCandado_(() => moverStock_(linea_(args.sku, 40), delta, linea_(args.motivo, 120) || (delta > 0 ? 'Entrada de mercancía' : 'Salida manual'), ''));
+}
+function crmReceta_(args) {
+  const sh = sheet_('recetas'), row = filaValida_('recetas', args.row), sku = linea_(args.sku, 40).toUpperCase();
+  sh.getRange(row, COL.recetas.SKU, 1, 3).setValues([fila_([sku, Math.max(1, Math.round(Number(args.qty) || 1)), sku ? '' : 'Sin inventario'])]);
+}
+// el dueño confirma o rechaza un comprobante que subió el cliente
+function crmPago_(args) {
+  if (!['Confirmado', 'Rechazado'].includes(args.resultado)) throw new Error('Resultado inválido.');
+  const sh = sheet_('pagos'), row = filaValida_('pagos', args.row);
+  sh.getRange(row, COL.pagos.Resultado).setValue(args.resultado);
+  sh.getRange(row, COL.pagos['Revisado por']).setValue(celda_(who_()));
+  if (args.monto !== undefined && args.monto !== '') sh.getRange(row, COL.pagos['Monto leído']).setValue(Math.max(0, Number(args.monto) || 0));
+}
+// acción -> función (se arma al usarse para no depender del orden en que Google carga los archivos)
+const accionesCrm_ = () => ({
+  datos: () => {}, imagenes: crmImagenes_, estado: crmEstado_, nota: crmNota_, cliente: crmCliente_, ajuste: crmAjuste_,
+  pieza: args => { conCandado_(() => guardarPieza_(args)); },
+  sitio: args => { conCandado_(() => guardarSitio_(args.cambios)); },
+  sitioImagen: args => JSON.stringify({ url: subirImagenSitio_(String(args.dataUrl || '')) }),
+  receta: crmReceta_, pago: crmPago_,
+});
+
 function crm(k, accion, args) {
   exigir_(k);
   args = args && typeof args === 'object' ? args : {};
-  switch (accion) {
-    case 'datos': break;
-    case 'imagenes': {
-      const srcs = {};
-      (Array.isArray(args.ids) ? args.ids : []).filter(id => /^[-\w]{25,80}$/.test(id)).slice(0, 6).forEach(id => {
-        try { srcs[id] = dataUrl_(DriveApp.getFileById(String(id)).getBlob()); } catch (e) { /* foto borrada o sin permiso: el CRM muestra "Sin foto" */ }
-      });
-      return JSON.stringify({ srcs });
-    }
-    case 'estado': {
-      if (!ESTADOS.includes(args.estado)) throw new Error('Estado inválido.');
-      const row = filaValida_('pedidos', args.row);
-      conCandado_(() => { sheet_('pedidos').getRange(row, COL.pedidos.Estado).setValue(args.estado); aplicarEstado_(row, args.estado); });
-      break;
-    }
-    case 'nota':
-      sheet_('pedidos').getRange(filaValida_('pedidos', args.row), COL.pedidos['Notas internas']).setValue(celda_(texto_(args.texto, 2000)));
-      break;
-    case 'cliente': {
-      const sh = hojaClientes_();
-      if (!sh) throw new Error('Ya existe una hoja "Clientes" con otros datos; no se modifica.');
-      const et = linea_(args.etiquetas, 200), notas = texto_(args.notas, 2000);
-      if (Number(args.row)) sh.getRange(filaValida_('clientes', args.row), COL.clientes.Etiquetas, 1, 2).setValues([fila_([et, notas])]);
-      else sh.appendRow(fila_(["'" + telKey_(args.tel), linea_(args.nombre, 80), linea_(args.correo, 120), linea_(args.ciudad, 60), '', '', et, notas]));
-      break;
-    }
-    case 'ajuste': {
-      const delta = Number(args.delta);
-      if (!delta) throw new Error('Cantidad inválida.');
-      conCandado_(() => moverStock_(linea_(args.sku, 40), delta, linea_(args.motivo, 120) || (delta > 0 ? 'Entrada de mercancía' : 'Salida manual'), ''));
-      break;
-    }
-    case 'pieza': conCandado_(() => guardarPieza_(args)); break;
-    case 'sitio': conCandado_(() => guardarSitio_(args.cambios)); break;
-    case 'sitioImagen': return JSON.stringify({ url: subirImagenSitio_(String(args.dataUrl || '')) });
-    case 'receta': {
-      const sh = sheet_('recetas'), row = filaValida_('recetas', args.row), sku = linea_(args.sku, 40).toUpperCase();
-      sh.getRange(row, COL.recetas.SKU, 1, 3).setValues([fila_([sku, Math.max(1, Math.round(Number(args.qty) || 1)), sku ? '' : 'Sin inventario'])]);
-      break;
-    }
-    case 'pago': {
-      // el dueño confirma o rechaza un comprobante que subió el cliente
-      if (!['Confirmado', 'Rechazado'].includes(args.resultado)) throw new Error('Resultado inválido.');
-      const sh = sheet_('pagos'), row = filaValida_('pagos', args.row);
-      sh.getRange(row, COL.pagos.Resultado).setValue(args.resultado);
-      sh.getRange(row, COL.pagos['Revisado por']).setValue(celda_(who_()));
-      if (args.monto !== undefined && args.monto !== '') sh.getRange(row, COL.pagos['Monto leído']).setValue(Math.max(0, Number(args.monto) || 0));
-      break;
-    }
-    default: throw new Error('Acción desconocida: ' + accion);
-  }
-  return crmDatosJson_();
+  const acciones = accionesCrm_();
+  if (!Object.prototype.hasOwnProperty.call(acciones, accion)) throw new Error('Acción desconocida: ' + accion);
+  const r = acciones[accion](args);
+  return typeof r === 'string' ? r : crmDatosJson_();
 }
 
 function guardarPieza_(p) {

@@ -1,0 +1,54 @@
+<script>
+/* Admin — vista SITIO WEB
+   Colores, textos, fotos y contacto que ven los clientes. Depende de: Base, Servidor, Pagos (urlSegura). */
+// ---------- sitio web: colores, textos, fotos y contacto que ven los clientes ----------
+// cambios sin guardar: clave -> valor
+const SIT = new Map();
+const GRUPOS_SITIO = [['Colores', /^color[.]/], ['Portada', /^(anuncio|hero[.]|seccion[.])/], ['Cómo funciona', /^como[.]/], ['Historia', /^historia[.]/], ['Preguntas frecuentes', /^faq[.]/], ['Contacto y pie de página', /^(pie|contacto[.])/]];
+const webSegura = u => /^https:[/][/][\w.-]+[.][a-z]{2,}([/]\S*)?$/i.test(String(u)) ? String(u).replace(/[/]$/, '') : '';
+const fotoSitio = v => /^https:/.test(v) ? urlSegura(v) || (/^https:[/][/]lh3[.]googleusercontent[.]com[/]/.test(v) ? v : '') : (webSegura(D.web) && /^fotos[/]/.test(v) ? webSegura(D.web) + '/' + v : '');
+function campoSitio(f) {
+  const v = SIT.has(f.clave) ? SIT.get(f.clave) : f.valor, id = 'sf_' + f.clave.replace(/[^\w]/g, '_'), a = `id="${id}" data-s="${esc(f.clave)}"`;
+  const cambio = SIT.has(f.clave) ? ' cambio' : '';
+  let input;
+  if (f.tipo === 'color') input = `<span class="colorin"><input type="color" ${a} value="${esc(/^#[0-9a-f]{6}$/i.test(v) ? v : '#000000')}"><code>${esc(v)}</code></span>`;
+  else if (f.tipo === 'largo') input = `<textarea class="in" rows="3" maxlength="900" ${a}>${esc(v)}</textarea>`;
+  else if (f.tipo === 'imagen') { const src = fotoSitio(v); input = `<div class="fotosit">${src ? `<img src="${esc(src)}" alt="">` : '<span class="muted">Vista previa al poner la dirección del sitio en Config</span>'}<div><button class="btn sm" data-subir="${esc(f.clave)}">Subir otra foto</button><small class="muted">${esc(v)}</small></div></div>`; }
+  else input = `<input class="in" ${a} value="${esc(v)}" maxlength="${f.tipo === 'texto' ? 160 : 300}" ${f.tipo === 'whatsapp' ? 'inputmode="tel" placeholder="50498765432"' : ''} autocomplete="off">`;
+  return `<div class="campo${cambio}"><label for="${id}"><b>${esc(f.ayuda)}</b><small class="muted">${esc(f.clave)}</small></label>${input}</div>`;
+}
+function rSitio() {
+  const F = D.sitio || [];
+  $('#pSub').innerHTML = `Cambia lo que ven tus clientes sin tocar código.${webSegura(D.web) ? ` <a href="${esc(webSegura(D.web))}" target="_blank" rel="noopener noreferrer">Ver sitio ↗</a>` : ' Pon la dirección de tu página en Config › Sitio web para ver las fotos aquí.'}`;
+  $('#sitioBody').innerHTML = F.length ? GRUPOS_SITIO.map(([t, re]) => { const fs = F.filter(f => re.test(f.clave)); return fs.length ? `<div class="card sitio-g"><h3>${t}</h3><div class="campos">${fs.map(campoSitio).join('')}</div></div>` : ''; }).join('')
+    : '<div class="empty">Falta la hoja Sitio. En la hoja de cálculo corre Pehn › Configurar hojas.</div>';
+  $('#sitioBar').hidden = !SIT.size;
+  $('#sitioN').textContent = `${plural(SIT.size, 'cambio', 'cambios')} sin guardar`;
+}
+function marcaSitio(clave, valor) {
+  const f = (D.sitio || []).find(x => x.clave === clave); if (!f) return;
+  if (valor === f.valor) SIT.delete(clave); else SIT.set(clave, valor);
+  $('#sitioBar').hidden = !SIT.size; $('#sitioN').textContent = `${plural(SIT.size, 'cambio', 'cambios')} sin guardar`;
+  $('#cSit').hidden = !SIT.size; $('#cSit').textContent = SIT.size;
+  document.querySelector(`[data-s="${CSS.escape(clave)}"]`)?.closest('.campo')?.classList.toggle('cambio', SIT.has(clave));
+}
+document.addEventListener('input', e => { const el = e.target.closest('[data-s]'); if (!el) return; marcaSitio(el.dataset.s, el.value); if (el.type === 'color') el.nextElementSibling.textContent = el.value.toUpperCase(); });
+// foto nueva: se achica aquí (máx. 1600 px) y se sube a Drive; la dirección queda como cambio sin guardar
+let subiendoA = '';
+function achicar(file, max) {
+  return new Promise((ok, ko) => { const img = new Image(), r = new FileReader(); r.onload = () => { img.src = r.result; }; r.onerror = ko; img.onerror = ko;
+    img.onload = () => { const k = Math.min(1, max / Math.max(img.width, img.height)), cv = document.createElement('canvas'); cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k); cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height); ok(cv.toDataURL('image/jpeg', 0.86)); };
+    r.readAsDataURL(file); });
+}
+$('#sitioFile').addEventListener('change', async e => {
+  const file = e.target.files[0]; e.target.value = ''; if (!file || !subiendoA) return;
+  try { toast('Subiendo foto…'); const r = await call('sitioImagen', { dataUrl: await achicar(file, 1600) }); marcaSitio(subiendoA, r.url); rSitio(); toast('Foto lista: guarda los cambios para publicarla'); }
+  catch (x) { toast('No se pudo subir: ' + (x.message || x)); }
+});
+
+CLICS.push(
+  [d => d.subir, d => { subiendoA = d.subir; $('#sitioFile').click(); }],
+  [(d, t) => t.id === 'sitioSave', () => { const cambios = [...SIT].map(([clave, valor]) => ({ clave, valor })); SIT.clear(); return act('sitio', { cambios }, 'Sitio actualizado: se verá en unos minutos'); }],
+  [(d, t) => t.id === 'sitioUndo', () => { SIT.clear(); render(); }],
+);
+</script>

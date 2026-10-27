@@ -115,90 +115,105 @@ function verificarTurnstile_(token) {
 
 // Lo lento (Drive, OCR, correo) va FUERA del candado; dentro solo ID, filas y stock.
 // Si algo falla antes de guardar el pedido, la carpeta temporal se manda a la papelera (si no se puede, queda huérfana sin daño).
+// Pasos: validar -> fotos y comprobante (sin candado) -> guardar filas (con candado) -> correo (sin candado).
 function recibirPedido_(raw, cfg) {
   const d = limpiarPedido_(raw), c = d.customer;
-  // anticipo antes de enviar (Config › Anticipo antes de enviar = Sí)
+  validarPedido_(raw, d, cfg);
+  const folder = folder_().createFolder(`Nuevo · ${String(c.name).slice(0, 40)}`);
+  const estado = { guardado: false }; // pasa a true cuando la fila del pedido ya está en la hoja
+  try {
+    const partidas = subirFotos_(folder, d);
+    const esperado = Math.round(d.total * (Number(cfg['Anticipo (%)']) || 50) / 100);
+    const leido = leerAnticipo_(folder, d);
+    const { id, pago } = conCandado_(() => guardarFilas_(d, folder, partidas, leido, esperado, estado));
+    avisarCliente_(id, d, partidas, cfg, pago, esperado);
+    return { id, pago };
+  } catch (err) {
+    if (!estado.guardado) { try { folder.setTrashed(true); } catch (e) { /* queda huérfana: sin daño */ } }
+    throw err;
+  }
+}
+
+// comprobante (si el anticipo es antes de enviar), anti-bots y límites por contacto y por hora
+function validarPedido_(raw, d, cfg) {
   if (d.comprobante && !comprobanteValido_(d.comprobante)) throw new Error('El comprobante debe ser foto (JPG, PNG) o PDF de menos de 5 MB.');
   if (!d.comprobante && yes_(cfg['Anticipo antes de enviar'] ?? 'Sí')) throw new Error('Sube el comprobante de tu anticipo para enviar el pedido.');
   verificarTurnstile_(raw.turnstile);
-  limite_('p_' + telKey_(c.phone), LIMITS.perContact, 600, 'Demasiados pedidos seguidos. Escríbenos por WhatsApp.');
+  limite_('p_' + telKey_(d.customer.phone), LIMITS.perContact, 600, 'Demasiados pedidos seguidos. Escríbenos por WhatsApp.');
   limite_('p_hora', LIMITS.perHour, 3600, 'Estamos recibiendo muchos pedidos. Intenta en unos minutos o escríbenos por WhatsApp.');
+}
+// 1) sin candado: la vista previa y las fotos del cliente de cada producto, guardadas en Drive
+function subirFotos_(folder, d) {
+  return d.items.map((it, i) => {
+    const prev = it.preview ? guardarImagen_(folder, it.preview, `${i + 1} vista previa`) : null;
+    const subidas = (it.images || []).slice(0, 4).map((src, j) => guardarImagen_(folder, src, `${i + 1} imagen cliente ${j + 1}`)).filter(Boolean);
+    return { it, prev, subidas };
+  });
+}
+// lectura del comprobante (OCR); el pedido no se pierde si falla
+function leerAnticipo_(folder, d) {
+  if (!d.comprobante) return null;
+  try { return prepararComprobante_(folder, d.comprobante); }
+  catch (err) { console.error('Comprobante no procesado:', err); return null; }
+}
 
-  // 1) sin candado: carpeta temporal (se renombra con el ID dentro del candado), fotos y lectura del comprobante
-  const folder = folder_().createFolder(`Nuevo · ${String(c.name).slice(0, 40)}`);
-  let guardado = false;
-  try {
-    const partidas = d.items.map((it, i) => {
-      const prev = it.preview ? guardarImagen_(folder, it.preview, `${i + 1} vista previa`) : null;
-      const subidas = (it.images || []).slice(0, 4).map((src, j) => guardarImagen_(folder, src, `${i + 1} imagen cliente ${j + 1}`)).filter(Boolean);
-      return { it, prev, subidas };
-    });
-    const esperado = Math.round(d.total * (Number(cfg['Anticipo (%)']) || 50) / 100);
-    let leido = null;
-    if (d.comprobante) {
-      try { leido = prepararComprobante_(folder, d.comprobante); }
-      catch (err) { console.error('Comprobante no procesado:', err); } // el pedido no se pierde por esto
-    }
-
-    // 2) con candado: ID, filas y stock
-    const { id, pago } = conCandado_(() => {
-      const id = nuevoId_();
-      folder.setName(`${id} · ${String(c.name).slice(0, 40)}`);
-      const fecha = now_();
-      const piezas = consumoDePedido_(d.items);
-      const disp = disponibilidad_(piezas);
-      const textoProductos = d.items.map(it => `${it.qty} × ${it.product}`).join('\n');
-      const textoPiezas = piezas.map(p => `${p.qty} × ${p.sku} ${p.name || ''}`.trim()).join('\n') || '(sin receta)';
-
-      // Pedidos
-      const sh = sheet_('pedidos');
-      const row = [id, fecha, 'Nuevo', c.name, c.phone, c.email, c.city, c.date, textoProductos, textoPiezas,
-        d.total, d.currency, '', folder.getUrl(), disp.texto, c.notes, '', fecha,
-        datosJson_({ items: d.items.map(stripImages_), piezas, descontado: false }), ''];
-      sh.appendRow(fila_(row));
-      guardado = true;
-      const r = sh.getLastRow();
-      if (partidas[0] && partidas[0].prev) ponerImagen_(sh.getRange(r, COL.pedidos['Vista previa']), partidas[0].prev);
-      sh.setRowHeight(r, 110);
-
-      // Partidas
-      const sp = sheet_('partidas');
-      partidas.forEach(({ it, prev, subidas }, i) => {
-        sp.appendRow(fila_([id, i + 1, it.product, it.qty, it.unitPrice, it.discount, it.total, opcionesTexto_(it.options), '',
-          subidas.map(s => s.url).join('\n'), prev ? prev.url : '']));
-        const pr = sp.getLastRow();
-        if (prev) ponerImagen_(sp.getRange(pr, COL.partidas['Vista previa']), prev);
-        sp.setRowHeight(pr, 110);
-      });
-
-      // anticipo que mandó junto con el pedido
-      let pago = null;
-      if (leido) {
-        try { pago = anotarPago_({ ID: id }, leido, esperado); }
-        catch (err) { console.error('Pago no anotado:', err); }
-      }
-
-      // claves nuevas que todavía no tienen pieza asignada
-      registrarClavesNuevas_(d.items);
-      try { guardarCliente_(c, fecha); } catch (err) { console.error(err); } // nunca frena un pedido
-      return { id, pago };
-    });
-
-    // 3) sin candado: un solo correo al cliente; si falla o no hay cuota, el pedido ya quedó guardado y se anota en la hoja
-    let marca;
-    try { marca = correoCliente_(id, d, partidas, cfg, pago, !!d.comprobante, esperado); }
-    catch (err) { console.error('Correo no enviado:', err); marca = 'Falló: ' + linea_(err && err.message || err, 80); }
-    try {
-      conCandado_(() => {
-        const fila = rows_('pedidos').find(p => String(p.ID) === id);
-        if (fila) sheet_('pedidos').getRange(fila._row, COL.pedidos['Correo cliente']).setValue(celda_(marca));
-      });
-    } catch (err) { console.error(err); }
-    return { id, pago };
-  } catch (err) {
-    if (!guardado) { try { folder.setTrashed(true); } catch (e) { /* queda huérfana: sin daño */ } }
-    throw err;
+// 2) con candado: ID, filas y stock
+function guardarFilas_(d, folder, partidas, leido, esperado, estado) {
+  const c = d.customer, id = nuevoId_();
+  folder.setName(`${id} · ${String(c.name).slice(0, 40)}`);
+  const fecha = now_();
+  const piezas = consumoDePedido_(d.items);
+  anotarPedido_(id, fecha, d, folder, partidas, piezas, estado);
+  anotarPartidas_(id, partidas);
+  // anticipo que mandó junto con el pedido
+  let pago = null;
+  if (leido) {
+    try { pago = anotarPago_({ ID: id }, leido, esperado); }
+    catch (err) { console.error('Pago no anotado:', err); }
   }
+  // claves nuevas que todavía no tienen pieza asignada
+  registrarClavesNuevas_(d.items);
+  try { guardarCliente_(c, fecha); } catch (err) { console.error(err); } // nunca frena un pedido
+  return { id, pago };
+}
+// hoja Pedidos: una fila con el resumen, la carpeta de Drive y la disponibilidad de piezas
+function anotarPedido_(id, fecha, d, folder, partidas, piezas, estado) {
+  const c = d.customer, disp = disponibilidad_(piezas);
+  const textoProductos = d.items.map(it => `${it.qty} × ${it.product}`).join('\n');
+  const textoPiezas = piezas.map(p => `${p.qty} × ${p.sku} ${p.name || ''}`.trim()).join('\n') || '(sin receta)';
+  const sh = sheet_('pedidos');
+  const row = [id, fecha, 'Nuevo', c.name, c.phone, c.email, c.city, c.date, textoProductos, textoPiezas,
+    d.total, d.currency, '', folder.getUrl(), disp.texto, c.notes, '', fecha,
+    datosJson_({ items: d.items.map(stripImages_), piezas, descontado: false }), ''];
+  sh.appendRow(fila_(row));
+  estado.guardado = true;
+  const r = sh.getLastRow();
+  if (partidas[0] && partidas[0].prev) ponerImagen_(sh.getRange(r, COL.pedidos['Vista previa']), partidas[0].prev);
+  sh.setRowHeight(r, 110);
+}
+// hoja Partidas: una fila por producto del pedido
+function anotarPartidas_(id, partidas) {
+  const sp = sheet_('partidas');
+  partidas.forEach(({ it, prev, subidas }, i) => {
+    sp.appendRow(fila_([id, i + 1, it.product, it.qty, it.unitPrice, it.discount, it.total, opcionesTexto_(it.options), '',
+      subidas.map(s => s.url).join('\n'), prev ? prev.url : '']));
+    const pr = sp.getLastRow();
+    if (prev) ponerImagen_(sp.getRange(pr, COL.partidas['Vista previa']), prev);
+    sp.setRowHeight(pr, 110);
+  });
+}
+
+// 3) sin candado: un solo correo al cliente; si falla o no hay cuota, el pedido ya quedó guardado y se anota en la hoja
+function avisarCliente_(id, d, partidas, cfg, pago, esperado) {
+  let marca;
+  try { marca = correoCliente_(id, d, partidas, cfg, pago, !!d.comprobante, esperado); }
+  catch (err) { console.error('Correo no enviado:', err); marca = 'Falló: ' + linea_(err && err.message || err, 80); }
+  try {
+    conCandado_(() => {
+      const fila = rows_('pedidos').find(p => String(p.ID) === id);
+      if (fila) sheet_('pedidos').getRange(fila._row, COL.pedidos['Correo cliente']).setValue(celda_(marca));
+    });
+  } catch (err) { console.error(err); }
 }
 
 // ficha del cliente (una por WhatsApp); las notas y etiquetas se editan en el CRM
@@ -276,27 +291,30 @@ function ponerImagen_(cell, img) {
 
 const hashCorreo_ = email => Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(email).trim().toLowerCase()));
 
-// Correo al cliente: uno solo por pedido. Devuelve la marca que se guarda en "Correo cliente":
-// 'Enviado' / 'Sin correo' / 'Sin correo (sin cuota hoy)'. Si el envío truena, lanza error (lo anota quien llama).
-function correoCliente_(id, d, partidas, cfg, pago, subioComprobante, anticipo) {
-  const c = d.customer;
+// por qué NO se le escribe al cliente ('' = sí se le puede escribir)
+function sinCorreoPorque_(c, cfg) {
   if (!c.email || !yes_(cfg['Confirmar al cliente por correo'])) return 'Sin correo';
   // deja 1 correo de reserva para el resumen del negocio
   if (MailApp.getRemainingDailyQuota() < 2) return 'Sin correo (sin cuota hoy)';
   // máximo 1 correo por destinatario (el token del sitio es público: así no sirve para llenar de correos a un tercero).
   // Se guarda un hash, no el correo. La caché de Google aguanta como máximo 6 h (21600 s).
   try { limite_('m_' + hashCorreo_(c.email), 1, 21600, 'ya'); } catch (err) { return 'Sin correo (ya se le escribió hoy)'; }
-  const negocio = cfg['Nombre del negocio'] || 'Pehn Design';
-  const pct = Number(cfg['Anticipo (%)']) || 50, moneda = d.currency, inline = {};
+  return '';
+}
+// tabla de productos del correo (con su vista previa en línea) y el total
+function tablaCorreo_(d, partidas, inline) {
+  const moneda = d.currency;
   const bloques = partidas.map(({ it, prev }, i) => {
     if (prev) inline['p' + i] = prev.blob.setName('p' + i);
     return `<tr><td style="padding:12px 0;vertical-align:top;width:130px">${prev ? `<img src="cid:p${i}" width="120" style="border-radius:10px;display:block">` : ''}</td>
       <td style="padding:12px;vertical-align:top"><b>${esc_(it.qty)} × ${esc_(it.product)}</b><br>
       <span style="color:#5C4C41;font-size:13px">${esc_(opcionesTexto_(it.options)).replace(/\n/g, '<br>')}</span><br><b>${money_(it.total, moneda)}</b></td></tr>`;
   }).join('');
-  const tabla = `<table style="width:100%;border-collapse:collapse">${bloques}</table><p style="font-size:16px"><b>Total: ${money_(d.total, moneda)}</b></p>`;
-
-  // estado del pago
+  return `<table style="width:100%;border-collapse:collapse">${bloques}</table><p style="font-size:16px"><b>Total: ${money_(d.total, moneda)}</b></p>`;
+}
+// qué se le dice del anticipo: recibido, en verificación o cómo pagarlo
+function estadoPagoCorreo_(d, cfg, pago, subioComprobante, anticipo) {
+  const pct = Number(cfg['Anticipo (%)']) || 50, moneda = d.currency;
   const falta = Math.max(0, d.total - anticipo);
   let estadoPago;
   if (subioComprobante && pago && pago.resultado === 'Coincide') {
@@ -307,6 +325,17 @@ function correoCliente_(id, d, partidas, cfg, pago, subioComprobante, anticipo) 
     const banco = cfg['Datos bancarios'] ? `<br>${esc_(cfg['Datos bancarios'])}` : '';
     estadoPago = `Para empezar paga el ${pct}% (<b>${money_(anticipo, moneda)}</b>) y súbelo en Mis pedidos o mándalo por WhatsApp.${banco}<br>El resto (<b>${money_(falta, moneda)}</b>) lo pagas al final, cuando tu pedido esté listo.`;
   }
+  return estadoPago;
+}
+
+// Correo al cliente: uno solo por pedido. Devuelve la marca que se guarda en "Correo cliente":
+// 'Enviado' / 'Sin correo' / 'Sin correo (sin cuota hoy)'. Si el envío truena, lanza error (lo anota quien llama).
+function correoCliente_(id, d, partidas, cfg, pago, subioComprobante, anticipo) {
+  const c = d.customer, motivo = sinCorreoPorque_(c, cfg);
+  if (motivo) return motivo;
+  const negocio = cfg['Nombre del negocio'] || 'Pehn Design', inline = {};
+  const tabla = tablaCorreo_(d, partidas, inline);
+  const estadoPago = estadoPagoCorreo_(d, cfg, pago, subioComprobante, anticipo);
 
   const sitio = /^https?:\/\//i.test(String(cfg['Sitio web'] || '').trim()) ? String(cfg['Sitio web']).trim().replace(/\/+$/, '') : '';
   const rastrear = sitio ? `<p><a href="${esc_(sitio)}/pedido.html?id=${encodeURIComponent(id)}" style="color:#1E1611">Ver mi pedido en Mis pedidos →</a></p>` : '';

@@ -1,0 +1,93 @@
+<!-- Vistas del CRM: una <section> por pantalla (Inicio, Pedidos, Clientes, Inventario, Recetas, Pagos, Sitio web, Movimientos).
+     Para una vista nueva: botón en #nav (Admin.html), <section id="v-nombre"> aquí, y su AdminJsNombre.html con la función rNombre(). -->
+      <!-- INICIO -->
+      <section class="view" id="v-inicio">
+        <div class="hero"><div><h2 id="hola"></h2><p id="holaSub"></p><div class="actions" id="holaAct"></div></div></div>
+        <div class="kpis" id="kpiHome"></div>
+        <div class="grid2">
+          <div class="card"><div class="ch"><h3>Para hoy</h3></div><div class="list" id="todo"></div></div>
+          <div class="card"><div class="ch"><h3>Últimos pedidos</h3><button class="lnk" data-go="pedidos" data-f="Todos">Ver todos →</button></div><div class="list" id="recent"></div></div>
+        </div>
+      </section>
+
+      <!-- PEDIDOS -->
+      <section class="view" id="v-pedidos" hidden>
+        <div class="panel">
+          <div class="pnh">
+            <h3><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg></i>Lista de pedidos <span class="cnt" id="nP"></span></h3>
+            <input class="search" id="qP" type="search" placeholder="Filtrar por cliente, ID o producto…" aria-label="Filtrar pedidos">
+            <button class="btn sm" data-expall="1" title="Abre o cierra el detalle de todos los pedidos de esta página">Expandir todo</button>
+            <button class="btn sm" data-csv="pedidos" title="Descarga los pedidos que ves en una hoja de Excel">Exportar CSV</button>
+          </div>
+          <div class="chips" id="fP"></div>
+          <div id="pedBody"></div>
+        </div>
+      </section>
+
+      <!-- CLIENTES -->
+      <section class="view" id="v-clientes" hidden>
+        <div class="kpis" id="kpiCli"></div>
+        <div class="panel">
+          <div class="pnh"><h3><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg></i>Clientes <span class="cnt" id="nC"></span></h3><input class="search" id="qC" type="search" placeholder="Buscar cliente, WhatsApp, ciudad o etiqueta…" aria-label="Buscar clientes"><button class="btn sm" data-csv="clientes">Exportar CSV</button></div>
+          <div class="chips" id="fC"></div>
+          <div class="tw"><table><thead><tr><th>Cliente</th><th>WhatsApp</th><th>Ciudad</th><th>Etiquetas</th><th class="num">Pedidos</th><th class="num">Total</th><th>Último pedido</th></tr></thead><tbody id="cli"></tbody></table></div>
+        </div>
+      </section>
+
+      <!-- INVENTARIO -->
+      <section class="view" id="v-inventario" hidden>
+        <div class="kpis" id="kpiInv"></div>
+        <details class="add" id="addPieza"><summary class="btn gold">+ Agregar o editar pieza</summary>
+          <div class="card"><form class="form" id="fPieza">
+            <label>SKU<input class="in" name="sku" required placeholder="PEL-LARGO…" autocomplete="off" spellcheck="false"></label>
+            <label>Pieza<input class="in" name="pieza" required placeholder="Cabello largo…" autocomplete="off"></label>
+            <label>Categoría<input class="in" name="cat" list="cats" placeholder="Cabello…" autocomplete="off"></label>
+            <label>Stock<input class="in" name="stock" type="number" inputmode="numeric" value="0"></label>
+            <label>Mínimo<input class="in" name="min" type="number" inputmode="numeric" value="3"></label>
+            <label>Costo (L)<input class="in" name="costo" type="number" step="0.01" inputmode="decimal" value="0"></label>
+            <label>Proveedor<input class="in" name="proveedor" placeholder="Opcional…" autocomplete="off"></label>
+            <button class="btn dark" type="submit">Guardar pieza</button>
+          </form></div>
+        </details>
+        <div class="panel">
+          <div class="pnh"><h3><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5Z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></i>Piezas <span class="cnt" id="nI"></span></h3><input class="search" id="qI" type="search" placeholder="Buscar pieza o SKU…" aria-label="Buscar en inventario"></div>
+          <div class="chips" id="fI"></div>
+          <div class="tw"><table><thead><tr><th>SKU</th><th>Pieza</th><th>Categoría</th><th class="num">Apartado</th><th>Stock</th><th class="num">Mínimo</th><th>Estado</th><th></th></tr></thead><tbody id="inv"></tbody></table></div>
+        </div>
+      </section>
+
+      <!-- RECETAS -->
+      <section class="view" id="v-recetas" hidden>
+        <p class="note">Cada opción que eligen en el sitio llega como una clave (ej. <b>Figura · Cabello · Largo · Negro</b>). Aquí dices qué pieza del inventario gasta. Deja el SKU vacío si no gasta inventario. En la hoja Recetas puedes usar <b>*</b> como comodín.</p>
+        <div class="panel">
+          <div class="pnh"><h3><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></i>Recetas</h3><input class="search" id="qR" type="search" placeholder="Buscar clave…" aria-label="Buscar recetas"></div>
+          <div class="chips" id="fR"></div>
+          <div class="tw"><table><thead><tr><th>Clave del sitio</th><th style="width:240px">Pieza (SKU)</th><th style="width:100px">Cantidad</th><th style="width:100px"></th></tr></thead><tbody id="rec"></tbody></table></div>
+        </div>
+      </section>
+
+      <!-- PAGOS -->
+      <section class="view" id="v-pagos" hidden>
+        <div class="kpis" id="kpiPag"></div>
+        <div class="panel">
+          <div class="pnh"><h3><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 9.5v.01M18 14.5v.01"/></svg></i>Comprobantes <span class="cnt" id="nPg"></span></h3><input class="search" id="qPg" type="search" placeholder="Buscar pedido…" aria-label="Buscar comprobantes" autocomplete="off"></div>
+          <div class="chips" id="fPg"></div>
+          <div class="tw"><table><thead><tr><th>Fecha</th><th>Pedido</th><th class="num">Monto leído</th><th class="num">Esperado</th><th>Resultado</th><th>Comprobante</th><th></th></tr></thead><tbody id="pagos"></tbody></table></div>
+        </div>
+      </section>
+
+      <!-- SITIO WEB -->
+      <section class="view" id="v-sitio" hidden>
+        <p class="note">Lo que cambies aquí sale en la página en unos minutos. Los textos se ven tal cual (sin formato). Los colores de fondo y letra solo se aplican si se leen bien juntos.</p>
+        <div id="sitioBody"></div>
+        <div class="savebar" id="sitioBar" hidden><span id="sitioN"></span><button class="btn sm ghost" id="sitioUndo">Descartar</button><button class="btn sm dark" id="sitioSave">Guardar cambios</button></div>
+        <input type="file" id="sitioFile" accept="image/jpeg,image/png,image/webp" hidden>
+      </section>
+
+      <!-- MOVIMIENTOS -->
+      <section class="view" id="v-movimientos" hidden>
+        <div class="panel">
+          <div class="pnh"><h3><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/></svg></i>Entradas y salidas</h3><input class="search" id="qM" type="search" placeholder="Buscar SKU, pieza, pedido o motivo…" aria-label="Buscar movimientos"></div>
+          <div class="tw"><table><thead><tr><th>Fecha</th><th>SKU</th><th>Pieza</th><th class="num">Cantidad</th><th class="num">Stock</th><th>Motivo</th><th>Pedido</th><th>Quién</th></tr></thead><tbody id="movs"></tbody></table></div>
+        </div>
+      </section>

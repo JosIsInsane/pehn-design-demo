@@ -1,0 +1,92 @@
+<script>
+/* Admin — vista PEDIDOS
+   Tabla con filtros, orden, páginas y detalle. Depende de: Base, Servidor, Imagenes. */
+function filtraPedidos() {
+  const q = $('#qP').value.trim().toLowerCase();
+  return D.pedidos.filter(p => UI.fP === 'Todos' || (UI.fP === 'Activos' ? activo(p) : p.estado === UI.fP))
+    .filter(p => !q || [p.id, p.cliente, p.productos, p.ciudad, p.wa, p.correo].join(' ').toLowerCase().includes(q));
+}
+function detalleFila(p) {
+  const it = p.items.map(i => `<div class="xi"><b>${i.qty} × ${esc(i.product)}</b> <span class="money">${money(i.total, p.moneda)}</span>${i.options.length ? `<ul>${i.options.map(o => `<li><span class="muted">${esc(o[0])}${o[1] ? ':' : ''}</span> ${esc(o[1])}</li>`).join('')}</ul>` : ''}</div>`).join('') || `<div class="xi">${esc(p.productos).replace(/\n/g, '<br>')}</div>`;
+  const fotos = p.previews.map(id => `<img class="xf" data-img="${id}" data-zoom="1" data-name="${esc(p.id)}" alt="Vista previa de ${esc(p.id)}">`).join('');
+  const f = (t, v) => v ? `<div><small class="muted">${t}</small><br>${v}</div>` : '';
+  return `<tr class="det"><td colspan="9"><div class="xg">
+    <div class="xp">${fotos}<div>${it}</div></div>
+    <div class="xd">${f('WhatsApp', esc(p.wa))}${f('Correo', esc(p.correo))}${f('Ciudad', esc(p.ciudad))}${f('Entrega', p.paraDia || p.para ? esc(p.para || p.paraDia) : '')}${f('Inventario', stockTag(p.stock))}${f('Notas del cliente', esc(p.notasCliente))}${f('Notas internas', esc(p.notas))}
+      <div class="row"><button class="btn sm dark" data-ped="${p.row}">Abrir ficha completa</button>${urlSegura(p.carpeta) ? `<a class="btn sm" href="${esc(urlSegura(p.carpeta))}" target="_blank" rel="noopener noreferrer">Carpeta en Drive ↗</a>` : ''}</div></div></div></td></tr>`;
+}
+const PAGINA = 25;
+const EXP = new Set();
+const SORTS = { id: p => p.id, cliente: p => p.cliente.toLowerCase(), estado: p => D.estados.indexOf(p.estado), entrega: p => p.paraDia || '9999', total: p => p.total, fecha: p => p.fecha || '' };
+// ---------- filtros ----------
+function chipsPedidos(P) {
+  const opts = ['Activos', 'Todos', ...D.estados];
+  $('#fP').innerHTML = opts.map(o => { const n = o === 'Todos' ? P.length : o === 'Activos' ? P.filter(activo).length : P.filter(p => p.estado === o).length; return `<button aria-pressed="${o === UI.fP}" data-fp="${esc(o)}">${esc(o)}<i>${n}</i></button>`; }).join('');
+}
+
+// ---------- tabla ----------
+// encabezado de columna que se puede ordenar
+const cabeceraOrden = (k, t, cls = '') => `<th class="${cls}" aria-sort="${UI.sortP === k ? (UI.dirP > 0 ? 'ascending' : 'descending') : 'none'}"><button class="sortb" data-sort="${k}">${t}<span class="ar" aria-hidden="true">${UI.sortP === k ? (UI.dirP > 0 ? '↑' : '↓') : '↕'}</span></button></th>`;
+// fecha de entrega; en rojo o naranja si es vencida o está cerca
+const entregaHTML = (p, hoy) => { if (!p.paraDia || !activo(p)) return p.para ? esc(p.para) : '<span class="muted">—</span>'; const n = Math.round((new Date(p.paraDia + 'T00:00:00') - hoy) / 864e5); const t = new Intl.DateTimeFormat('es-HN', { day: 'numeric', month: 'short' }).format(new Date(p.paraDia + 'T00:00:00')); return n <= 2 && p.estado !== 'Listo' ? `<span class="tag ${n < 0 ? 'bad' : 'warn'}">${t}</span>` : t; };
+const encabezadoTabla = () => `<thead><tr><th class="xc"><span class="sr">Expandir</span></th><th class="thc"><span class="sr">Foto</span></th>${cabeceraOrden('id', 'Pedido')}${cabeceraOrden('cliente', 'Cliente')}<th class="hm">Productos</th>${cabeceraOrden('estado', 'Estado')}<th class="hm hl">Avance</th>${cabeceraOrden('entrega', 'Entrega', 'hm')}${cabeceraOrden('total', 'Total', 'num')}</tr></thead>`;
+const filaPedido = (p, hoy) => `<tr class="click${activo(p) ? '' : ' off'}${EXP.has(p.row) ? ' open' : ''}" data-ped="${p.row}" tabindex="0">
+      <td class="xc"><button class="chev" data-exp="${p.row}" aria-expanded="${EXP.has(p.row)}" aria-label="${EXP.has(p.row) ? 'Contraer' : 'Expandir'} ${esc(p.id)}"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button></td>
+      <td class="thc"><span class="thumb sm">${p.previews[0] ? `<img data-img="${p.previews[0]}" alt="">` : ''}</span></td>
+      <td><b><span class="pre">PEHN-</span>${esc(p.id.replace(/^PEHN-/, ''))}</b><br><small class="muted">${fdate(p.fecha)}</small></td>
+      <td><span class="who">${avatar(p.cliente)}<span>${esc(p.cliente)}<br><small class="muted">${esc(p.wa)}</small></span></span></td>
+      <td class="hm pcell">${esc(p.productos.split('\n')[0])}${p.productos.includes('\n') ? ' <small class="muted">+más</small>' : ''}${/^Falta/.test(p.stock) && activo(p) ? ' <span class="tag bad">Falta stock</span>' : ''}</td>
+      <td><select class="est ${stClass(p.estado)}" data-estado="${p.row}" aria-label="Estado de ${esc(p.id)}">${D.estados.map(e => `<option${e === p.estado ? ' selected' : ''}>${esc(e)}</option>`).join('')}</select></td>
+      <td class="hm hl">${avance(p)}</td>
+      <td class="hm">${entregaHTML(p, hoy)}</td>
+      <td class="num money">${money(p.total, p.moneda)}</td></tr>${EXP.has(p.row) ? detalleFila(p) : ''}`;
+function rPedidos() {
+  const P = D.pedidos;
+  chipsPedidos(P);
+  const f = SORTS[UI.sortP], list = filtraPedidos().sort((a, b) => (f(a) > f(b) ? 1 : f(a) < f(b) ? -1 : 0) * UI.dirP);
+  const pags = Math.max(1, Math.ceil(list.length / PAGINA));
+  UI.pagP = Math.min(UI.pagP, pags - 1);
+  const ini = UI.pagP * PAGINA, vista = list.slice(ini, ini + PAGINA);
+  $('#nP').textContent = list.length;
+  $('#pSub').textContent = `${plural(P.filter(activo).length, 'pedido activo', 'pedidos activos')} · ${plural(P.filter(p => p.estado === 'Nuevo').length, 'por confirmar', 'por confirmar')}. Cambia el estado desde la tabla o abre la ficha.`;
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  $('#pedBody').innerHTML = `<div class="tw"><table class="ped">${encabezadoTabla()}<tbody>${vista.map(p => filaPedido(p, hoy)).join('') || '<tr><td colspan="9" class="empty">Sin pedidos con este filtro.</td></tr>'}</tbody></table></div>
+    <div class="pager">${pags > 1 ? paginas(UI.pagP, pags) : '<span></span>'}<span class="muted">${list.length ? `Mostrando ${ini + 1} a ${ini + vista.length} de ${list.length}` : '0 pedidos'}</span></div>`;
+}
+
+// 1 2 3 … 10: siempre la primera, la última y las vecinas de la actual
+function paginas(cur, total) {
+  const ver = [...new Set([0, total - 1, cur - 1, cur, cur + 1])].filter(i => i >= 0 && i < total).sort((a, b) => a - b);
+  let html = `<nav class="pgs" aria-label="Páginas"><button class="arw" data-pg="-1" aria-label="Página anterior" ${cur === 0 ? 'disabled' : ''}>‹</button>`;
+  ver.forEach((i, j) => { if (j && i - ver[j - 1] > 1) html += '<span>…</span>'; html += `<button data-pgto="${i}" ${i === cur ? 'aria-current="page"' : ''}>${i + 1}</button>`; });
+  return html + `<button class="arw" data-pg="1" aria-label="Página siguiente" ${cur >= total - 1 ? 'disabled' : ''}>›</button></nav>`;
+}
+
+// ---------- cambiar de estado ----------
+async function mover(row, to) {
+  const p = D.pedidos.find(x => x.row === row); if (!p || p.estado === to) return;
+  if (to === 'Cancelado' && !(await ask({ title: `¿Cancelar ${p.id}?`, text: 'Si ya se descontó inventario, se regresa al stock.', ok: 'Cancelar pedido', danger: true }))) return;
+  if (await act('estado', { row, estado: to }, `${p.id}: ${to}`) && to === D.gatillo) toast(`${p.id}: ${to} · inventario descontado`);
+}
+const repintaPedidos = () => { rPedidos(); watchImgs(); };
+function ordenarPor(k) {
+  if (UI.sortP === k) UI.dirP = -UI.dirP; else { UI.sortP = k; UI.dirP = k === 'fecha' || k === 'total' ? -1 : 1; }
+  UI.pagP = 0; repintaPedidos();
+}
+function expandirTodo() {
+  const filas = [...document.querySelectorAll('table.ped tr[data-ped]')].map(x => +x.dataset.ped);
+  const todas = filas.every(r => EXP.has(r));
+  filas.forEach(r => todas ? EXP.delete(r) : EXP.add(r));
+  repintaPedidos();
+}
+document.addEventListener('change', e => { const sel = e.target.closest('select[data-estado]'); if (sel) mover(+sel.dataset.estado, sel.value).finally(repintaPedidos); });
+$('#qP').addEventListener('input', () => { UI.pagP = 0; repintaPedidos(); });
+CLICS.push(
+  [d => d.exp, d => { const r = +d.exp; EXP.has(r) ? EXP.delete(r) : EXP.add(r); repintaPedidos(); }],
+  [d => d.expall, expandirTodo],
+  [d => d.sort, d => ordenarPor(d.sort)],
+  [d => d.pg || d.pgto, d => { UI.pagP = d.pgto ? +d.pgto : UI.pagP + +d.pg; repintaPedidos(); window.scrollTo(0, 0); }],
+  [d => d.fp, d => { UI.fP = d.fp; UI.pagP = 0; repintaPedidos(); }],
+  [d => d.mv, d => mover(+d.mv, d.to)],
+);
+</script>

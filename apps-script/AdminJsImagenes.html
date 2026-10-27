@@ -1,0 +1,33 @@
+<script>
+/* Admin — FOTOS de Drive
+   Se cargan al verse y en grupos de 4. Depende de: Base, Servidor (call). */
+const imgCache = {};
+// imágenes de Drive, cargadas cuando se ven
+const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { io.unobserve(e.target); loadImg(e.target); } }), { rootMargin: '300px' });
+// las fotos se piden en grupos de 4: menos viajes al servidor
+let imgQ = [], imgT = 0;
+function pedirImg(id) {
+  return new Promise((ok, ko) => { imgQ.push({ id, ok, ko }); clearTimeout(imgT); imgT = setTimeout(vaciarImgs, 60); });
+}
+function vaciarImgs() {
+  const q = imgQ; imgQ = [];
+  for (let i = 0; i < q.length; i += 4) {
+    const lote = q.slice(i, i + 4);
+    call('imagenes', { ids: lote.map(x => x.id) })
+      .then(r => lote.forEach(x => (r.srcs && r.srcs[x.id] ? x.ok(r.srcs[x.id]) : x.ko(new Error('sin foto')))))
+      .catch(e => lote.forEach(x => x.ko(e)));
+  }
+}
+function loadImg(el) {
+  const id = el.dataset.img;
+  const p = imgCache[id] = imgCache[id] || pedirImg(id);
+  p.then(src => { el.src = src; }).catch(() => { delete imgCache[id]; el.alt = 'Sin foto'; });
+}
+const watchImgs = () => document.querySelectorAll('img[data-img]:not([src])').forEach(i => io.observe(i));
+
+// ---------- ampliar una foto ----------
+CLICS.push(
+  [d => d.zoom, (d, t) => { $('#lbImg').src = t.src; $('#lbDl').href = t.src; $('#lbDl').download = (d.name || 'pedido') + '.jpg'; $('#lb').hidden = false; }],
+  [(d, t) => t.id === 'lbX', () => { $('#lb').hidden = true; }],
+);
+</script>

@@ -1,0 +1,16 @@
+<script>
+/* Admin — EVENTOS globales
+   Un solo oyente de clics: recorre CLICS (cada vista agrega sus reglas) y ejecuta la primera que coincide.
+   También el teclado (/ para buscar, Esc para cerrar, Enter en filas). Depende de: todos los AdminJs* anteriores. */
+document.addEventListener('click', e => {
+  if (e.target.closest('select')) return;
+  const t = e.target.closest('button,tr.click,img[data-zoom],[data-x]'); if (!t) return;
+  const d = t.dataset, regla = CLICS.find(([coincide]) => coincide(d, t));
+  if (regla) return regla[1](d, t);
+});
+document.addEventListener('keydown', e => {
+  if (e.key === '/' && !e.target.closest('input,textarea')) { e.preventDefault(); $('#gs').focus(); }
+  if (e.key === 'Escape') { if (!$('#lb').hidden) $('#lb').hidden = true; else if (!$('#dlg').hidden) $('#dlgNo').click(); else if ($('#det').classList.contains('open')) closeDrawer(); }
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('tr.click')) { e.preventDefault(); e.target.click(); }
+});
+</script>
