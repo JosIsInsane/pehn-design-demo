@@ -9,35 +9,83 @@
  * Después de cambiar código: Implementar › Gestionar implementaciones › Nueva versión (si no, sigue el viejo).
  */
 
-const LIMITS = { items: 20, imageChars: 7e6, perContact: 5 };
+// Topes contra spam y abuso. Si un cliente real choca con uno, súbelo aquí.
+const LIMITS = {
+  body: 30e6,          // tamaño máximo de lo que manda el sitio (fotos incluidas)
+  items: 20,           // productos por pedido
+  options: 80,         // opciones por producto
+  imagesPerItem: 4,
+  imageChars: 7e6,     // ~5 MB por imagen
+  perContact: 5,       // pedidos por WhatsApp cada 10 min
+  perHour: 40,         // pedidos de toda la tienda por hora (frena inundaciones de bots)
+  minFillMs: 2500,     // un humano tarda más que esto en llenar sus datos
+};
 
+// Todo lo que manda el sitio entra aquí. "accion" elige qué hacer; sin accion es un pedido.
 function doPost(e) {
   let data;
-  try { data = JSON.parse(e.postData.contents); } catch (err) { return json_({ ok: false, error: 'Formato inválido.' }); }
   try {
-    const res = recibirPedido_(data);
-    return json_({ ok: true, id: res.id });
+    const body = e && e.postData && e.postData.contents || '';
+    if (body.length > LIMITS.body) throw new Error('Demasiado grande.');
+    data = JSON.parse(body);
+    if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('Formato inválido.');
+  } catch (err) { return json_({ ok: false, error: 'Formato inválido.' }); }
+  try {
+    const cfg = config_();
+    if (!cfg['Token del sitio'] || data.token !== cfg['Token del sitio']) throw new Error('Token inválido.');
+    switch (data.accion || 'pedido') {
+      case 'pedido': return json_({ ok: true, id: recibirPedido_(data, cfg).id });
+      case 'seguimiento': return json_({ ok: true, pedido: seguimiento_(data) });
+      case 'comprobante': return json_({ ok: true, pago: recibirComprobante_(data, cfg) });
+      default: throw new Error('Acción desconocida.');
+    }
   } catch (err) {
     console.error(err);
     return json_({ ok: false, error: String(err.message || err) });
   }
 }
 
+// cuenta en caché: más de "max" en "seg" segundos = rechazo
+function limite_(clave, max, seg, msg) {
+  const cache = CacheService.getScriptCache(), n = Number(cache.get(clave) || 0);
+  if (n >= max) throw new Error(msg);
+  cache.put(clave, String(n + 1), seg);
+}
+
+// Solo pasan los campos que conocemos, con tope de largo y formato revisado.
+function limpiarPedido_(d) {
+  if (d.website) throw new Error('Rechazado.'); // campo trampa: un humano no lo ve
+  if (!(Number(d.fillMs) >= LIMITS.minFillMs)) throw new Error('Rechazado.'); // sin tiempo o llenado instantáneo = bot
+  const c = d.customer || {};
+  const customer = {
+    name: linea_(c.name, 80), phone: linea_(c.phone, 25), email: linea_(c.email, 120).toLowerCase(),
+    city: linea_(c.city, 60), date: linea_(c.date, 20), notes: texto_(c.notes, 1000),
+  };
+  if (!customer.name || !customer.city) throw new Error('Faltan datos del cliente.');
+  const dig = customer.phone.replace(/\D/g, '');
+  if (dig.length < 8 || dig.length > 15) throw new Error('Revisa el número de WhatsApp.');
+  if (customer.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customer.email)) throw new Error('Revisa el correo.');
+  if (!Array.isArray(d.items) || !d.items.length || d.items.length > LIMITS.items) throw new Error('Pedido vacío o demasiado grande.');
+  const num = (v, min, max) => Math.min(max, Math.max(min, Number(v) || 0));
+  const items = d.items.map(it => ({
+    product: linea_(it && it.product, 80) || 'Producto',
+    qty: Math.round(num(it.qty, 1, 99)),
+    unitPrice: num(it.unitPrice, 0, 1e6), discount: num(it.discount, 0, 1e6), total: num(it.total, 0, 1e7),
+    options: (Array.isArray(it.options) ? it.options : []).slice(0, LIMITS.options)
+      .map(o => Array.isArray(o) ? [linea_(o[0], 60), texto_(o[1], 240)] : [texto_(o, 240), '']),
+    bom: (Array.isArray(it.bom) ? it.bom : []).slice(0, 200).map(b => ({ key: linea_(b && b.key, 160), qty: Math.round(num(b && b.qty, 1, 999)) })).filter(b => b.key),
+    preview: typeof it.preview === 'string' ? it.preview : '',
+    images: (Array.isArray(it.images) ? it.images : []).filter(x => typeof x === 'string').slice(0, LIMITS.imagesPerItem),
+  }));
+  return { customer, items, total: num(d.total, 0, 1e7), currency: /^[A-Z]{3}$/.test(d.currency) ? d.currency : 'HNL' };
+}
+
 function json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
 
-function recibirPedido_(d) {
-  const cfg = config_();
-  if (!cfg['Token del sitio'] || d.token !== cfg['Token del sitio']) throw new Error('Token inválido.');
-  if (d.website) throw new Error('Rechazado.'); // campo trampa para bots
-  const c = d.customer || {};
-  ['name', 'phone', 'city'].forEach(k => { if (!String(c[k] || '').trim()) throw new Error('Faltan datos del cliente.'); });
-  if (!Array.isArray(d.items) || !d.items.length || d.items.length > LIMITS.items) throw new Error('Pedido vacío o demasiado grande.');
-
-  // máximo N pedidos por contacto cada 10 minutos
-  const cache = CacheService.getScriptCache(), ck = 'p_' + String(c.phone).replace(/\D/g, '');
-  const n = Number(cache.get(ck) || 0);
-  if (n >= LIMITS.perContact) throw new Error('Demasiados pedidos seguidos. Escríbenos por WhatsApp.');
-  cache.put(ck, String(n + 1), 600);
+function recibirPedido_(raw, cfg) {
+  const d = limpiarPedido_(raw), c = d.customer;
+  limite_('p_' + telKey_(c.phone), LIMITS.perContact, 600, 'Demasiados pedidos seguidos. Escríbenos por WhatsApp.');
+  limite_('p_hora', LIMITS.perHour, 3600, 'Estamos recibiendo muchos pedidos. Intenta en unos minutos o escríbenos por WhatsApp.');
 
   return conCandado_(() => {
     const id = nuevoId_();
@@ -58,10 +106,10 @@ function recibirPedido_(d) {
 
     // Pedidos
     const sh = sheet_('pedidos');
-    const row = [id, fecha, 'Nuevo', c.name, c.phone, c.email || '', c.city, c.date || '', textoProductos, textoPiezas,
-      Number(d.total) || 0, d.currency || 'HNL', '', folder.getUrl(), disp.texto, c.notes || '', '', fecha,
-      JSON.stringify({ items: d.items.map(stripImages_), piezas, descontado: false })];
-    sh.appendRow(row);
+    const row = [id, fecha, 'Nuevo', c.name, c.phone, c.email, c.city, c.date, textoProductos, textoPiezas,
+      d.total, d.currency, '', folder.getUrl(), disp.texto, c.notes, '', fecha,
+      datosJson_({ items: d.items.map(stripImages_), piezas, descontado: false })];
+    sh.appendRow(fila_(row));
     const r = sh.getLastRow();
     if (partidas[0] && partidas[0].prev) ponerImagen_(sh.getRange(r, COL.pedidos['Vista previa']), partidas[0].prev);
     sh.setRowHeight(r, 110);
@@ -69,8 +117,8 @@ function recibirPedido_(d) {
     // Partidas
     const sp = sheet_('partidas');
     partidas.forEach(({ it, prev, subidas }, i) => {
-      sp.appendRow([id, i + 1, it.product, it.qty, it.unitPrice, it.discount, it.total, opcionesTexto_(it.options), '',
-        subidas.map(s => s.url).join('\n'), prev ? prev.url : '']);
+      sp.appendRow(fila_([id, i + 1, it.product, it.qty, it.unitPrice, it.discount, it.total, opcionesTexto_(it.options), '',
+        subidas.map(s => s.url).join('\n'), prev ? prev.url : '']));
       const pr = sp.getLastRow();
       if (prev) ponerImagen_(sp.getRange(pr, COL.partidas['Vista previa']), prev);
       sp.setRowHeight(pr, 110);
@@ -91,10 +139,10 @@ function guardarCliente_(c, fecha) {
   const sh = hojaClientes_(); if (!sh) return;
   const key = telKey_(c.phone), cur = rows_('clientes').find(r => telKey_(r.WhatsApp) === key);
   if (cur) {
-    sh.getRange(cur._row, 2, 1, 3).setValues([[c.name || cur.Nombre, c.email || cur.Correo, c.city || cur.Ciudad]]);
+    sh.getRange(cur._row, 2, 1, 3).setValues([fila_([c.name || cur.Nombre, c.email || cur.Correo, c.city || cur.Ciudad])]);
     sh.getRange(cur._row, COL.clientes['Último pedido']).setValue(fecha);
   } else {
-    sh.appendRow(["'" + key, c.name, c.email || '', c.city || '', fecha, fecha, '', '']);
+    sh.appendRow(fila_(["'" + key, c.name, c.email, c.city, fecha, fecha, '', '']));
   }
 }
 
@@ -112,11 +160,20 @@ function opcionesTexto_(opts) {
   return (opts || []).map(o => Array.isArray(o) ? `${o[0]}: ${o[1]}` : String(o)).join('\n');
 }
 
-// data:image/...;base64,... -> archivo privado en la carpeta del pedido
+// Una celda de Sheets aguanta 50 000 letras. Si un pedido gigante se pasa, se guarda sin opciones
+// (el detalle completo sigue en Partidas).
+function datosJson_(o) {
+  const s = JSON.stringify(o);
+  return s.length < 49000 ? s : JSON.stringify({ ...o, items: o.items.map(it => ({ ...it, options: [] })), recortado: true });
+}
+
+// data:image/...;base64,... -> archivo privado en la carpeta del pedido.
+// Solo fotos comunes (no SVG: puede traer código) y base64 válido.
+const TIPOS_OK = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'application/pdf': 'pdf' };
 function guardarImagen_(folder, dataUrl, name) {
-  const m = /^data:(image\/[\w+.-]+);base64,(.+)$/.exec(String(dataUrl || ''));
-  if (!m || m[2].length > LIMITS.imageChars) return null;
-  const ext = m[1].split('/')[1].replace('jpeg', 'jpg').replace('svg+xml', 'svg');
+  const m = /^data:([\w/+.-]+);base64,([A-Za-z0-9+/=]+)$/.exec(String(dataUrl || ''));
+  if (!m || !TIPOS_OK[m[1]] || m[2].length > LIMITS.imageChars) return null;
+  const ext = TIPOS_OK[m[1]];
   const blob = Utilities.newBlob(Utilities.base64Decode(m[2]), m[1], `${name}.${ext}`);
   const file = folder.createFile(blob);
   return { id: file.getId(), url: file.getUrl(), dataUrl, blob };

@@ -70,6 +70,11 @@ function formatPedidos_() {
   rules.push(SpreadsheetApp.newConditionalFormatRule().whenTextStartsWith('Falta').setBackground('#F3D6D2').setFontColor('#8A2A1A').setRanges([stock]).build());
   sh.setConditionalFormatRules(rules);
 
+  const pg = sheet_('pagos');
+  pg.getRange(2, COL.pagos.Fecha, pg.getMaxRows() - 1, 1).setNumberFormat('dd/mm/yyyy hh:mm');
+  pg.getRange(2, COL.pagos['Monto leído'], pg.getMaxRows() - 1, 2).setNumberFormat('"L" #,##0.00');
+  pg.setColumnWidth(COL.pagos['Texto leído'], 260);
+
   sheet_('partidas').setColumnWidth(COL.partidas['Vista previa'], 140);
   sheet_('partidas').setColumnWidth(COL.partidas.Opciones, 380);
   sheet_('partidas').getRange(2, COL.partidas['Precio unitario'], sheet_('partidas').getMaxRows() - 1, 3).setNumberFormat('"L" #,##0');
@@ -218,6 +223,8 @@ function revisarSistema() {
     ver(carpeta, 'Carpeta de Drive', 'La carpeta de Drive no existe. Arreglo: Pehn › Configurar hojas crea otra.');
     const trig = ScriptApp.getProjectTriggers().map(t => t.getHandlerFunction());
     ['alEditar_', 'resumenStockDiario_', 'respaldoSemanal_'].forEach(f => ver(trig.includes(f), `Disparador ${f}`, `Falta el disparador ${f}. Arreglo: Pehn › Configurar hojas.`));
+    ver(typeof Drive !== 'undefined', 'Lectura de comprobantes (Drive API)', 'Sin Drive API: los comprobantes se guardan pero el monto se revisa a mano. Arreglo: Editor › Servicios (+) › Drive API › Agregar.');
+    ver(!!cfg['Datos bancarios'], 'Datos bancarios', 'Config › Datos bancarios vacío: el cliente no ve a dónde pagar el anticipo.');
     ver(!!urlApp_(), 'App web publicada', 'La app web no está publicada. Arreglo: Implementar › Nueva implementación › App web.');
     const sinSku = rows_('recetas').filter(r => /^Nueva/.test(r.Notas)).length;
     if (sinSku) mal.push(`• ${sinSku} opción(es) nuevas sin pieza asignada. Arreglo: CRM › Recetas › Por asignar.`);

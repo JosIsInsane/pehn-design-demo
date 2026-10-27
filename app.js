@@ -1,6 +1,6 @@
 /* Pehn Design — catálogo, personalizador, carrito y envío del pedido
    Datos y precios: datos.js. Dibujos: dibujos.js. Este archivo solo maneja la página.
-   Envío del pedido a Google Sheets: ver submitOrder() y apps-script/README.md. */
+   Envío del pedido a Google Sheets: ver api() y apps-script/README.md. */
 
 const fmt = n => new Intl.NumberFormat(CONFIG.locale, { style: 'currency', currency: CONFIG.currency, maximumFractionDigits: 0 }).format(n);
 const $ = s => document.querySelector(s);
@@ -9,7 +9,11 @@ const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const productoDe = id => PRODUCTS.find(p => p.id === id);
 const HOLA = '¡Hola Pehn Design! ✦';
 // claves del navegador (localStorage): cambiarlas vacía el carrito guardado de todos
-const KEY_CART = 'pehn_cart', KEY_CONTACT = 'pehn_contact';
+const KEY_CART = 'pehn_cart', KEY_CONTACT = 'pehn_contact', KEY_ORDERS = 'pehn_pedidos', KEY_CONSENT = 'pehn_aviso';
+// lectura/escritura segura del navegador: en modo privado o sin permiso no truena
+const leer = (k, def) => { try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; } };
+const guardar = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* sin almacenamiento: sigue sin recordar */ } };
+const borrar = k => { try { localStorage.removeItem(k); } catch { } };
 
 function defaults(p) {
   const c = {};
@@ -565,9 +569,10 @@ document.querySelectorAll('.wa-link').forEach(el => { el.href = waURL(`${HOLA} Q
 
 /* ---------- carrito ---------- */
 let cart = [];
-try { cart = JSON.parse(localStorage.getItem(KEY_CART) || '[]').filter(i => productoDe(i.id)); cart.forEach(i => normCfg(productoDe(i.id), i.cfg)); } catch { cart = []; }
+cart = (Array.isArray(leer(KEY_CART, [])) ? leer(KEY_CART, []) : []).filter(i => i && productoDe(i.id));
+cart.forEach(i => normCfg(productoDe(i.id), i.cfg));
 function saveCart() {
-  try { localStorage.setItem(KEY_CART, JSON.stringify(cart)); } catch { /* sin storage: sigue en memoria */ }
+  guardar(KEY_CART, cart); // sin almacenamiento sigue en memoria
   const n = $('#cartCount'); if (n) n.textContent = cart.reduce((s, i) => s + i.qty, 0);
 }
 
@@ -614,8 +619,10 @@ function renderDrawer() {
     <p class="note">No se cobra nada aún. Primero te enviamos tu diseño para aprobar.</p>`;
 }
 
+let checkoutAt = 0; // cuándo se mostró el formulario: el servidor rechaza envíos "instantáneos" de bots
 function renderCheckout(total) {
-  const d = (() => { try { return JSON.parse(localStorage.getItem(KEY_CONTACT) || '{}'); } catch { return {}; } })();
+  const d = leer(KEY_CONTACT, {});
+  checkoutAt = performance.now();
   $('#dBody').innerHTML = `<button class="back" id="backCart">← Volver al pedido</button>
     <form class="co" id="coForm" novalidate>
       <label>Nombre completo<input name="name" autocomplete="name" required value="${esc(d.name)}"></label>
@@ -628,6 +635,8 @@ function renderCheckout(total) {
         <label>¿Para cuándo?<input name="date" type="date"></label>
       </div>
       <label>Notas para el diseño<textarea name="notes" placeholder="Ej. él usa lentes redondos, ella tiene fleco…"></textarea></label>
+      <label class="chk"><input type="checkbox" name="remember" ${leer(KEY_CONSENT, '') !== 'minimo' ? 'checked' : ''}> Recordar mis datos y mis pedidos en este dispositivo</label>
+      <label class="chk"><input type="checkbox" name="consent" required> Acepto el <a href="privacidad.html" target="_blank" rel="noopener">aviso de privacidad</a>: usan mis datos solo para hacer, enviar y darle seguimiento a mi pedido.</label>
       <label class="hp" aria-hidden="true">No llenar<input name="website" tabindex="-1" autocomplete="off"></label>
       <div class="err" id="coErr" role="alert"></div>
     </form>`;
@@ -664,27 +673,27 @@ async function handleSend(btn) {
     phone: v => v.replace(/\D/g, '').replace(/^504/, '').length >= 8 ? '' : 'Escribe tu WhatsApp de 8 dígitos, ej. 9876 5432.',
     email: v => /^\S+@\S+\.\S+$/.test(v) ? '' : 'Revisa tu correo, ej. ana@correo.com.',
     city: v => v.trim() ? '' : 'Escribe tu ciudad.',
+    consent: v => v ? '' : 'Necesitamos tu permiso para usar tus datos en el pedido.',
   };
   let first = null;
   Object.entries(checks).forEach(([k, fn]) => {
     const el = f.elements[k], msg = fn(String(data[k] || '')), id = 'e_' + k;
     let m = document.getElementById(id);
-    if (!m) { m = document.createElement('span'); m.id = id; m.className = 'f-err'; el.after(m); el.setAttribute('aria-describedby', id); }
+    if (!m) { m = document.createElement('span'); m.id = id; m.className = 'f-err'; (el.type === 'checkbox' ? el.parentElement : el).after(m); el.setAttribute('aria-describedby', id); }
     m.textContent = msg; el.setAttribute('aria-invalid', !!msg);
     if (msg && !first) first = el;
   });
   if (first) { err.textContent = 'Revisa los campos marcados.'; first.focus(); return; }
   err.textContent = '';
-  try { localStorage.setItem(KEY_CONTACT, JSON.stringify({ name: data.name, phone: data.phone, email: data.email, city: data.city })); } catch { }
+  // solo se recuerdan si la persona lo pidió; si no, se borra lo que hubiera
+  if (data.remember) guardar(KEY_CONTACT, { name: data.name, phone: data.phone, email: data.email, city: data.city }); else borrar(KEY_CONTACT);
 
   const { rows, gross, disc, total } = cartTotals();
   btn.disabled = true; btn.textContent = 'Preparando tu diseño…';
   const previews = await Promise.all(rows.map(r => previewImage(r.p, r.i.cfg).catch(() => '')));
-  const { website, ...customer } = data;
+  const { website, remember, consent, ...customer } = data;
   const order = {
-    id: 'PEHN-' + Date.now().toString(36).toUpperCase().slice(-6),
-    createdAt: new Date().toISOString(),
-    customer, website: website || '',
+    customer, website: website || '', fillMs: Math.round(performance.now() - checkoutAt),
     currency: CONFIG.currency,
     items: rows.map((r, i) => ({
       product: r.p.name, qty: r.i.qty, unitPrice: r.unit, discount: r.disc, total: r.total,
@@ -698,10 +707,11 @@ async function handleSend(btn) {
 
   btn.textContent = 'Enviando…';
   try {
-    const res = await submitOrder(order);
-    if (res.id) order.id = res.id;
+    const res = await api('pedido', order);
+    const id = res.id || '';
+    if (id && data.remember) guardar(KEY_ORDERS, [{ id, phone: data.phone, fecha: new Date().toISOString().slice(0, 10) }, ...leer(KEY_ORDERS, []).filter(o => o.id !== id)].slice(0, 20));
     cart = []; saveCart(); view = 'cart'; closeDrawer();
-    $('#doneTxt').innerHTML = `Tu número de pedido es <b>${order.id}</b>.<br>Total estimado <b>${fmt(total)}</b>.<br>Te escribimos a <b>${esc(data.phone)}</b> con tu diseño para aprobar.`;
+    $('#doneTxt').innerHTML = `${id ? `Tu número de pedido es <b>${esc(id)}</b>.<br>` : ''}Total estimado <b>${fmt(total)}</b>.<br>Te escribimos a <b>${esc(data.phone)}</b> con tu diseño para aprobar.${id ? `<br><a href="pedido.html?id=${encodeURIComponent(id)}">Ver mi pedido y pagar el anticipo →</a>` : ''}`;
     openModal('#done');
   } catch (e) {
     $('#coErr').innerHTML = `No se pudo enviar (${esc(e.message || 'sin conexión')}). Intenta de nuevo o <a href="${waURL(waCartText())}" target="_blank" rel="noopener">mándalo por WhatsApp</a>.`;
@@ -788,16 +798,22 @@ async function previewImage(p, cfg, size = 900) {
   } catch { return ''; } finally { URL.revokeObjectURL(url); }
 }
 
-async function submitOrder(order) {
+// Única puerta hacia Google Sheets (apps-script/Orders.gs › doPost). accion: 'pedido' | 'seguimiento' | 'comprobante'.
+// Se manda como texto plano: así el navegador no hace la consulta previa (CORS) que Apps Script no contesta.
+async function api(accion, data) {
   if (!CONFIG.sheetsUrl) {
-    console.warn('[Pehn] Falta CONFIG.sheetsUrl: el pedido no se guardó. Datos:', order);
-    await new Promise(r => setTimeout(r, 600));
-    return { ok: true, demo: true };
+    console.warn('[Pehn] Falta CONFIG.sheetsUrl en datos.js: no se envió nada.', accion);
+    throw new Error('el sistema de pedidos no está conectado');
   }
-  const res = await fetch(CONFIG.sheetsUrl, { method: 'POST', body: JSON.stringify({ ...order, token: CONFIG.sheetsToken }) });
-  const out = await res.json().catch(() => ({ ok: false, error: 'Respuesta inválida del servidor.' }));
-  if (!out.ok) throw new Error(out.error || 'No se pudo guardar el pedido.');
-  return out;
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 60000);
+  try {
+    const res = await fetch(CONFIG.sheetsUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ ...data, accion, token: CONFIG.sheetsToken }), signal: ctl.signal });
+    const out = await res.json().catch(() => ({ ok: false, error: 'Respuesta inválida del servidor' }));
+    if (!out.ok) throw new Error(out.error || 'No se pudo completar');
+    return out;
+  } catch (e) {
+    throw new Error(e.name === 'AbortError' ? 'tardó demasiado, revisa tu conexión' : e.message);
+  } finally { clearTimeout(t); }
 }
 
 /* ---------- cambios sin guardar ---------- */
@@ -976,6 +992,118 @@ addEventListener('scroll', () => {
     ticking = false;
   });
 }, { passive: true });
+
+/* ---------- Rastrear pedido (pedido.html) ----------
+   Pide número + WhatsApp, muestra estado y montos, y recibe el comprobante del anticipo.
+   El servidor (apps-script/Pagos.gs) valida que el WhatsApp sea el del pedido y lee el monto del comprobante. */
+// mismo orden que ESTADOS en apps-script/Config.gs
+const PASOS = ['Nuevo', 'Diseño enviado', 'Aprobado', 'En producción', 'Listo', 'Enviado', 'Entregado'];
+const PASO_TXT = { 'Nuevo': 'Recibido', 'Diseño enviado': 'Diseño enviado', 'Aprobado': 'Aprobado', 'En producción': 'En producción', 'Listo': 'Listo', 'Enviado': 'En camino', 'Entregado': 'Entregado' };
+let seguido = null; // { id, phone } del pedido que se está viendo
+
+function pintarPedido(p) {
+  const i = PASOS.indexOf(p.estado), money = n => fmt(n);
+  const cancel = p.estado === 'Cancelado';
+  const pasos = cancel ? '<p class="note">Este pedido fue cancelado. Si tienes dudas, escríbenos por WhatsApp.</p>'
+    : `<ol class="pasos">${PASOS.map((s, j) => `<li class="${j < i ? 'hecho' : j === i ? 'ahora' : ''}"${j === i ? ' aria-current="step"' : ''}><i aria-hidden="true">${j < i ? '✓' : j + 1}</i><span>${PASO_TXT[s]}</span></li>`).join('')}</ol>`;
+  const falta = p.porPagarAnticipo > 0, debe = p.saldo > 0;
+  $('#estadoPedido').innerHTML = `<article class="ped-card">
+    <header><p class="card-cat">Pedido</p><h2>${esc(p.id)}</h2>${p.fecha ? `<small>Hecho el ${esc(fmtDate(p.fecha))}</small>` : ''}</header>
+    ${pasos}
+    <div class="ped-prod"><b>Productos</b><p>${esc(p.productos).replace(/\n/g, '<br>')}</p></div>
+    <dl class="ped-montos">
+      <div><dt>Total</dt><dd>${money(p.total)}</dd></div>
+      <div><dt>Anticipo (${p.pct}%)</dt><dd>${money(p.anticipo)}</dd></div>
+      <div><dt>Pagado</dt><dd class="${p.pagado ? 'ok' : ''}">${money(p.pagado)}</dd></div>
+      <div><dt>Saldo</dt><dd>${money(p.saldo)}</dd></div>
+    </dl>
+    ${p.comprobantes.length ? `<p class="note">Comprobantes recibidos: ${p.comprobantes.map(c => `${c.monto ? money(c.monto) : 'monto por revisar'} (${esc(/Coincide|Confirmado/.test(c.resultado) ? 'confirmado' : c.resultado === 'Rechazado' ? 'no válido' : 'en revisión')})`).join(' · ')}</p>` : ''}
+    ${!cancel && debe ? `<div class="pago">
+      <h3>${falta ? `Paga tu anticipo de ${money(p.porPagarAnticipo)} para empezar` : `Saldo pendiente: ${money(p.saldo)}`}</h3>
+      ${p.banco ? `<p class="banco">${esc(p.banco)}</p>` : '<p class="note">Te mandamos los datos de pago por WhatsApp.</p>'}
+      <label class="drop" id="drop"><input type="file" id="voucher" accept="image/jpeg,image/png,image/webp,application/pdf"><span class="drop-ico" aria-hidden="true">⇪</span><span id="dropTxt"><b>Sube la foto o PDF de tu comprobante</b><small>JPG, PNG o PDF · máx. 5 MB</small></span></label>
+      <button class="btn btn-dark" id="sendVoucher" disabled>Enviar comprobante</button>
+      <div class="err" id="voucherErr" role="alert"></div>
+    </div>` : !cancel ? '<p class="note ok">¡Pedido pagado por completo! Gracias.</p>' : ''}
+  </article>`;
+}
+
+let voucherData = '';
+async function leerVoucher(file) {
+  if (file.size > 5 * 1024 * 1024) throw new Error('El archivo pesa más de 5 MB.');
+  if (file.type === 'application/pdf') return new Promise((ok, ko) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = ko; r.readAsDataURL(file); });
+  if (!/^image\/(jpeg|png|webp)$/.test(file.type)) throw new Error('Sube una foto (JPG o PNG) o un PDF.');
+  return shrinkImage(file, 1800); // legible para leer el monto, liviana para enviar
+}
+
+if ($('#seguir')) {
+  const f = $('#seguir'), q = new URLSearchParams(location.search);
+  const mis = leer(KEY_ORDERS, []);
+  if (q.get('id')) f.elements.id.value = q.get('id');
+  const conocido = mis.find(o => o.id === f.elements.id.value);
+  if (conocido) f.elements.phone.value = conocido.phone;
+  if (mis.length) {
+    $('#misPedidos').hidden = false;
+    $('#misPedidos').innerHTML = `<b>Tus pedidos en este dispositivo</b>${mis.map(o => `<button type="button" class="chip" data-mio="${esc(o.id)}">${esc(o.id)}<small>${esc(o.fecha || '')}</small></button>`).join('')}`;
+  }
+  f.addEventListener('submit', async e => {
+    e.preventDefault();
+    const id = f.elements.id.value.trim().toUpperCase(), phone = f.elements.phone.value.trim(), err = $('#seguirErr');
+    if (!/^PEHN-[\w-]{3,24}$/.test(id)) { err.textContent = 'El número de pedido empieza con PEHN-, ej. PEHN-261027-001.'; f.elements.id.focus(); return; }
+    if (phone.replace(/\D/g, '').length < 8) { err.textContent = 'Escribe el WhatsApp con el que hiciste el pedido.'; f.elements.phone.focus(); return; }
+    err.textContent = ''; $('#seguirBtn').disabled = true; $('#seguirBtn').textContent = 'Buscando…';
+    try {
+      const r = await api('seguimiento', { id, phone });
+      seguido = { id, phone }; pintarPedido(r.pedido);
+      $('#estadoPedido').scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' });
+    } catch (x) { err.textContent = x.message; $('#estadoPedido').innerHTML = ''; }
+    finally { $('#seguirBtn').disabled = false; $('#seguirBtn').textContent = 'Ver mi pedido'; }
+  });
+  $('#misPedidos').addEventListener('click', e => {
+    const b = e.target.closest('[data-mio]'); if (!b) return;
+    const o = mis.find(x => x.id === b.dataset.mio); f.elements.id.value = o.id; f.elements.phone.value = o.phone; f.requestSubmit();
+  });
+  $('#estadoPedido').addEventListener('change', async e => {
+    if (e.target.id !== 'voucher' || !e.target.files[0]) return;
+    const file = e.target.files[0], err = $('#voucherErr');
+    try {
+      voucherData = await leerVoucher(file); err.textContent = '';
+      $('#dropTxt').innerHTML = `<b>${esc(file.name)}</b><small>Listo para enviar · toca para cambiar</small>`;
+      $('#drop').classList.add('lleno'); $('#sendVoucher').disabled = false;
+    } catch (x) { voucherData = ''; err.textContent = x.message; $('#sendVoucher').disabled = true; }
+  });
+  $('#estadoPedido').addEventListener('click', async e => {
+    if (e.target.id !== 'sendVoucher' || !voucherData || !seguido) return;
+    const btn = e.target, err = $('#voucherErr');
+    btn.disabled = true; btn.textContent = 'Enviando y leyendo el monto…';
+    try {
+      const { pago } = await api('comprobante', { ...seguido, file: voucherData });
+      voucherData = '';
+      toast(pago.resultado === 'Coincide' ? `¡Listo! Recibimos ${fmt(pago.monto)}.` : 'Recibimos tu comprobante. Lo revisamos y te confirmamos por WhatsApp.');
+      f.requestSubmit();
+    } catch (x) { err.textContent = `No se pudo enviar: ${x.message}.`; btn.disabled = false; btn.textContent = 'Enviar comprobante'; }
+  });
+  if (f.elements.id.value && f.elements.phone.value) f.requestSubmit();
+}
+
+/* ---------- aviso de privacidad (abajo, una sola vez) ----------
+   "Entendido": se recuerdan datos y pedidos si la persona lo marca al pedir.
+   "Solo el carrito": se borra lo guardado y la casilla "Recordar" sale desmarcada. */
+function aviso(mostrar) { const a = $('#aviso'); if (a) a.hidden = !mostrar; }
+if (!leer(KEY_CONSENT, '')) aviso(true);
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-aviso],[data-aviso-abrir]'); if (!b) return;
+  if (b.dataset.avisoAbrir !== undefined) return aviso(true);
+  guardar(KEY_CONSENT, b.dataset.aviso);
+  if (b.dataset.aviso === 'minimo') { borrar(KEY_CONTACT); borrar(KEY_ORDERS); toast('Listo: solo guardamos tu carrito.'); }
+  aviso(false);
+});
+
+$('#borrarDatos')?.addEventListener('click', () => {
+  [KEY_CART, KEY_CONTACT, KEY_ORDERS, KEY_CONSENT].forEach(borrar); cart = []; saveCart();
+  try { sessionStorage.clear(); } catch { }
+  toast('Listo: borramos todo lo que este sitio guardó en tu navegador.');
+});
 
 // Revisa datos.js al cargar y avisa en la consola (F12) con "[Pehn]" lo que esté mal y cómo arreglarlo.
 function revisarDatos() {

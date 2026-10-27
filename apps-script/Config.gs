@@ -20,6 +20,7 @@ const SHEETS = {
   recetas: 'Recetas',
   movimientos: 'Movimientos',
   clientes: 'Clientes',
+  pagos: 'Pagos',
   config: 'Config',
 };
 
@@ -32,6 +33,7 @@ const HEADERS = {
   recetas: ['Clave', 'SKU', 'Cantidad', 'Notas'],
   movimientos: ['Fecha', 'SKU', 'Pieza', 'Cantidad', 'Stock después', 'Motivo', 'Pedido', 'Usuario'],
   clientes: ['WhatsApp', 'Nombre', 'Correo', 'Ciudad', 'Primer pedido', 'Último pedido', 'Etiquetas', 'Notas'],
+  pagos: ['Fecha', 'Pedido', 'Monto leído', 'Esperado', 'Resultado', 'Comprobante', 'Texto leído', 'Revisado por', 'Notas'],
   config: ['Ajuste', 'Valor', 'Para qué sirve'],
 };
 
@@ -51,6 +53,8 @@ const CONFIG_DEFAULTS = [
   ['Aviso de stock bajo', 'Sí', 'Sí / No. Correo diario a las 8 am con lo que hay que reponer.'],
   ['Carpeta de Drive', '', 'Se llena sola. Aquí se guardan fotos y vistas previas.'],
   ['Moneda', 'HNL', 'Lempiras.'],
+  ['Anticipo (%)', 50, 'Porcentaje que se paga para empezar el pedido. El sitio lo muestra en Mi pedido.'],
+  ['Datos bancarios', '', 'Cuenta para el anticipo. Se muestra al cliente en Mi pedido (ej. BAC · Ahorro · 123456789 · Pehn Design).'],
 ];
 
 const COL = {}; // COL.pedidos.Estado -> número de columna (1-based)
@@ -156,6 +160,16 @@ function conCandado_(fn) {
   if (!lock.tryLock(20000)) throw new Error('La hoja está ocupada con otro cambio. Espera unos segundos e intenta de nuevo.');
   try { return fn(); } finally { lock.releaseLock(); }
 }
+
+// Seguridad: todo texto que venga de afuera pasa por celda_ antes de escribirse en la hoja.
+// Un texto que empieza con = + - @ se volvería fórmula (puede leer otras celdas o llamar URLs).
+// Con el apóstrofo delante Sheets lo guarda como texto tal cual.
+const celda_ = v => (typeof v === 'string' && /^[=+\-@\t\r]/.test(v) ? "'" + v : v);
+const fila_ = arr => arr.map(celda_);
+// texto limpio y con tope de largo (sin caracteres de control)
+// una sola línea (nombres, asuntos de correo): sin saltos que permitan colar encabezados
+const linea_ = (v, max) => texto_(v, max * 2).replace(/\s+/g, ' ').slice(0, max);
+const texto_ = (v, max) => String(v == null ? '' : v).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '').trim().slice(0, max);
 
 // WhatsApp como clave única: solo dígitos y con 504 si son 8 dígitos (Honduras)
 const telKey_ = t => { const n = String(t || '').replace(/\D/g, ''); return n.length === 8 ? '504' + n : n; };

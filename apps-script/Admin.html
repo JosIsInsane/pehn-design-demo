@@ -332,6 +332,7 @@
       <button data-v="inicio" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="8" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="15" width="7" height="6" rx="1.5"/></svg><span>Inicio</span></button>
       <button data-v="pedidos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 7h12l-1 13H7Z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg><span>Pedidos</span><b class="ct" id="cPed" hidden></b></button>
       <button data-v="clientes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.6c2.5.2 4.3 2 5 4.9"/></svg><span>Clientes</span></button>
+      <button data-v="pagos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 9.5v.01M18 14.5v.01"/></svg><span>Pagos</span><b class="ct" id="cPag" hidden></b></button>
       <button data-v="inventario"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5Z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg><span>Inventario</span><b class="ct" id="cInv" hidden></b></button>
       <button data-v="recetas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg><span>Recetas</span><b class="ct" id="cRec" hidden></b></button>
       <button data-v="movimientos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/></svg><span><span class="lbl-l">Movimientos</span><span class="lbl-s">Movs</span></span></button>
@@ -422,6 +423,16 @@
           <div class="pnh"><h3><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></i>Recetas</h3><input class="search" id="qR" type="search" placeholder="Buscar clave…" aria-label="Buscar recetas"></div>
           <div class="chips" id="fR"></div>
           <div class="tw"><table><thead><tr><th>Clave del sitio</th><th style="width:240px">Pieza (SKU)</th><th style="width:100px">Cantidad</th><th style="width:100px"></th></tr></thead><tbody id="rec"></tbody></table></div>
+        </div>
+      </section>
+
+      <!-- PAGOS -->
+      <section class="view" id="v-pagos" hidden>
+        <div class="kpis" id="kpiPag"></div>
+        <div class="panel">
+          <div class="pnh"><h3><i aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 9.5v.01M18 14.5v.01"/></svg></i>Comprobantes <span class="cnt" id="nPg"></span></h3><input class="search" id="qPg" type="search" placeholder="Buscar pedido…" aria-label="Buscar comprobantes" autocomplete="off"></div>
+          <div class="chips" id="fPg"></div>
+          <div class="tw"><table><thead><tr><th>Fecha</th><th>Pedido</th><th class="num">Monto leído</th><th class="num">Esperado</th><th>Resultado</th><th>Comprobante</th><th></th></tr></thead><tbody id="pagos"></tbody></table></div>
         </div>
       </section>
 
@@ -518,6 +529,7 @@ const LOCAL = {
     const v = { sku, pieza: a.pieza, cat: a.cat || '', stock: +a.stock || 0, min: +a.min || 0, costo: +a.costo || 0, proveedor: a.proveedor || '' };
     if (i) Object.assign(i, v); else D.inventario.push({ ...v, row: 0, unidad: 'pza', actualizado: '', apartado: 0 });
   },
+  pago: a => { const x = (D.pagos || []).find(y => y.row === a.row); if (x) { x.resultado = a.resultado; if (a.monto !== '' && a.monto !== undefined) x.monto = +a.monto; x.revisado = 'tú'; } },
   receta: a => { const r = D.recetas.find(x => x.row === a.row); if (r) { r.sku = String(a.sku || '').trim().toUpperCase(); r.qty = +a.qty || 1; r.notas = r.sku ? '' : 'Sin inventario'; } },
 };
 // pendientes: los datos del servidor solo se aplican cuando ya no queda ninguno en camino
@@ -583,7 +595,7 @@ function loadImg(el) {
 const watchImgs = () => document.querySelectorAll('img[data-img]:not([src])').forEach(i => io.observe(i));
 
 // ---------- navegación ----------
-const TITLES = { inicio: 'Inicio', pedidos: 'Pedidos', clientes: 'Clientes', inventario: 'Inventario', recetas: 'Recetas', movimientos: 'Movimientos' };
+const TITLES = { inicio: 'Inicio', pedidos: 'Pedidos', clientes: 'Clientes', pagos: 'Pagos', inventario: 'Inventario', recetas: 'Recetas', movimientos: 'Movimientos' };
 function go(v, opts = {}) {
   view = v;
   document.querySelectorAll('#nav button').forEach(b => { if (b.dataset.v === v) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
@@ -611,10 +623,10 @@ function render() {
   const nuevos = D.pedidos.filter(p => p.estado === 'Nuevo').length;
   const inv = D.inventario.filter(i => i.stock <= i.min || i.apartado > i.stock).length;
   const rec = D.recetas.filter(r => /^Nueva/.test(r.notas)).length;
-  [['#cPed', nuevos], ['#cInv', inv], ['#cRec', rec]].forEach(([s, n]) => { $(s).hidden = !n; $(s).textContent = n; });
+  [['#cPed', nuevos], ['#cInv', inv], ['#cRec', rec], ['#cPag', (D.pagos || []).filter(porRevisar).length]].forEach(([s, n]) => { $(s).hidden = !n; $(s).textContent = n; });
   $('#skus').innerHTML = D.inventario.map(i => `<option value="${esc(i.sku)}">${esc(i.pieza)}</option>`).join('');
   $('#cats').innerHTML = [...new Set(D.inventario.map(i => i.cat).filter(Boolean))].map(c => `<option value="${esc(c)}">`).join('');
-  ({ inicio: rInicio, pedidos: rPedidos, clientes: rClientes, inventario: rInv, recetas: rRec, movimientos: rMovs })[view]();
+  ({ inicio: rInicio, pedidos: rPedidos, clientes: rClientes, pagos: rPagos, inventario: rInv, recetas: rRec, movimientos: rMovs })[view]();
   const escribiendo = document.activeElement && document.activeElement.closest('#dBody') && document.activeElement.matches('input,textarea');
   if (open && !escribiendo) { const fn = open.type === 'pedido' ? openPedido : openCliente; const it = open.type === 'pedido' ? D.pedidos.find(p => p.row === open.key) : D.clientes.find(c => (c.tel || c.nombre) === open.key); if (it) fn(it, true); }
   watchImgs();
@@ -679,7 +691,7 @@ function detalleFila(p) {
   return `<tr class="det"><td colspan="9"><div class="xg">
     <div class="xp">${fotos}<div>${it}</div></div>
     <div class="xd">${f('WhatsApp', esc(p.wa))}${f('Correo', esc(p.correo))}${f('Ciudad', esc(p.ciudad))}${f('Entrega', p.paraDia || p.para ? esc(p.para || p.paraDia) : '')}${f('Inventario', stockTag(p.stock))}${f('Notas del cliente', esc(p.notasCliente))}${f('Notas internas', esc(p.notas))}
-      <div class="row"><button class="btn sm dark" data-ped="${p.row}">Abrir ficha completa</button>${p.carpeta ? `<a class="btn sm" href="${esc(p.carpeta)}" target="_blank" rel="noopener">Carpeta en Drive ↗</a>` : ''}</div></div></div></td></tr>`;
+      <div class="row"><button class="btn sm dark" data-ped="${p.row}">Abrir ficha completa</button>${urlSegura(p.carpeta) ? `<a class="btn sm" href="${esc(urlSegura(p.carpeta))}" target="_blank" rel="noopener">Carpeta en Drive ↗</a>` : ''}</div></div></div></td></tr>`;
 }
 const PAGINA = 25;
 let sortP = 'fecha', dirP = -1, pagP = 0;
@@ -759,10 +771,11 @@ function openPedido(p, keep) {
       <div><small>WhatsApp</small>${esc(p.wa)}</div><div><small>Correo</small>${esc(p.correo || '—')}</div>
       <div><small>Ciudad</small>${esc(p.ciudad || '—')}</div><div><small>Para cuándo</small>${esc(p.para || '—')}</div>
       <div><small>Total</small><span class="money">${money(p.total, p.moneda)}</span></div><div><small>Inventario</small>${stockTag(p.stock)}</div>
+      <div><small>Pagado</small><span class="money">${money(pagadoDe(p.id), p.moneda)}</span> <span class="muted">de ${money(Math.round(p.total * D.anticipo / 100), p.moneda)} de anticipo</span></div><div><small>Saldo</small><span class="money">${money(Math.max(0, p.total - pagadoDe(p.id)), p.moneda)}</span></div>
     </div>
     <div class="actions">${cli ? `<button class="btn sm" data-cli="${esc(cli.tel || cli.nombre)}">${ICON.user.replace('<svg', '<svg width="15" height="15"')} Ficha del cliente · ${cli.pedidos.length} pedido${cli.pedidos.length > 1 ? 's' : ''}</button>` : ''}
       ${p.correo ? `<a class="btn sm" href="mailto:${esc(p.correo)}?subject=${encodeURIComponent('Tu pedido ' + p.id)}">Correo</a>` : ''}
-      ${p.carpeta ? `<a class="btn sm" target="_blank" rel="noopener" href="${esc(p.carpeta)}">Carpeta en Drive ↗</a>` : ''}</div>
+      ${urlSegura(p.carpeta) ? `<a class="btn sm" target="_blank" rel="noopener" href="${esc(urlSegura(p.carpeta))}">Carpeta en Drive ↗</a>` : ''}</div>
     ${p.notasCliente ? `<div class="note"><b>Notas del cliente:</b> ${esc(p.notasCliente)}</div>` : ''}
     <h3 class="sec">Productos</h3>
     ${p.items.map((it, j) => `<div class="item"><div class="ph">${p.previews[j] ? `<img data-img="${p.previews[j]}" data-zoom="${p.previews[j]}" data-name="${esc(p.id + '-' + (j + 1))}" alt="Vista previa de ${esc(it.product)}">` : '<span class="muted">Sin foto</span>'}</div>
@@ -846,6 +859,38 @@ function rRec() {
 }
 function fit(r, t) { return t === 'Todas' || (t === 'Por asignar' ? /^Nueva/.test(r.notas) : t === 'Con pieza' ? !!r.sku : !r.sku && !/^Nueva/.test(r.notas)); }
 
+// ---------- pagos (comprobantes que suben los clientes en "Rastrear pedido") ----------
+const PAGO_OK = ['Coincide', 'Confirmado'];
+const porRevisar = x => !PAGO_OK.includes(x.resultado) && x.resultado !== 'Rechazado';
+const pagadoDe = id => (D.pagos || []).filter(x => x.pedido === id && PAGO_OK.includes(x.resultado)).reduce((s, x) => s + x.monto, 0);
+// solo enlaces https (nunca javascript: ni otros esquemas) aunque alguien edite la hoja a mano
+const urlSegura = u => /^https:[/][/][\w.-]+[.]google[.]com[/]/.test(String(u)) ? String(u) : '';
+let fPg = 'Por revisar';
+function rPagos() {
+  const P = D.pagos || [], q = $('#qPg').value.trim().toLowerCase(), mes = new Date(); mes.setDate(1); mes.setHours(0, 0, 0, 0);
+  const delMes = P.filter(x => x.fecha && new Date(x.fecha) >= mes && PAGO_OK.includes(x.resultado));
+  $('#pSub').textContent = `El sitio lee el monto de cada comprobante. "Coincide" ya cuenta como pagado; lo demás revísalo y confirma o rechaza. Anticipo: ${D.anticipo}%.`;
+  $('#kpiPag').innerHTML = [
+    kpi('Por revisar', P.filter(porRevisar).length, { sub: 'Monto distinto o sin lectura', bad: true, tone: 'rose', icon: 'alert' }),
+    kpi('Cobrado este mes', money(delMes.reduce((s, x) => s + x.monto, 0)), { sub: plural(delMes.length, 'comprobante', 'comprobantes'), tone: 'mint', icon: 'cash' }),
+    kpi('Leídos solos', P.filter(x => x.resultado === 'Coincide').length, { sub: 'Monto igual al esperado', tone: 'sky', icon: 'check' }),
+    kpi('Rechazados', P.filter(x => x.resultado === 'Rechazado').length, { tone: 'lav', icon: 'ticket' }),
+  ].join('');
+  const opts = ['Por revisar', 'Pagados', 'Rechazados', 'Todos'], fit = (x, t) => t === 'Todos' || (t === 'Por revisar' ? porRevisar(x) : t === 'Pagados' ? PAGO_OK.includes(x.resultado) : x.resultado === 'Rechazado');
+  $('#fPg').innerHTML = opts.map(o => `<button aria-pressed="${o === fPg}" data-fpg="${o}">${o}<i>${P.filter(x => fit(x, o)).length}</i></button>`).join('');
+  const list = P.filter(x => fit(x, fPg)).filter(x => !q || x.pedido.toLowerCase().includes(q));
+  $('#nPg').textContent = list.length;
+  const tono = r => PAGO_OK.includes(r) ? 'ok' : r === 'Rechazado' ? 'bad' : 'warn';
+  $('#pagos').innerHTML = list.map(x => `<tr><td class="muted nw">${fdate(x.fecha)}</td>
+    <td><button class="btn sm ghost" data-pid="${esc(x.pedido)}">${esc(x.pedido)}</button></td>
+    <td class="num"><input class="in" style="max-width:110px;text-align:right" type="number" min="0" step="0.01" value="${x.leido === '' ? '' : x.monto}" data-pmonto="${x.row}" aria-label="Monto de ${esc(x.pedido)}" title="${esc(x.texto)}"></td>
+    <td class="num money">${money(x.esperado)}</td>
+    <td><span class="tag ${tono(x.resultado)}">${esc(x.resultado)}</span>${x.revisado ? `<br><small class="muted">${esc(x.revisado)}</small>` : ''}</td>
+    <td>${urlSegura(x.url) ? `<a class="btn sm" href="${esc(urlSegura(x.url))}" target="_blank" rel="noopener">Ver ↗</a>` : ''}</td>
+    <td class="nw"><button class="btn sm dark" data-pago="${x.row}" data-res="Confirmado">Confirmar</button> <button class="btn sm ghost" data-pago="${x.row}" data-res="Rechazado">Rechazar</button></td></tr>`).join('')
+    || `<tr><td colspan="7" class="empty">${fPg === 'Por revisar' ? 'Nada por revisar. 👌' : 'Sin comprobantes todavía.'}</td></tr>`;
+}
+
 function rMovs() {
   const q = $('#qM').value.trim().toLowerCase();
   $('#pSub').textContent = 'Historial de cada entrada y salida de stock (últimos 120).';
@@ -926,6 +971,8 @@ document.addEventListener('click', async e => {
   if (d.adj) return act('ajuste', { sku: d.adj, delta: +d.d, motivo: +d.d > 0 ? 'Ajuste +1 desde el CRM' : 'Ajuste −1 desde el CRM' }, 'Stock actualizado');
   if (d.in) { const n = await ask({ title: `Entrada de ${d.in}`, text: '¿Cuántas piezas llegaron?', input: 10, ok: 'Sumar al stock' }); if (n && +n) act('ajuste', { sku: d.in, delta: +n, motivo: 'Entrada de mercancía' }, `+${n} ${d.in}`); return; }
   if (d.edit) { const i = D.inventario.find(x => x.sku === d.edit), f = $('#fPieza'); $('#addPieza').open = true; ['sku', 'pieza', 'cat', 'stock', 'min', 'costo', 'proveedor'].forEach(k => { f.elements[k].value = i[k] ?? ''; }); f.elements.pieza.focus(); return; }
+  if (d.fpg) { fPg = d.fpg; return rPagos(); }
+  if (d.pago) { const m = document.querySelector(`[data-pmonto="${d.pago}"]`); return act('pago', { row: +d.pago, resultado: d.res, monto: m ? m.value : '' }, d.res === 'Confirmado' ? 'Pago confirmado' : 'Comprobante rechazado'); }
   if (d.rsave) { const r = d.rsave; return act('receta', { row: +r, sku: document.querySelector(`[data-rsku="${r}"]`).value, qty: +document.querySelector(`[data-rqty="${r}"]`).value }, 'Receta guardada'); }
   if (t.id === 'reload') return act('datos', {}, 'Datos al día');
 });
@@ -940,7 +987,7 @@ document.addEventListener('keydown', e => {
   if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('tr.click')) { e.preventDefault(); e.target.click(); }
 });
 $('#fPieza').addEventListener('submit', async e => { e.preventDefault(); const f = Object.fromEntries(new FormData(e.target)); e.target.reset(); $('#addPieza').open = false; act('pieza', f, `${f.sku.toUpperCase()} guardada`); });
-[['#qP', () => { pagP = 0; rPedidos(); watchImgs(); }], ['#qC', rClientes], ['#qI', rInv], ['#qR', rRec], ['#qM', rMovs]].forEach(([s, fn]) => $(s).addEventListener('input', fn));
+[['#qP', () => { pagP = 0; rPedidos(); watchImgs(); }], ['#qC', rClientes], ['#qPg', rPagos], ['#qI', rInv], ['#qR', rRec], ['#qM', rMovs]].forEach(([s, fn]) => $(s).addEventListener('input', fn));
 
 // ---------- inicio ----------
 if (ERROR || !D) {

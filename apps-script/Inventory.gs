@@ -79,14 +79,14 @@ function registrarClavesNuevas_(items) {
   }));
   if (!nuevas.size) return;
   const sh = sheet_('recetas');
-  const data = [...nuevas].map(k => [k, '', 1, 'Nueva: asigna la pieza (SKU) o déjala vacía si no usa inventario']);
+  const data = [...nuevas].map(k => fila_([k, '', 1, 'Nueva: asigna la pieza (SKU) o déjala vacía si no usa inventario']));
   sh.getRange(sh.getLastRow() + 1, 1, data.length, 4).setValues(data);
 }
 
 // ---------- movimientos de stock ----------
 // toda entrada o salida pasa por aquí: así Movimientos siempre tiene el historial completo
 function registrarMovimiento_(sku, pieza, delta, despues, motivo, pedido) {
-  sheet_('movimientos').appendRow([now_(), sku, pieza, delta, despues, motivo, pedido || '', who_()]);
+  sheet_('movimientos').appendRow(fila_([now_(), String(sku), String(pieza || ''), delta, despues, motivo, pedido || '', who_()]));
 }
 
 function moverStock_(sku, delta, motivo, pedido) {

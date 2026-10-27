@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>Rastrear pedido · Pehn Design</title>
+<meta name="description" content="Revisa el estado de tu pedido de Pehn Design y sube el comprobante de tu anticipo.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#FBF7F2">
+<link rel="icon" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,400..700,0..100,0..1;1,9..144,400..700,0..100,0..1&family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Great+Vibes&family=Bagel+Fat+One&family=Pacifico&family=Space+Mono:wght@700&family=Alfa+Slab+One&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-page="pedido">
+<a class="skip" href="#main">Saltar al contenido</a>
+<header data-marco="menu"></header>
+
+<main id="main">
+  <section class="cat-hero">
+    <div class="wrap">
+      <nav class="crumbs" aria-label="Ruta"><a href="index.html">Inicio</a><span aria-hidden="true">/</span><span>Rastrear pedido</span></nav>
+      <h1>Rastrear mi pedido</h1>
+      <p class="lead">Mira en qué va tu pedido y sube el comprobante de tu anticipo. Solo necesitas tu número de pedido y el WhatsApp con el que lo hiciste.</p>
+    </div>
+  </section>
+
+  <section class="sec seguir-sec">
+    <div class="wrap seguir">
+      <form class="co seguir-form" id="seguir" novalidate>
+        <div class="row2">
+          <label>Número de pedido<input name="id" required autocomplete="off" spellcheck="false" autocapitalize="characters" placeholder="PEHN-261027-001…" inputmode="text"></label>
+          <label>WhatsApp<input name="phone" type="tel" inputmode="tel" autocomplete="tel" required placeholder="9876 5432…"></label>
+        </div>
+        <button class="btn btn-dark" type="submit" id="seguirBtn">Ver mi pedido</button>
+        <div class="err" id="seguirErr" role="alert"></div>
+        <div class="mis" id="misPedidos" hidden></div>
+      </form>
+      <div id="estadoPedido" aria-live="polite"></div>
+    </div>
+  </section>
+</main>
+
+<footer data-marco="pie"></footer>
+<div data-marco="flotantes"></div>
+
+<script src="datos.js"></script>
+<script src="dibujos.js"></script>
+<script src="marco.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

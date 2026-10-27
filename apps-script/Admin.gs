@@ -123,57 +123,79 @@ function crmDatosLeer_() {
     unidad: txt(i.Unidad), costo: Number(i['Costo unitario']) || 0, proveedor: txt(i.Proveedor), actualizado: iso(i.Actualizado), apartado: res[txt(i.SKU)] || 0,
   }));
   const recetas = rows_('recetas').map(r => ({ row: r._row, clave: txt(r.Clave), sku: txt(r.SKU), qty: Number(r.Cantidad) || 1, notas: txt(r.Notas) }));
+  // pagos: si la hoja no existe todavía (instalación vieja) el CRM sigue funcionando sin ellos
+  let pagos = [];
+  try {
+    pagos = rows_('pagos').slice(-300).reverse().map(x => ({ row: x._row, fecha: iso(x.Fecha), pedido: txt(x.Pedido), monto: Number(x['Monto leído']) || 0, leido: txt(x['Monto leído']),
+      esperado: Number(x.Esperado) || 0, resultado: txt(x.Resultado), url: txt(x.Comprobante), revisado: txt(x['Revisado por']), texto: txt(x['Texto leído']).slice(0, 400) }));
+  } catch (e) { console.warn('Sin hoja Pagos: corre Pehn › Configurar hojas.'); }
   const movs = rows_('movimientos').slice(-120).reverse().map(m => ({ fecha: iso(m.Fecha), sku: txt(m.SKU), pieza: txt(m.Pieza), qty: Number(m.Cantidad) || 0, despues: Number(m['Stock después']) || 0, motivo: txt(m.Motivo), pedido: txt(m.Pedido), usuario: txt(m.Usuario) }));
 
   return {
     estados: ESTADOS, gatillo: txt(cfg['Estado que descuenta stock']) || 'En producción',
     negocio: txt(cfg['Nombre del negocio']) || 'Pehn Design', waNegocio: txt(cfg['WhatsApp del negocio']),
     hoja: ss_().getUrl(), generado: new Date().toISOString(),
-    pedidos, clientes, inventario, recetas, movs,
+    anticipo: Number(cfg['Anticipo (%)']) || 50,
+    pedidos, clientes, inventario, recetas, movs, pagos,
   };
 }
 
 // ---------- acciones (todas devuelven los datos al día como texto JSON) ----------
+// fila de datos válida (nunca la 1 de encabezados ni una que no existe)
+function filaValida_(key, row) {
+  const r = Number(row);
+  if (!Number.isInteger(r) || r < 2 || r > sheet_(key).getLastRow()) throw new Error('Fila inválida. Actualiza los datos e intenta de nuevo.');
+  return r;
+}
+
 function crm(k, accion, args) {
   exigir_(k);
-  args = args || {};
+  args = args && typeof args === 'object' ? args : {};
   switch (accion) {
     case 'datos': break;
     case 'imagenes': {
       const srcs = {};
-      (args.ids || []).slice(0, 6).forEach(id => {
+      (Array.isArray(args.ids) ? args.ids : []).filter(id => /^[-\w]{25,80}$/.test(id)).slice(0, 6).forEach(id => {
         try { srcs[id] = dataUrl_(DriveApp.getFileById(String(id)).getBlob()); } catch (e) { /* foto borrada o sin permiso: el CRM muestra "Sin foto" */ }
       });
       return JSON.stringify({ srcs });
     }
     case 'estado': {
       if (!ESTADOS.includes(args.estado)) throw new Error('Estado inválido.');
-      conCandado_(() => { sheet_('pedidos').getRange(args.row, COL.pedidos.Estado).setValue(args.estado); aplicarEstado_(args.row, args.estado); });
+      const row = filaValida_('pedidos', args.row);
+      conCandado_(() => { sheet_('pedidos').getRange(row, COL.pedidos.Estado).setValue(args.estado); aplicarEstado_(row, args.estado); });
       break;
     }
     case 'nota':
-      sheet_('pedidos').getRange(args.row, COL.pedidos['Notas internas']).setValue(String(args.texto || '').slice(0, 2000));
+      sheet_('pedidos').getRange(filaValida_('pedidos', args.row), COL.pedidos['Notas internas']).setValue(celda_(texto_(args.texto, 2000)));
       break;
     case 'cliente': {
       const sh = hojaClientes_();
       if (!sh) throw new Error('Ya existe una hoja "Clientes" con otros datos; no se modifica.');
-      const row = Number(args.row) || 0;
-      if (row) sh.getRange(row, COL.clientes.Etiquetas, 1, 2).setValues([[args.etiquetas || '', args.notas || '']]);
-      else sh.appendRow(["'" + telKey_(args.tel), args.nombre || '', args.correo || '', args.ciudad || '', '', '', args.etiquetas || '', args.notas || '']);
+      const et = linea_(args.etiquetas, 200), notas = texto_(args.notas, 2000);
+      if (Number(args.row)) sh.getRange(filaValida_('clientes', args.row), COL.clientes.Etiquetas, 1, 2).setValues([fila_([et, notas])]);
+      else sh.appendRow(fila_(["'" + telKey_(args.tel), linea_(args.nombre, 80), linea_(args.correo, 120), linea_(args.ciudad, 60), '', '', et, notas]));
       break;
     }
     case 'ajuste': {
       const delta = Number(args.delta);
       if (!delta) throw new Error('Cantidad inválida.');
-      conCandado_(() => moverStock_(String(args.sku), delta, args.motivo || (delta > 0 ? 'Entrada de mercancía' : 'Salida manual'), ''));
+      conCandado_(() => moverStock_(linea_(args.sku, 40), delta, linea_(args.motivo, 120) || (delta > 0 ? 'Entrada de mercancía' : 'Salida manual'), ''));
       break;
     }
     case 'pieza': conCandado_(() => guardarPieza_(args)); break;
     case 'receta': {
-      const sh = sheet_('recetas'), sku = String(args.sku || '').trim().toUpperCase();
-      sh.getRange(args.row, COL.recetas.SKU).setValue(sku);
-      sh.getRange(args.row, COL.recetas.Cantidad).setValue(Number(args.qty) || 1);
-      sh.getRange(args.row, COL.recetas.Notas).setValue(sku ? '' : 'Sin inventario');
+      const sh = sheet_('recetas'), row = filaValida_('recetas', args.row), sku = linea_(args.sku, 40).toUpperCase();
+      sh.getRange(row, COL.recetas.SKU, 1, 3).setValues([fila_([sku, Math.max(1, Math.round(Number(args.qty) || 1)), sku ? '' : 'Sin inventario'])]);
+      break;
+    }
+    case 'pago': {
+      // el dueño confirma o rechaza un comprobante que subió el cliente
+      if (!['Confirmado', 'Rechazado'].includes(args.resultado)) throw new Error('Resultado inválido.');
+      const sh = sheet_('pagos'), row = filaValida_('pagos', args.row);
+      sh.getRange(row, COL.pagos.Resultado).setValue(args.resultado);
+      sh.getRange(row, COL.pagos['Revisado por']).setValue(celda_(who_()));
+      if (args.monto !== undefined && args.monto !== '') sh.getRange(row, COL.pagos['Monto leído']).setValue(Math.max(0, Number(args.monto) || 0));
       break;
     }
     default: throw new Error('Acción desconocida: ' + accion);
@@ -182,10 +204,11 @@ function crm(k, accion, args) {
 }
 
 function guardarPieza_(p) {
-  const sku = String(p.sku || '').trim().toUpperCase();
-  if (!sku || !String(p.pieza || '').trim()) throw new Error('SKU y nombre son obligatorios.');
+  const sku = linea_(p.sku, 40).toUpperCase();
+  p = { ...p, pieza: linea_(p.pieza, 120), cat: linea_(p.cat, 60), proveedor: linea_(p.proveedor, 120), unidad: linea_(p.unidad, 20) };
+  if (!sku || !p.pieza) throw new Error('SKU y nombre son obligatorios.');
   const sh = sheet_('inventario'), cur = inventarioMap_()[sku];
-  const vals = [sku, p.pieza, p.cat || '', Number(p.stock) || 0, Number(p.min) || 0, p.unidad || 'pza', Number(p.costo) || 0, p.proveedor || ''];
+  const vals = fila_([sku, p.pieza, p.cat, Number(p.stock) || 0, Number(p.min) || 0, p.unidad || 'pza', Number(p.costo) || 0, p.proveedor]);
   if (cur) {
     const antes = Number(cur.Stock) || 0;
     sh.getRange(cur._row, 1, 1, 8).setValues([vals]);
