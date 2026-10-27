@@ -436,7 +436,7 @@ function secHTML(groups, cfg, sc) {
     const gs = groups.filter(g => ids.includes(g.id)); gs.forEach(g => used.add(g.id));
     if (!gs.some(g => visible(g, cfg))) return '';
     const key = sc + k, open = cur.open.has(key);
-    return `<section class="sec${open ? ' open' : ''}"><h3><button type="button" class="sec-h" data-sec="${key}" aria-expanded="${open}" aria-controls="sec_${key}"><span class="sec-t">${t}</span><span class="sec-s" data-secsum="${k}" data-sc="${sc}">${esc(secSum(k, cfg))}</span><span class="chev" aria-hidden="true">▾</span></button></h3><div class="sec-b" id="sec_${key}"${open ? '' : ' hidden'}>${gs.map(g => groupHTML(g, cfg, sc)).join('')}</div></section>`;
+    return `<section class="fsec${open ? ' open' : ''}"><h3><button type="button" class="sec-h" data-sec="${key}" aria-expanded="${open}" aria-controls="sec_${key}"><span class="sec-t">${t}</span><span class="sec-s" data-secsum="${k}" data-sc="${sc}">${esc(secSum(k, cfg))}</span><span class="chev" aria-hidden="true">▾</span></button></h3><div class="sec-b" id="sec_${key}"${open ? '' : ' hidden'}>${gs.map(g => groupHTML(g, cfg, sc)).join('')}</div></section>`;
   }).join('');
   return secs + groups.filter(g => !used.has(g.id)).map(g => groupHTML(g, cfg, sc)).join('');
 }
@@ -497,7 +497,7 @@ function pantalla(dir) {
   if (cur.sub || cur.step) cur.draft = null;
   buildForm(dir);
   $('#cScreen').focus({ preventScroll: true });
-  $('#custom .sheet').classList.remove('mini');
+  $('#custom .sheet').classList.remove('mini'); $('#custom .sheet').classList.toggle('sub', cur.sub);
   if (cur.sub) enfocaFig(); else if (Z.s > 1) zReset();
 }
 function atras() { if (cur.stack.length > 1) history.back(); else cerrarPagina(); }
@@ -610,7 +610,7 @@ $('#cForm')?.addEventListener('click', e => {
   if (b.dataset.sec) { // sección plegable
     const k = b.dataset.sec, open = !cur.open.has(k), body = document.getElementById('sec_' + k);
     open ? cur.open.add(k) : cur.open.delete(k);
-    b.setAttribute('aria-expanded', open); b.closest('.sec').classList.toggle('open', open); body.hidden = !open;
+    b.setAttribute('aria-expanded', open); b.closest('.fsec').classList.toggle('open', open); body.hidden = !open;
     if (open && !REDUCED) body.animate([{ opacity: 0, transform: 'translateY(-6px)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: 'ease-out' });
     return;
   }

@@ -822,14 +822,14 @@ body[data-page="catalog"]{scroll-padding-top:calc(var(--nav-h) + 140px)}
 #custom.pg .looks::-webkit-scrollbar{display:none}
 #custom.pg .looks button{flex:none;min-height:46px;padding:0 18px;font-size:15px;scroll-snap-align:start;white-space:nowrap}
 /* secciones plegables de la figura */
-.sec{border-top:1px solid var(--line)}
-.looks-wrap + .sec{margin-top:14px}
+.fsec{border-top:1px solid var(--line)}
+.looks-wrap + .fsec{margin-top:14px}
 .sec-h{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"t c" "s c";gap:2px 12px;align-items:center;min-height:68px;padding:14px 0;text-align:left}
 .sec-t{grid-area:t;font-family:var(--serif);font-size:20px;font-weight:500}
 .sec-s{grid-area:s;font-size:15px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sec.open .sec-s{display:none}
+.fsec.open .sec-s{display:none}
 .sec-h .chev{grid-area:c;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--bg);font-size:14px;transition:transform .3s var(--ease)}
-.sec.open .sec-h .chev{transform:rotate(180deg)}
+.fsec.open .sec-h .chev{transform:rotate(180deg)}
 .sec-b{padding:0 0 12px}
 .sec-b>.grp:first-child{padding-top:10px;border-top:0}
 .sec-b[hidden]{display:none}
@@ -867,5 +867,8 @@ body:has(#custom.pg.open) .cart-fab,body:has(#custom.pg.open) .wa-float{visibili
   #custom.pg .c-preview,.sec-h .chev{transition:none}
   .zoom-layer.anim{transition:none}
 }
-.sec h3{margin:0}
+.fsec h3{margin:0}
 #custom .c-buy [hidden]{display:none}
+#custom.pg .sheet.sub .ref{display:none}
+.fsec.open .sec-h{grid-template-areas:"t c";min-height:60px;padding:8px 0}
+.fsec.open .sec-b>.grp:first-child{padding-top:4px}
