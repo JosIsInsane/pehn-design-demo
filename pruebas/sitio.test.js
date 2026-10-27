@@ -31,6 +31,7 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
   const page = await ctx.newPage();
   const errores = [];
   page.on('pageerror', e => errores.push(e.message));
+  const turnstile = []; page.on('request', r => { if (/challenges\.cloudflare\.com/.test(r.url())) turnstile.push(r.url()); });
   page.on('console', m => { if (m.type() === 'error' && /Content Security Policy|Refused/.test(m.text())) errores.push('CSP: ' + m.text()); });
   page.on('dialog', d => { errores.push('dialog: ' + d.message()); d.dismiss(); });
   // Google Sheets simulado: el sitio manda su token real; aquí se cambia por el del simulador
@@ -57,7 +58,8 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
 
   // 2. pedido completo con datos maliciosos y anticipo antes de enviar
   const jpg = path.join(__dirname, 'comprobante.jpg');
-  fs.writeFileSync(jpg, Buffer.from('/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==', 'base64'));
+  const JPG_B64 = '/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==';
+  fs.writeFileSync(jpg, Buffer.from(JPG_B64, 'base64'));
   await page.evaluate(() => openCard(0)); await page.waitForTimeout(300);
   for (let i = 0; i < 4; i++) { await page.click('#addBtn'); await page.waitForTimeout(150); }
   await page.waitForTimeout(900);
@@ -271,6 +273,43 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
     await crm.close();
   }
 
+  // Turnstile activado (llave de prueba y script falso de Cloudflare): sin token no envía; con token lo manda; tras un error lo reinicia
+  {
+    const tctx = await b.newContext({ viewport: { width: 1280, height: 900 } });
+    const t = await tctx.newPage(); const tErr = [];
+    t.on('pageerror', e => tErr.push(e.message));
+    t.on('console', m => { if (m.type() === 'error' && /Content Security Policy|Refused/.test(m.text())) tErr.push('CSP: ' + m.text()); });
+    await t.addInitScript(() => localStorage.setItem('pehn_aviso', '1'));
+    await t.route(/fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, body: '' }));
+    await t.route(/\/datos\.js$/, async r => { const res = await r.fetch(); await r.fulfill({ response: res, body: (await res.text()).replace("turnstileSiteKey: ''", "turnstileSiteKey: 'LLAVE-PRUEBA'") }); });
+    await t.route(/challenges\.cloudflare\.com/, r => r.fulfill({ status: 200, contentType: 'text/javascript', body: 'window.turnstile={render:function(el,o){window.__tsOpts=o;return 7},reset:function(w){window.__tsReset=w}};' }));
+    let enviado = null;
+    await t.route(/script\.google\.com/, async r => {
+      if (r.request().method() === 'GET') return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(sim.get(Object.fromEntries(new URL(r.request().url()).searchParams))) });
+      enviado = JSON.parse(r.request().postData() || '{}');
+      await r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: false, error: 'Verificación fallida. Recarga la página e intenta de nuevo.' }) });
+    });
+    await t.goto(base + 'catalogo.html');
+    await t.evaluate(() => openCard(0)); await t.waitForTimeout(300);
+    for (let i = 0; i < 4; i++) { await t.click('#addBtn'); await t.waitForTimeout(150); }
+    await t.waitForTimeout(900);
+    await t.click('#cartBtn'); await t.click('#goCheckout');
+    await t.fill('[name=name]', 'Ana'); await t.fill('[name=phone]', '9876 5432'); await t.fill('[name=email]', 'ana@correo.com'); await t.fill('[name=city]', 'Tegucigalpa');
+    await t.check('[name=consent]'); await t.click('#goPago'); await t.waitForTimeout(200);
+    await t.waitForFunction(() => window.__tsOpts, null, { timeout: 5000 }).catch(() => {});
+    ok(await t.evaluate(() => window.__tsOpts && window.__tsOpts.sitekey === 'LLAVE-PRUEBA'), 'Turnstile: el widget se monta con la llave de datos.js (CSP lo permite)');
+    await t.setInputFiles('#anticipoFile', { name: 'c.jpg', mimeType: 'image/jpeg', buffer: Buffer.from(JPG_B64, 'base64') }); await t.waitForTimeout(2800);
+    await t.click('#sendOrder'); await t.waitForTimeout(300);
+    ok(enviado === null && /verificando/.test(await t.textContent('#coErr')), 'Turnstile: sin token no se envía el pedido');
+    await t.evaluate(() => window.__tsOpts.callback('tok-123'));
+    await t.click('#sendOrder'); await t.waitForTimeout(1500);
+    ok(enviado && enviado.turnstile === 'tok-123', 'Turnstile: el token viaja con el pedido');
+    ok(await t.evaluate(() => window.__tsReset === 7), 'Turnstile: tras un error se pide otro token');
+    ok(!tErr.length, 'Turnstile: sin errores de JavaScript ni CSP' + (tErr.length ? ': ' + tErr.join(' | ') : ''));
+    await tctx.close();
+  }
+
+  ok(!turnstile.length, 'Sin turnstileSiteKey no se carga nada de Cloudflare Turnstile');
   ok(!(await page.evaluate(() => window.__xss)), 'Ningún texto del cliente ejecutó código');
   ok(!errores.length, 'Sin errores de JavaScript' + (errores.length ? ': ' + errores.join(' | ') : ''));
   await b.close(); server.close();

@@ -625,5 +625,13 @@ prueba('Turnstile: con secreto y token bueno el pedido pasa', () => {
   ok(s.hoja('Pedidos').length === 1);
 });
 
+prueba('_headers: Turnstile permitido solo en script-src y frame-src; datos.js lo trae vacío', () => {
+  const h = fsx.readFileSync(pathx.join(__dirname, '..', '_headers'), 'utf8');
+  const dir = n => (h.match(new RegExp(n + ' ([^;]*)')) || [])[1] || '';
+  ok(/challenges\.cloudflare\.com/.test(dir('script-src')) && /challenges\.cloudflare\.com/.test(dir('frame-src')));
+  ok(!/challenges\.cloudflare\.com/.test(dir('default-src')) && !/unsafe-inline|unsafe-eval/.test(dir('script-src')));
+  ok(/turnstileSiteKey: ''/.test(fsx.readFileSync(pathx.join(__dirname, '..', 'datos.js'), 'utf8')), 'datos.js debe traer la llave vacía');
+});
+
 console.log(`\n${n - fallas} de ${n} pruebas pasaron.`);
 process.exit(fallas ? 1 : 0);
