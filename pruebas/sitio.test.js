@@ -177,6 +177,83 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
     await mctx.close(); await c360.close();
   }
 
+  // 9. catálogo: columna de filtros con categorías desplegables (escritorio) y cajón (teléfono)
+  {
+    const d = await ctx.newPage();
+    d.on('pageerror', e => errores.push('filtros: ' + e.message));
+    await d.route(/fonts\.(googleapis|gstatic)\.com|script\.google\.com/, r => r.fulfill({ status: 200, body: '{}' }));
+    await d.addInitScript(() => localStorage.setItem('pehn_aviso', '1'));
+    await d.goto(base + 'catalogo.html'); await d.waitForTimeout(400);
+    ok(await d.isVisible('#side') && !(await d.isVisible('#fBtn')), 'Escritorio: filtros en columna fija, sin botón Filtros');
+    ok(await d.getAttribute('[data-acc="ropa"]', 'aria-expanded') === 'false' && await d.isHidden('[data-cat="ropa"][data-sub="pijamas"]'), 'Escritorio: Ropa empieza plegada');
+    await d.click('[data-acc="ropa"]'); await d.waitForTimeout(500);
+    ok(await d.getAttribute('[data-acc="ropa"]', 'aria-expanded') === 'true' && await d.isVisible('[data-cat="ropa"][data-sub="pijamas"]'), 'Escritorio: Ropa se despliega y muestra sus subcategorías');
+    ok(await d.getAttribute('[data-acc="ropa"]', 'aria-controls') === 'as-ropa' && await d.locator('#as-ropa').count() === 1, 'Acordeón: aria-controls apunta a su panel');
+    await d.click('[data-cat="ropa"][data-sub="pijamas"]'); await d.waitForTimeout(600);
+    const tarjetas = await d.$$eval('#grid .card', l => l.map(c => [c.querySelector('.card-cat').textContent, c.querySelector('h3').textContent]));
+    ok(tarjetas.length === 6 && tarjetas.every(t => t[0] === 'Ropa' && /pijama/i.test(t[1])), 'Escritorio: Pijamas deja solo pijamas (' + tarjetas.length + ')');
+    const u = new URL(d.url());
+    ok(u.searchParams.get('cat') === 'ropa' && u.searchParams.get('sub') === 'pijamas', 'URL lleva ?cat=ropa&sub=pijamas');
+    ok(await d.getAttribute('[data-cat="ropa"][data-sub="pijamas"]', 'aria-current') === 'true', 'Subcategoría activa marcada (aria-current)');
+    ok((await d.textContent('#chip')).includes('Pijamas') && (await d.textContent('#resCount')).startsWith('6 '), 'Chip del filtro activo y conteo de resultados');
+    await d.click('[data-acc="vasos"]'); await d.waitForTimeout(500);
+    ok(await d.getAttribute('[data-acc="ropa"]', 'aria-expanded') === 'false' && await d.getAttribute('[data-acc="vasos"]', 'aria-expanded') === 'true', 'Solo una categoría abierta a la vez');
+    await d.focus('[data-acc="vasos"]'); await d.keyboard.press('ArrowDown');
+    ok(await d.evaluate(() => document.activeElement.dataset.sub === ''), 'Teclado: flecha abajo pasa al primer elemento de la categoría abierta');
+    await d.click('#chip'); await d.waitForTimeout(500);
+    ok(!/[?&](cat|sub)=/.test(d.url()) && await d.$$eval('#grid .card', l => l.length) === 8, 'La × del chip quita el filtro y limpia la URL');
+    await d.goto(base + 'catalogo.html?cat=vasos'); await d.waitForTimeout(500);
+    ok(await d.$$eval('#grid .card', l => l.length > 0 && l.every(c => c.querySelector('.card-cat').textContent === 'Vasos y tazas')) && await d.getAttribute('[data-acc="vasos"]', 'aria-expanded') === 'true', 'Enlace viejo ?cat=vasos sigue funcionando');
+    await d.goto(base + 'catalogo.html?cat=ropa&sub=inventada'); await d.waitForTimeout(400);
+    ok(await d.$$eval('#grid .card', l => l.length) === 8 && !(await d.textContent('#chip')).includes('inventada'), 'Subcategoría desconocida en la URL se ignora');
+    await d.close();
+
+    const fctx = await b.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    const m = await fctx.newPage();
+    m.on('pageerror', e => errores.push('filtros móvil: ' + e.message));
+    await m.route(/fonts\.(googleapis|gstatic)\.com|script\.google\.com/, r => r.fulfill({ status: 200, body: '{}' }));
+    await m.addInitScript(() => localStorage.setItem('pehn_aviso', '1'));
+    await m.goto(base + 'catalogo.html'); await m.waitForTimeout(500);
+    ok(await m.isVisible('#fBtn') && !(await m.isVisible('#side')) && await m.isVisible('#buscar #q'), 'Móvil: una fila con buscador y botón Filtros; sin columna fija');
+    ok(await m.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Móvil: sin scroll horizontal con la barra compacta');
+    await m.click('#fBtn'); await m.waitForTimeout(700);
+    ok(await m.isVisible('#side .side-panel') && await m.getAttribute('#fBtn', 'aria-expanded') === 'true', 'Móvil: Filtros abre el cajón');
+    ok(await m.evaluate(() => document.querySelector('.shop-main').inert && !document.querySelector('#sidePanel').inert && document.activeElement.id === 'sidePanel'), 'Móvil: el resto queda inerte y el foco va al cajón');
+    await m.click('[data-acc="ropa"]'); await m.waitForTimeout(500);
+    const medidas = await m.evaluate(() => [...document.querySelectorAll('#side .acc-h, #side .acc-s, #side .x, #fApply')].filter(e => e.getBoundingClientRect().height > 0 && getComputedStyle(e).visibility === 'visible' && getComputedStyle(e.closest('ul') || e).visibility === 'visible').every(e => { const r = e.getBoundingClientRect(); return r.height >= 43.5 && r.width >= 43.5; }));
+    ok(medidas, 'Móvil: filas y botones del cajón de al menos 44 px');
+    ok(await m.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'Móvil: cajón abierto sin scroll horizontal');
+    await m.click('[data-cat="ropa"][data-sub="pijamas"]'); await m.waitForTimeout(500);
+    ok((await m.textContent('#fApply')) === 'Ver 6 productos', 'Móvil: el botón fijo dice "Ver 6 productos"');
+    await m.click('#fApply'); await m.waitForTimeout(700);
+    ok(!(await m.isVisible('#side')) && await m.getAttribute('#fBtn', 'aria-expanded') === 'false', 'Móvil: "Ver productos" cierra el cajón');
+    ok(await m.$$eval('#grid .card', l => l.length === 6 && l.every(c => /pijama/i.test(c.querySelector('h3').textContent))), 'Móvil: el grid quedó filtrado en pijamas');
+    ok((await m.textContent('#fBadge')) === '1' && /sub=pijamas/.test(m.url()), 'Móvil: el botón muestra el número de filtros y la URL el filtro');
+    ok(await m.evaluate(() => !document.querySelector('main').inert && !document.querySelector('.shop-main').inert), 'Móvil: al cerrar nada queda inerte');
+    await m.click('#fBtn'); await m.waitForTimeout(600);
+    ok(await m.isVisible('#side .side-panel'), 'Móvil: se vuelve a abrir');
+    await m.goBack(); await m.waitForTimeout(600);
+    ok(!(await m.isVisible('#side')) && /catalogo\.html/.test(m.url()) && /sub=pijamas/.test(m.url()), 'Móvil: Atrás cierra el cajón y se queda en el catálogo');
+    await m.click('#fBtn'); await m.waitForTimeout(600); await m.keyboard.press('Escape'); await m.waitForTimeout(600);
+    ok(!(await m.isVisible('#side')), 'Móvil: Escape cierra el cajón');
+    await m.click('#fBtn'); await m.waitForTimeout(600); await m.mouse.click(385, 400); await m.waitForTimeout(600);
+    ok(!(await m.isVisible('#side')), 'Móvil: tocar fuera cierra el cajón');
+    await m.click('#fBtn'); await m.waitForTimeout(600); await m.click('#side .x'); await m.waitForTimeout(600);
+    ok(!(await m.isVisible('#side')) && await m.evaluate(() => document.activeElement.id === 'fBtn'), 'Móvil: la × cierra el cajón y el foco vuelve al botón');
+    await fctx.close();
+
+    const c360 = await b.newContext({ viewport: { width: 360, height: 740 }, isMobile: true, hasTouch: true });
+    const q = await c360.newPage();
+    await q.route(/fonts\.(googleapis|gstatic)\.com|script\.google\.com/, r => r.fulfill({ status: 200, body: '{}' }));
+    await q.addInitScript(() => localStorage.setItem('pehn_aviso', '1'));
+    await q.goto(base + 'catalogo.html?cat=ropa&sub=pijamas'); await q.waitForTimeout(500);
+    const ancho1 = await q.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
+    await q.click('#fBtn'); await q.waitForTimeout(600);
+    const ancho2 = await q.evaluate(() => document.documentElement.scrollWidth <= innerWidth && document.querySelector('.side-body').scrollWidth <= document.querySelector('.side-body').clientWidth);
+    ok(ancho1 && ancho2, 'Móvil 360 px: catálogo y cajón de filtros sin scroll horizontal');
+    await c360.close();
+  }
+
   ok(!(await page.evaluate(() => window.__xss)), 'Ningún texto del cliente ejecutó código');
   ok(!errores.length, 'Sin errores de JavaScript' + (errores.length ? ': ' + errores.join(' | ') : ''));
   await b.close(); server.close();

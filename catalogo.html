@@ -30,37 +30,67 @@
   </section>
 
   <section id="catalogo">
+    <!-- celular y tablet: buscador + botón que abre el panel de filtros -->
     <div class="toolbar" id="buscar">
       <div class="wrap">
         <div class="toolbar-in">
           <label class="search">
-            <span class="sr" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Buscar productos</span>
+            <span class="sr">Buscar productos</span>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
             <input type="search" id="q" name="q" placeholder="Buscar productos…" autocomplete="off" enterkeyhint="search">
-            <button type="button" class="clear" id="qClear" aria-label="Borrar búsqueda" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+            <button type="button" class="clear" data-qclear aria-label="Borrar búsqueda" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
           </label>
-          <div class="sort">
-            <label class="sr" for="sort" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Ordenar por</label>
-            <select id="sort">
-              <option value="feat">Destacados</option>
-              <option value="asc">Precio: menor a mayor</option>
-              <option value="desc">Precio: mayor a menor</option>
-              <option value="name">Nombre (A–Z)</option>
-            </select>
-          </div>
+          <button type="button" class="f-btn" id="fBtn" aria-haspopup="dialog" aria-controls="side" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
+            <span>Filtros</span><b id="fBadge" hidden></b>
+          </button>
         </div>
-        <div class="filters" role="tablist" aria-label="Categorías" id="filters"></div>
       </div>
     </div>
 
-    <div class="wrap">
-      <div class="results-meta"><span id="resCount" aria-live="polite"></span><span>Precios en lempiras (HNL)</span></div>
-      <h2 class="sr">Productos</h2>
-      <div class="grid" id="grid"></div>
-      <div class="load-more" id="loadMore" hidden>
-        <div class="bar"><i id="loadBar"></i></div>
-        <small id="loadTxt"></small>
-        <button class="btn btn-ghost" id="loadBtn">Mostrar más</button>
+    <div class="wrap shop">
+      <!-- escritorio: columna fija a la izquierda. Celular: el mismo bloque es un cajón (ver app.js) -->
+      <div class="drawer fside" id="side">
+        <div class="modal-bg" data-fclose></div>
+        <aside class="d-panel side-panel" id="sidePanel" tabindex="-1" aria-labelledby="sideT">
+          <div class="side-head"><h2 id="sideT">Filtros</h2><button type="button" class="x" data-fclose aria-label="Cerrar filtros">✕</button></div>
+          <div class="side-body">
+            <label class="search side-search">
+              <span class="sr">Buscar productos</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+              <input type="search" id="qs" name="qs" placeholder="Buscar productos…" autocomplete="off" enterkeyhint="search">
+              <button type="button" class="clear" data-qclear aria-label="Borrar búsqueda" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+            </label>
+            <div class="side-sec sort">
+              <label class="side-t" for="sort">Ordenar por</label>
+              <select id="sort">
+                <option value="feat">Destacados</option>
+                <option value="asc">Precio: menor a mayor</option>
+                <option value="desc">Precio: mayor a menor</option>
+                <option value="name">Nombre (A–Z)</option>
+              </select>
+            </div>
+            <nav class="side-sec" aria-labelledby="catT">
+              <h3 class="side-t" id="catT">Categorías</h3>
+              <ul class="acc" id="filters"></ul>
+            </nav>
+          </div>
+          <div class="side-foot"><button type="button" class="btn btn-dark" id="fApply">Ver productos</button></div>
+        </aside>
+      </div>
+
+      <div class="shop-main">
+        <div class="results-meta">
+          <span id="resCount" aria-live="polite"></span><span class="sep" aria-hidden="true">·</span><span>Precios en lempiras (HNL)</span>
+          <button type="button" class="fchip" id="chip" hidden><span id="chipTxt"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+        <h2 class="sr">Productos</h2>
+        <div class="grid" id="grid"></div>
+        <div class="load-more" id="loadMore" hidden>
+          <div class="bar"><i id="loadBar"></i></div>
+          <small id="loadTxt"></small>
+          <button class="btn btn-ghost" id="loadBtn">Mostrar más</button>
+        </div>
       </div>
     </div>
   </section>

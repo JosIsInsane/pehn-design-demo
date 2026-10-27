@@ -4,6 +4,7 @@
 
 const fmt = n => new Intl.NumberFormat(CONFIG.locale, { style: 'currency', currency: CONFIG.currency, maximumFractionDigits: 0 }).format(n);
 const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
 // con "menos movimiento" activo solo se quitan el vuelo al carrito y la inclinación; lo demás son fundidos cortos
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const productoDe = id => PRODUCTS.find(p => p.id === id);
@@ -93,7 +94,14 @@ function fmtDate(iso) { const [y, m, d] = String(iso).split('-').map(Number); re
 const PAGE = 8;
 const ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
 const norm = s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-const state = { cat: 'todos', q: '', sort: 'feat', shown: PAGE };
+const state = { cat: 'todos', sub: '', q: '', sort: 'feat', shown: PAGE, open: '' };
+// árbol del filtro: categoría -> subcategorías con productos. Con una sola (o ninguna) la categoría no se despliega.
+const ARBOL = CATS.map(([id, nombre]) => {
+  const cuenta = sub => CARDS.filter(c => { const p = productoDe(c.id); return id === 'todos' || (p.cat === id && (!sub || p.sub === sub)); }).length;
+  const subs = id === 'todos' ? [] : (SUBS[id] || []).map(([sid, sn]) => [sid, sn, cuenta(sid)]).filter(x => x[2]);
+  return { id, nombre, n: cuenta(''), subs: subs.length > 1 ? subs : [] };
+});
+const arbolDe = id => ARBOL.find(g => g.id === id);
 
 function cardHTML(card, ci, href) {
   const p = productoDe(card.id);
@@ -133,17 +141,39 @@ function results() {
   let list = CARDS.map((card, ci) => {
     const p = productoDe(card.id);
     return { card, ci, p, price: priceOf(p, cardCfg(card)).unit, title: card.title || p.name };
-  }).filter(r => (state.cat === 'todos' || r.p.cat === state.cat)
-    && (!q || norm([r.title, r.card.desc || r.p.desc, catName(r.p.cat), r.p.name].join(' ')).includes(q)));
+  }).filter(r => (state.cat === 'todos' || r.p.cat === state.cat) && (!state.sub || r.p.sub === state.sub)
+    && (!q || norm([r.title, r.card.desc || r.p.desc, catName(r.p.cat), subName(r.p.cat, r.p.sub), r.p.name].join(' ')).includes(q)));
   if (state.sort === 'asc') list.sort((x, y) => x.price - y.price);
   if (state.sort === 'desc') list.sort((x, y) => y.price - x.price);
   if (state.sort === 'name') list.sort((x, y) => x.title.localeCompare(y.title, 'es'));
   return list;
 }
 
+const CHEV = '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
+// la lista se arma una vez; syncFilters solo cambia estados (así el foco no se pierde al elegir)
 function renderFilters() {
-  const count = id => CARDS.filter(c => id === 'todos' || productoDe(c.id).cat === id).length;
-  $('#filters').innerHTML = CATS.map(([id, l]) => `<button role="tab" aria-selected="${id === state.cat}" data-f="${id}">${l}<b>${count(id)}</b></button>`).join('');
+  $('#filters').innerHTML = ARBOL.map(g => g.subs.length
+    ? `<li class="acc-item" data-g="${g.id}"><button type="button" class="acc-h" id="ah-${g.id}" data-acc="${g.id}" aria-expanded="false" aria-controls="as-${g.id}"><span>${g.nombre}</span><b>${g.n}</b>${CHEV}</button>
+      <div class="acc-sub" id="as-${g.id}" role="group" aria-labelledby="ah-${g.id}"><ul>${[['', 'Ver todo', g.n], ...g.subs].map(([sid, sn, n]) => `<li><button type="button" class="acc-s" data-cat="${g.id}" data-sub="${sid}"><span>${sn}</span><b>${n}</b></button></li>`).join('')}</ul></div></li>`
+    : `<li class="acc-item"><button type="button" class="acc-h" data-cat="${g.id}" data-sub=""><span>${g.nombre}</span><b>${g.n}</b></button></li>`).join('');
+  syncFilters();
+}
+function syncFilters() {
+  $$('#filters .acc-item[data-g]').forEach(li => {
+    const abierto = li.dataset.g === state.open;
+    li.classList.toggle('open', abierto); li.classList.toggle('act', li.dataset.g === state.cat);
+    li.querySelector('.acc-h').setAttribute('aria-expanded', abierto);
+  });
+  $$('#filters [data-cat]').forEach(b => {
+    const on = b.dataset.cat === state.cat && b.dataset.sub === state.sub;
+    b.classList.toggle('on', on); on ? b.setAttribute('aria-current', 'true') : b.removeAttribute('aria-current');
+  });
+}
+// elegir categoría (y subcategoría): una sola abierta a la vez
+function elegir(cat, sub = '') {
+  const cambia = cat !== state.cat || sub !== state.sub;
+  state.cat = cat; state.sub = sub; state.open = arbolDe(cat)?.subs.length ? cat : '';
+  syncFilters(); if (cambia) refresh();
 }
 
 function renderGrid(append = false) {
@@ -154,7 +184,12 @@ function renderGrid(append = false) {
   if (append) grid.insertAdjacentHTML('beforeend', html);
   else grid.innerHTML = list.length ? html : `<div class="empty-search"><h3>Nada por aquí… todavía</h3><p>No encontramos “${esc(state.q)}”. Prueba otra palabra o escríbenos: lo hacemos a la medida.</p><button class="btn btn-dark" data-reset>Ver todo el catálogo</button></div>`;
   const shown = Math.min(state.shown, list.length);
-  $('#resCount').textContent = list.length ? `${list.length} producto${list.length > 1 ? 's' : ''}${state.cat !== 'todos' ? ' en ' + catName(state.cat) : ''}` : 'Sin resultados';
+  $('#resCount').textContent = list.length ? `${list.length} producto${list.length > 1 ? 's' : ''}` : 'Sin resultados';
+  $('#fApply').textContent = list.length ? `Ver ${list.length} producto${list.length > 1 ? 's' : ''}` : 'Sin resultados';
+  const chip = $('#chip'), activo = state.cat !== 'todos';
+  chip.hidden = !activo; if (activo) $('#chipTxt').textContent = catName(state.cat) + (state.sub ? ' · ' + subName(state.cat, state.sub) : '');
+  $('#fBadge').hidden = !activo; $('#fBadge').textContent = activo ? '1' : '';
+  $('#fBtn').setAttribute('aria-label', activo ? 'Filtros, 1 activo' : 'Filtros');
   const lm = $('#loadMore');
   lm.hidden = shown >= list.length;
   $('#loadTxt').textContent = `Mostrando ${shown} de ${list.length}`;
@@ -165,40 +200,92 @@ function renderGrid(append = false) {
 
 function syncURL() {
   const u = new URL(location.href);
-  [['cat', state.cat !== 'todos' && state.cat], ['q', state.q.trim()], ['sort', state.sort !== 'feat' && state.sort]].forEach(([k, v]) => v ? u.searchParams.set(k, v) : u.searchParams.delete(k));
+  [['cat', state.cat !== 'todos' && state.cat], ['sub', state.sub], ['q', state.q.trim()], ['sort', state.sort !== 'feat' && state.sort]].forEach(([k, v]) => v ? u.searchParams.set(k, v) : u.searchParams.delete(k));
   ['card', 'edit'].forEach(k => u.searchParams.delete(k));
-  history.replaceState(null, '', u);
+  history.replaceState(history.state, '', u); // conserva el estado del cajón de filtros
 }
 function refresh() { state.shown = PAGE; syncURL(); swapContent($('#grid'), () => renderGrid()); }
 
 $('#filters')?.addEventListener('click', e => {
-  const b = e.target.closest('[data-f]'); if (!b || b.dataset.f === state.cat) return;
-  state.cat = b.dataset.f; renderFilters(); refresh();
-  $(`#filters [data-f="${state.cat}"]`)?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: matchMedia('(prefers-reduced-motion:reduce)').matches ? 'auto' : 'smooth' });
+  const h = e.target.closest('[data-acc]');
+  if (h) { // encabezado de categoría: despliega (y la elige si aún no lo estaba) o pliega
+    const g = h.dataset.acc;
+    if (state.open === g) { state.open = ''; syncFilters(); } else if (state.cat !== g) elegir(g); else { state.open = g; syncFilters(); }
+    return;
+  }
+  const b = e.target.closest('[data-cat]'); if (b) elegir(b.dataset.cat, b.dataset.sub);
 });
+// teclado: flechas, Inicio y Fin recorren los botones visibles de la lista
+$('#filters')?.addEventListener('keydown', e => {
+  if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) return;
+  const bs = $$('#filters button').filter(b => !b.classList.contains('acc-s') || b.closest('.acc-item').classList.contains('open'));
+  const i = bs.indexOf(document.activeElement); if (i < 0) return;
+  e.preventDefault();
+  bs[e.key === 'Home' ? 0 : e.key === 'End' ? bs.length - 1 : Math.max(0, Math.min(bs.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1)))].focus();
+});
+$('#chip')?.addEventListener('click', () => { elegir('todos'); $('#fBtn').offsetParent ? $('#fBtn').focus() : $('#filters .acc-h')?.focus(); });
 
-// celular: la barra de filtros se esconde al bajar y vuelve al subir (o si algo de ella tiene el foco)
+// celular y tablet: la barra de búsqueda se esconde al bajar y vuelve al subir (o si algo de ella tiene el foco)
 const toolbar = $('.toolbar');
 if (toolbar) {
   let lastY = scrollY;
   addEventListener('scroll', () => {
-    const y = scrollY, movil = innerWidth <= 640, dentro = toolbar.contains(document.activeElement);
+    const y = scrollY, movil = innerWidth <= 960, dentro = toolbar.contains(document.activeElement);
     toolbar.classList.toggle('tuck', movil && !dentro && y > lastY && y > toolbar.parentElement.offsetTop + 160);
     if (Math.abs(y - lastY) > 4) lastY = y;
   }, { passive: true });
 }
+
+// buscador: hay dos (barra de arriba en celular, columna en escritorio); se mantienen iguales
 let qT;
-$('#q')?.addEventListener('input', e => {
-  state.q = e.target.value; $('#qClear').hidden = !state.q;
-  clearTimeout(qT); qT = setTimeout(refresh, 160);
-});
-$('#qClear')?.addEventListener('click', () => { $('#q').value = ''; state.q = ''; $('#qClear').hidden = true; $('#q').focus(); refresh(); });
+function setQ(v, desde) {
+  state.q = v;
+  $$('#q,#qs').forEach(i => { if (i !== desde) i.value = v; });
+  $$('[data-qclear]').forEach(b => { b.hidden = !v; });
+}
+$$('#q,#qs').forEach(i => i.addEventListener('input', e => { setQ(e.target.value, e.target); clearTimeout(qT); qT = setTimeout(refresh, 160); }));
+$$('[data-qclear]').forEach(b => b.addEventListener('click', () => { setQ(''); b.parentElement.querySelector('input').focus(); refresh(); }));
 $('#sort')?.addEventListener('change', e => { state.sort = e.target.value; refresh(); });
 $('#loadBtn')?.addEventListener('click', () => { state.shown += PAGE; renderGrid(true); });
 document.addEventListener('click', e => {
   if (!e.target.closest('[data-reset]')) return;
-  state.q = ''; state.cat = 'todos'; $('#q').value = ''; $('#qClear').hidden = true; renderFilters(); refresh();
+  setQ(''); state.cat = 'todos'; state.sub = ''; state.open = ''; syncFilters(); refresh();
 });
+
+/* filtros en celular y tablet: el mismo panel de la columna es un cajón desde la izquierda.
+   Entra al historial (Atrás lo cierra) y usa el sistema de modales (inert, foco, animación). */
+const mqSide = matchMedia('(max-width:960px)');
+function ajustaSide() {
+  const p = $('#sidePanel'), d = $('#side'); if (!p) return;
+  if (mqSide.matches) { p.setAttribute('role', 'dialog'); p.setAttribute('aria-modal', 'true'); return; }
+  p.removeAttribute('role'); p.removeAttribute('aria-modal'); d.removeAttribute('aria-hidden');
+  if (d.classList.contains('open')) { // se agrandó la ventana con el cajón abierto
+    d.classList.remove('open', 'closing'); document.body.style.overflow = ''; syncInert();
+    if (history.state?.pehnF) history.replaceState(null, '');
+    $('#fBtn').setAttribute('aria-expanded', 'false');
+  }
+}
+function abrirFiltros() {
+  if (!mqSide.matches || $('#side').classList.contains('open')) return;
+  history.pushState({ pehnF: 1 }, '');
+  openModal('#side'); $('#fBtn').setAttribute('aria-expanded', 'true');
+}
+function soltarFiltros() { closeModal('#side'); $('#fBtn').setAttribute('aria-expanded', 'false'); }
+function cerrarFiltros() {
+  if (!$('#side').classList.contains('open')) return;
+  if (history.state?.pehnF) history.back(); else soltarFiltros();
+}
+if ($('#side')) {
+  ajustaSide(); mqSide.addEventListener('change', ajustaSide);
+  $('#fBtn').addEventListener('click', abrirFiltros);
+  document.addEventListener('click', e => { if (e.target.closest('[data-fclose]')) cerrarFiltros(); });
+  $('#fApply').addEventListener('click', () => {
+    cerrarFiltros();
+    const y = $('.results-meta').getBoundingClientRect().top + scrollY - 130;
+    if (scrollY > y) scrollTo({ top: Math.max(0, y), behavior: 'auto' });
+  });
+  addEventListener('popstate', () => { if ($('#side').classList.contains('open') && !history.state?.pehnF) { soltarFiltros(); syncURL(); } }); // Atrás deja la URL del paso anterior: se reescribe con el filtro actual
+}
 
 // cambia contenido con un fundido corto (solo opacidad/transform)
 function swapContent(el, fn) {
@@ -1138,9 +1225,14 @@ addEventListener('beforeunload', e => { if ($('#custom')?.classList.contains('op
 /* ---------- modales (entrada y salida animadas) ---------- */
 let lastFocus = null;
 // solo el modal abierto es usable; lo demás queda inerte para teclado y lectores de pantalla
+let inertados = [];
 function syncInert() {
-  const top = [...document.querySelectorAll('.modal.open:not(.closing),.drawer.open:not(.closing)')].pop();
-  [...document.body.children].forEach(el => { if (el.tagName !== 'SCRIPT') el.inert = !!top && el !== top && !el.classList.contains('toast'); });
+  inertados.forEach(el => { el.inert = false; }); inertados = [];
+  const top = [...document.querySelectorAll('.modal.open:not(.closing),.drawer.open:not(.closing)')].pop(); if (!top) return;
+  // se bloquea todo lo que no es el modal ni lo que lo contiene (el cajón de filtros está dentro de <main>)
+  for (let n = top; n.parentElement; n = n.parentElement) {
+    [...n.parentElement.children].forEach(el => { if (el !== n && el.tagName !== 'SCRIPT' && !el.classList.contains('toast')) { el.inert = true; inertados.push(el); } });
+  }
 }
 document.addEventListener('keydown', e => {
   if (e.key !== 'Tab') return;
@@ -1187,6 +1279,7 @@ document.addEventListener('keydown', e => {
   if ($('#done')?.classList.contains('open')) closeModal('#done');
   if ($('#custom')?.classList.contains('open')) cur?.mov ? atras() : tryCloseCustom();
   if ($('#drawer')?.classList.contains('open')) closeDrawer();
+  if ($('#side')?.classList.contains('open')) cerrarFiltros();
 });
 $('#cartBtn')?.addEventListener('click', openDrawer);
 
@@ -1446,8 +1539,12 @@ if (!CONFIG.ordersEnabled) document.body.classList.add('locked');
 $('#yr').textContent = new Date().getFullYear();
 if ($('#grid')) {
   const q = new URLSearchParams(location.search);
-  if (CATS.some(c => c[0] === q.get('cat'))) state.cat = q.get('cat');
-  if (q.get('q')) { state.q = q.get('q'); $('#q').value = state.q; $('#qClear').hidden = false; }
+  if (CATS.some(c => c[0] === q.get('cat'))) {
+    state.cat = q.get('cat');
+    if (arbolDe(state.cat).subs.some(x => x[0] === q.get('sub'))) state.sub = q.get('sub');
+    if (arbolDe(state.cat).subs.length) state.open = state.cat;
+  }
+  if (q.get('q')) setQ(q.get('q'));
   if (['asc', 'desc', 'name'].includes(q.get('sort'))) { state.sort = q.get('sort'); $('#sort').value = state.sort; }
   renderFilters(); renderGrid();
   if (q.has('card')) openCard(+q.get('card'));

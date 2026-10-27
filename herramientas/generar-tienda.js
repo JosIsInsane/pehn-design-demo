@@ -62,6 +62,18 @@ const CAT_APP = {
   Peluche: 'peluches',
   Lego: 'lego', 'Caja Lego': 'lego', Cumple: 'lego', Armable: 'lego', Estadio: 'lego',
 };
+// subcategoría (id, nombre) según la categoría del CSV (el orden de esta tabla es el orden del filtro); lo que no está aquí cae en "Otros detalles" (regalos) o sin sub
+const SUB_APP = {
+  Pijamas: ['pijamas', 'Pijamas'], Boxer: ['boxer', 'Boxer'], Mameluco: ['mamelucos', 'Mamelucos'], Abrigos: ['abrigos', 'Abrigos'],
+  Vaso: ['vasos', 'Vasos'], Taza: ['tazas', 'Tazas'],
+  Llavero: ['llaveros', 'Llaveros'], 'Llavero Lego': ['llaveros', 'Llaveros'], Instax: ['llaveros', 'Llaveros'],
+  Collar: ['collares', 'Collares'], Pulsera: ['pulseras', 'Pulseras'], Dije: ['dijes', 'Dijes'], Relicario: ['relicarios', 'Relicarios'], Joyero: ['joyeros', 'Joyeros'],
+  Armable: ['armables', 'Sets armables'], Cumple: ['cumple', 'Cumpleaños'], Estadio: ['estadios', 'Estadios'], 'Caja Lego': ['cajas-lego', 'Cajas Lego'], Lego: ['sets', 'Sets Lego'],
+  Flores: ['flores', 'Flores'], Funko: ['coleccion', 'Coleccionables'], Hotwheels: ['coleccion', 'Coleccionables'],
+};
+const ORDEN_SUB = [...Object.values(SUB_APP).map(v => v[0]), 'otros'];
+const SUB_OTROS = ['otros', 'Otros detalles'];
+const subApp = (c, cat) => SUB_APP[c] || (cat === 'regalos' ? SUB_OTROS : null);
 const CATS_NUEVAS = [['joyeria', 'Joyería'], ['peluches', 'Peluches'], ['regalos', 'Regalos']].concat([['lego', 'Lego y sets']]);
 const BG = { ropa: '#BDE7C9', vasos: '#B9A2F0', figuras: '#8EC5F2', joyeria: '#F7B6C8', peluches: '#FFD23F', regalos: '#F6B07A', lego: '#F6952A' };
 const PREFIJO = { 'Llavero Lego': 'Llavero Lego ', Estadio: 'Estadio ', Peluche: 'Peluche ' };
@@ -103,7 +115,8 @@ grupos.forEach(rows => {
     return { o, price: r.precio, sku: r.sku };
   });
   const photo = ['jpg', 'webp', 'png'].map(e => `fotos/tienda/${id}.${e}`).find(f => fs.existsSync(path.join(RAIZ, f)));
-  tienda.push({ id, name, cat, base: 0, bg: BG[cat], desc: DESC[cat], render: 'generico', ...(photo ? { photo } : {}), groups, variants });
+  const sub = subApp(c0.categoria, cat);
+  tienda.push({ id, name, cat, sub, base: 0, bg: BG[cat], desc: DESC[cat], render: 'generico', ...(photo ? { photo } : {}), groups, variants });
 });
 
 // ---------- datos-tienda.js ----------
@@ -118,10 +131,13 @@ let js = `/* Pehn Design — PRODUCTOS DE LA TIENDA (generado)
 
 ${CATS_NUEVAS.map(c => `CATS.push([${q(c[0])}, ${q(c[1])}]);`).join('\n')}
 
+// subcategorías (en orden de aparición, tras las de los personalizadores)
+${[...new Map(tienda.filter(p => p.sub).map(p => [p.cat + '|' + p.sub[0], [p.cat, ...p.sub]])).values()].sort((a, b) => ORDEN_SUB.indexOf(a[1]) - ORDEN_SUB.indexOf(b[1])).map(a => `addSub(${a.map(q).join(', ')});`).join('\n')}
+
 // tv: variante con el precio de su pieza (PIEZAS)
 const tv = (o, sku) => ({ o, sku, price: precioDe(sku) });
 const TIENDA = [
-${tienda.map(p => `  { id: ${q(p.id)}, name: ${q(p.name)}, cat: ${q(p.cat)}, base: 0, bg: ${q(p.bg)}, desc: ${q(p.desc)}, render: 'generico',${p.photo ? ` photo: ${q(p.photo)},` : ''}
+${tienda.map(p => `  { id: ${q(p.id)}, name: ${q(p.name)}, cat: ${q(p.cat)},${p.sub ? ` sub: ${q(p.sub[0])},` : ''} base: 0, bg: ${q(p.bg)}, desc: ${q(p.desc)}, render: 'generico',${p.photo ? ` photo: ${q(p.photo)},` : ''}
     groups: [${p.groups.map(grp).join(', ')}],
     variants: [
 ${p.variants.map(v => `      tv(${obj(v.o)}, ${q(v.sku)}),`).join('\n')}

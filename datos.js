@@ -242,7 +242,7 @@ const PRODUCTS = [
     init: c => { c.body = TEXTS.amor; c.word = 'Amor'; c.calDate = '2025-05-31'; },
   },
   {
-    id: 'minifig', name: 'Minifigura personalizada', cat: 'figuras', base: precioDe('LEG-MUNECOS-LEGO'), bg: '#F6952A',
+    id: 'minifig', name: 'Minifigura personalizada', cat: 'figuras', sub: 'minifiguras', base: precioDe('LEG-MUNECOS-LEGO'), bg: '#F6952A',
     desc: 'Una mini versión de ti (o de quien quieras) con base transparente y su nombre.',
     render: 'minifig', skus: ['LEG-MUNECOS-LEGO'],
     groups: [
@@ -254,7 +254,7 @@ const PRODUCTS = [
     init: c => Object.assign(c, FIG_PRESETS[4]),
   },
   {
-    id: 'llavero', name: 'Llavero minifigura', cat: 'figuras', base: precioDe('LLAVERO-BASE'), bg: '#8EC5F2',
+    id: 'llavero', name: 'Llavero minifigura', cat: 'figuras', sub: 'llaveros', base: precioDe('LLAVERO-BASE'), bg: '#8EC5F2',
     desc: 'Mini tú para tus llaves. Pídelos en par para tu persona favorita.',
     render: 'keychain', skus: ['LLAVERO-BASE'],
     groups: [
@@ -267,7 +267,7 @@ const PRODUCTS = [
   },
   {
     // hoodie 700 por pieza; el par son dos piezas (cada una con su color y talla que existan)
-    id: 'sudadera', name: 'Sudaderas para parejas', cat: 'ropa', base: 0, badge: 'Nuevo', bg: '#BDE7C9',
+    id: 'sudadera', name: 'Sudaderas para parejas', cat: 'ropa', sub: 'abrigos', base: 0, badge: 'Nuevo', bg: '#BDE7C9',
     desc: 'Tu inicial y un corazón en la manga. Una para ti, otra para tu persona.',
     render: 'hoodie',
     variants: HOODIES,
@@ -289,7 +289,7 @@ const PRODUCTS = [
   },
   {
     // camisa de algodón 240 (con sus tallas y colores); la Pepe 490 es otra opción
-    id: 'playera', name: 'Playera personalizada', cat: 'ropa', base: 0, bg: '#FFD23F',
+    id: 'playera', name: 'Playera personalizada', cat: 'ropa', sub: 'camisas', base: 0, bg: '#FFD23F',
     desc: 'Algodón suave con tu frase o tu propia imagen, al frente o en la espalda.',
     render: 'shirt',
     variants: CAMISAS,
@@ -308,7 +308,7 @@ const PRODUCTS = [
     ],
   },
   {
-    id: 'taza', name: 'Taza personalizada', cat: 'vasos', base: 0, bg: '#B9A2F0',
+    id: 'taza', name: 'Taza personalizada', cat: 'vasos', sub: 'tazas', base: 0, bg: '#B9A2F0',
     desc: 'Cerámica 11 oz con nombre, frase o foto, en el color que prefieras.',
     render: 'mug',
     groups: [
@@ -321,7 +321,7 @@ const PRODUCTS = [
   },
   {
     // vaso de silicón (300) con tapa y popote; los demás vasos están en la tienda
-    id: 'vaso', name: 'Vaso con nombre', cat: 'vasos', base: 0, bg: '#8EC5F2',
+    id: 'vaso', name: 'Vaso con nombre', cat: 'vasos', sub: 'vasos', base: 0, bg: '#8EC5F2',
     desc: 'Vaso de silicón con tapa, popote y tu nombre en vinil.',
     render: 'cup',
     groups: [
@@ -334,7 +334,7 @@ const PRODUCTS = [
     init: c => { c.name = 'Sofía'; },
   },
   {
-    id: 'termo', name: 'Termo grabado', cat: 'vasos', base: 0, bg: '#C9B8F0',
+    id: 'termo', name: 'Termo grabado', cat: 'vasos', sub: 'termos', base: 0, bg: '#C9B8F0',
     desc: 'Acero inoxidable, frío 24 h y caliente 12 h, con nombre grabado.',
     render: 'tumbler',
     groups: [
@@ -395,6 +395,13 @@ CARDS.forEach(c => c.cfg?.figs?.forEach(normFig));
 
 const CATS = [['todos', 'Todos'], ['cuadros', 'Cuadros'], ['figuras', 'Figuras y llaveros'], ['ropa', 'Ropa'], ['bolsas', 'Bolsas'], ['vasos', 'Vasos y tazas']];
 const catName = id => CATS.find(c => c[0] === id)?.[1] || '';
+// subcategorías de cada categoría, en el orden en que salen en el filtro: [id, nombre]. Cada producto lleva su `sub`.
+// Aquí van las de los personalizadores; las de la tienda las suma datos-tienda.js (generado).
+const SUBS = {};
+const addSub = (cat, id, nombre) => { const l = SUBS[cat] || (SUBS[cat] = []); if (!l.some(s => s[0] === id)) l.push([id, nombre]); };
+[['figuras', 'minifiguras', 'Minifiguras'], ['figuras', 'llaveros', 'Llaveros'], ['ropa', 'camisas', 'Camisas'], ['ropa', 'abrigos', 'Abrigos'],
+  ['vasos', 'tazas', 'Tazas'], ['vasos', 'vasos', 'Vasos'], ['vasos', 'termos', 'Termos']].forEach(a => addSub(...a));
+const subName = (cat, id) => SUBS[cat]?.find(s => s[0] === id)?.[1] || '';
 // mosaicos de categorías en la landing
 const CAT_TILES = [
   { cat: 'cuadros', photo: 'fotos/cuadro-amor.jpg', tint: 'var(--blush)', note: 'Con sus figuras, nombres y frase' },
