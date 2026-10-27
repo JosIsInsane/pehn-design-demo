@@ -1059,7 +1059,7 @@ function pintarPedido(p) {
     ${!cancel && debe ? `<div class="pago">
       <h3>${falta ? `Paga tu anticipo de ${money(p.porPagarAnticipo)} para empezar` : `Saldo pendiente: ${money(p.saldo)}`}</h3>
       ${p.banco ? `<p class="banco">${esc(p.banco)}</p>` : '<p class="note">Te mandamos los datos de pago por WhatsApp.</p>'}
-      <label class="drop" id="drop"><input type="file" id="voucher" accept="image/jpeg,image/png,image/webp,application/pdf"><span class="drop-ico" aria-hidden="true">⇪</span><span id="dropTxt"><b>Sube la foto o PDF de tu comprobante</b><small>JPG, PNG o PDF · máx. 5 MB</small></span></label>
+      <label class="drop" id="drop"><input type="file" id="voucher" accept="image/jpeg,image/png,image/webp,application/pdf"><span class="drop-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg></span><span id="dropTxt"><b>Sube la foto o PDF de tu comprobante</b><small>JPG, PNG o PDF · máx. 5 MB</small></span></label>
       <button class="btn btn-dark" id="sendVoucher" disabled>Enviar comprobante</button>
       <div class="err" id="voucherErr" role="alert"></div>
     </div>` : !cancel ? '<p class="note ok">¡Pedido pagado por completo! Gracias.</p>' : ''}
@@ -1093,6 +1093,7 @@ if ($('#seguir')) {
     try {
       const r = await api('seguimiento', { id, phone });
       seguido = { id, phone }; pintarPedido(r.pedido);
+      const u = new URL(location.href); u.searchParams.set('id', id); history.replaceState(null, '', u); // el WhatsApp nunca va en la dirección
       $('#estadoPedido').scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' });
     } catch (x) { err.textContent = x.message; $('#estadoPedido').innerHTML = ''; }
     finally { $('#seguirBtn').disabled = false; $('#seguirBtn').textContent = 'Ver mi pedido'; }
@@ -1127,7 +1128,8 @@ if ($('#seguir')) {
 /* ---------- aviso de privacidad (abajo, una sola vez) ----------
    "Entendido": se recuerdan datos y pedidos si la persona lo marca al pedir.
    "Solo el carrito": se borra lo guardado y la casilla "Recordar" sale desmarcada. */
-function aviso(mostrar) { const a = $('#aviso'); if (a) a.hidden = !mostrar; }
+// mientras se ve, en celular se esconden los botones flotantes para que no lo tapen
+function aviso(mostrar) { const a = $('#aviso'); if (a) a.hidden = !mostrar; document.body.classList.toggle('con-aviso', !!mostrar); }
 if (!leer(KEY_CONSENT, '')) aviso(true);
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-aviso],[data-aviso-abrir]'); if (!b) return;
