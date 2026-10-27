@@ -29,7 +29,7 @@ const SHEETS = {
 
 const HEADERS = {
   pedidos: ['ID', 'Fecha', 'Estado', 'Cliente', 'WhatsApp', 'Correo', 'Ciudad', 'Para cuándo', 'Productos',
-    'Piezas', 'Total', 'Moneda', 'Vista previa', 'Carpeta', 'Stock', 'Notas del cliente', 'Notas internas', 'Actualizado', 'Datos'],
+    'Piezas', 'Total', 'Moneda', 'Vista previa', 'Carpeta', 'Stock', 'Notas del cliente', 'Notas internas', 'Actualizado', 'Datos', 'Correo cliente'],
   partidas: ['Pedido', '#', 'Producto', 'Cantidad', 'Precio unitario', 'Descuento', 'Total', 'Opciones',
     'Vista previa', 'Imágenes del cliente', 'Archivo vista previa'],
   inventario: ['SKU', 'Pieza', 'Categoría', 'Stock', 'Mínimo', 'Unidad', 'Costo unitario', 'Proveedor', 'Estado', 'Actualizado'],
@@ -47,21 +47,29 @@ const ESTADOS = ['Nuevo', 'Diseño enviado', 'Aprobado', 'En producción', 'List
 // valores iniciales de la hoja Config (se pueden cambiar desde la hoja)
 const CONFIG_DEFAULTS = [
   ['Nombre del negocio', 'Pehn Design', 'Aparece en los correos.'],
-  ['Correo del negocio', '', 'Recibe el aviso de cada pedido y el resumen de stock bajo.'],
+  ['Correo del negocio', '', 'Recibe UN solo correo al día con el resumen (pedidos, cobros, entregas y stock). Los pedidos no avisan uno por uno: míralos en el CRM.'],
   ['Admins', '', 'Correos que pueden abrir el CRM sin la clave, separados por coma.'],
   ['WhatsApp del negocio', '', 'Con código de país, ej. 50498765432.'],
   ['Token del sitio', '', 'Se genera solo. Cópialo en CONFIG.sheetsToken de app.js.'],
   ['Clave del CRM', '', 'Se genera sola. Va en el enlace del CRM (?k=…). Cámbiala si el enlace se comparte de más.'],
   ['Estado que descuenta stock', 'En producción', 'Al llegar a este estado se descuentan las piezas.'],
-  ['Confirmar al cliente por correo', 'Sí', 'Sí / No'],
-  ['Aviso de stock bajo', 'Sí', 'Sí / No. Correo diario a las 8 am con lo que hay que reponer.'],
+  ['Confirmar al cliente por correo', 'Sí', 'Sí / No. Un solo correo al cliente por pedido, al confirmarlo.'],
   ['Carpeta de Drive', '', 'Se llena sola. Aquí se guardan fotos y vistas previas.'],
   ['Moneda', 'HNL', 'Lempiras.'],
   ['Sitio web', '', 'Dirección de la página (ej. https://pehndesign.com). El CRM la usa para "Ver sitio".'],
   ['Anticipo antes de enviar', 'Sí', 'Sí = el cliente sube el comprobante del anticipo antes de mandar el pedido. No = puede pagar después.'],
   ['Anticipo (%)', 50, 'Porcentaje que se paga para empezar el pedido. El sitio lo muestra en Mi pedido.'],
   ['Datos bancarios', '', 'Cuenta para el anticipo. Se muestra al cliente en Mi pedido (ej. BAC · Ahorro · 123456789 · Pehn Design).'],
+  ['Hora del resumen diario', 20, 'Hora (0 a 23) en que llega el resumen al Correo del negocio. 20 = 8 pm. Al cambiarla se reprograma sola.'],
+  ['Resumen diario al negocio', 'Sí', 'Sí / No. Reemplaza al viejo "Aviso de stock bajo" (si ese ajuste existía, se copia aquí su valor).'],
 ];
+
+// hora del resumen: entero 0–23; vacío o inválido = 20
+function horaResumen_(cfg) {
+  const v = (cfg || config_())['Hora del resumen diario'];
+  if (v === '' || v == null || !isFinite(Number(v))) return 20;
+  return Math.min(23, Math.max(0, Math.floor(Number(v))));
+}
 
 const COL = {}; // COL.pedidos.Estado -> número de columna (1-based)
 Object.keys(HEADERS).forEach(k => {

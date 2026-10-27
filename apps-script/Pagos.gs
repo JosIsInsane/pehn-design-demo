@@ -68,7 +68,6 @@ function procesarComprobante_(p, dataUrl, esperado, carpeta, cfg) {
   const resultado = lectura === null ? 'Sin lectura' : monto == null ? 'Revisar: sin monto' : Math.abs(monto - esperado) <= 1 ? 'Coincide' : 'Revisar: no coincide';
   sheet_('pagos').appendRow(fila_([now_(), p.ID, monto == null ? '' : monto, esperado, resultado, archivo.url,
     texto_(lectura || '', 2000), '', '']));
-  avisarComprobante_(p, monto, esperado, resultado, archivo.url, cfg);
   return { resultado: resultado === 'Coincide' ? 'Coincide' : 'Revisión', monto, esperado };
 }
 
@@ -130,17 +129,4 @@ function elegirMonto_(montos, esperado) {
   if (igual) return igual.n;
   const conMoneda = montos.filter(m => m.moneda);
   return Math.max(...(conMoneda.length ? conMoneda : montos).map(m => m.n));
-}
-
-function avisarComprobante_(p, monto, esperado, resultado, url, cfg) {
-  const to = cfg['Correo del negocio'];
-  if (!to) return;
-  try {
-    MailApp.sendEmail({
-      to, subject: `Comprobante ${p.ID} · ${resultado}`,
-      htmlBody: `<div style="font-family:system-ui,sans-serif"><p><b>${esc_(p.ID)}</b> · ${esc_(p.Cliente)}</p>
-        <p>Monto leído: <b>${monto == null ? '—' : money_(monto, p.Moneda)}</b> · Esperado: <b>${money_(esperado, p.Moneda)}</b></p>
-        <p>Resultado: <b>${esc_(resultado)}</b>. Confírmalo en el CRM › Pagos.</p><p><a href="${url}">Ver comprobante</a></p></div>`,
-    });
-  } catch (err) { console.error('Aviso de comprobante no enviado:', err); }
 }

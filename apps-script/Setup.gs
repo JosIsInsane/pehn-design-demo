@@ -31,7 +31,12 @@ function configurar() {
   });
 
   // Config: valores iniciales sin pisar lo que ya exista
-  const cfg = config_();
+  let cfg = config_();
+  // el viejo "Aviso de stock bajo" pasa a "Resumen diario al negocio" con el mismo valor
+  if (!('Resumen diario al negocio' in cfg) && 'Aviso de stock bajo' in cfg) sheet_('config').appendRow(['Resumen diario al negocio', cfg['Aviso de stock bajo'], CONFIG_DEFAULTS.find(x => x[0] === 'Resumen diario al negocio')[2]]);
+  const viejo = rows_('config').find(x => x.Ajuste === 'Aviso de stock bajo');
+  if (viejo) sheet_('config').getRange(viejo._row, 3).setValue('Ya no se usa: ahora es "Resumen diario al negocio".');
+  cfg = config_();
   CONFIG_DEFAULTS.forEach(([k, v, note]) => { if (!(k in cfg)) sheet_('config').appendRow([k, v, note]); });
   if (!config_()['Token del sitio']) setConfig_('Token del sitio', nuevaClave_(20));
   clave_();
@@ -165,11 +170,16 @@ function seedRecetas_() {
 }
 
 function instalarDisparadores_() {
-  const want = { alEditar_: 'edit', resumenStockDiario_: 'daily' };
-  ScriptApp.getProjectTriggers().forEach(t => { if (t.getHandlerFunction() in want) ScriptApp.deleteTrigger(t); });
+  ScriptApp.getProjectTriggers().forEach(t => { if (t.getHandlerFunction() === 'alEditar_') ScriptApp.deleteTrigger(t); });
   ScriptApp.newTrigger('alEditar_').forSpreadsheet(ss_()).onEdit().create();
-  ScriptApp.newTrigger('resumenStockDiario_').timeBased().everyDays(1).atHour(8).create();
+  instalarResumen_();
   instalarRespaldo_();
+}
+
+// resumen diario a la hora de Config; borra también el viejo resumenStockDiario_ (8 am)
+function instalarResumen_() {
+  ScriptApp.getProjectTriggers().forEach(t => { if (['resumenDiario_', 'resumenStockDiario_'].includes(t.getHandlerFunction())) ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger('resumenDiario_').timeBased().everyDays(1).atHour(horaResumen_()).create();
 }
 
 // copia completa de la hoja en Drive (carpeta Respaldos). Solo copia: no borra ni cambia nada.
@@ -219,11 +229,12 @@ function revisarSistema() {
   try {
     const cfg = config_();
     ver(!!cfg['Token del sitio'], 'Token del sitio', 'Sin token del sitio. Arreglo: Pehn › Configurar hojas.');
-    ver(!!cfg['Correo del negocio'], 'Correo del negocio', 'Config › Correo del negocio vacío: no llegan avisos.');
+    ver(!!cfg['Correo del negocio'], 'Correo del negocio', 'Config › Correo del negocio vacío: no llega el resumen diario.');
     let carpeta = false; try { carpeta = !!DriveApp.getFolderById(cfg['Carpeta de Drive']); } catch (e) { }
     ver(carpeta, 'Carpeta de Drive', 'La carpeta de Drive no existe. Arreglo: Pehn › Configurar hojas crea otra.');
     const trig = ScriptApp.getProjectTriggers().map(t => t.getHandlerFunction());
-    ['alEditar_', 'resumenStockDiario_', 'respaldoSemanal_'].forEach(f => ver(trig.includes(f), `Disparador ${f}`, `Falta el disparador ${f}. Arreglo: Pehn › Configurar hojas.`));
+    ['alEditar_', 'resumenDiario_', 'respaldoSemanal_'].forEach(f => ver(trig.includes(f), `Disparador ${f}`, `Falta el disparador ${f}. Arreglo: Pehn › Configurar hojas.`));
+    if (trig.includes('resumenStockDiario_')) mal.push('• Sigue el disparador viejo resumenStockDiario_. Arreglo: Pehn › Configurar hojas lo borra.');
     ver(typeof Drive !== 'undefined', 'Lectura de comprobantes (Drive API)', 'Sin Drive API: los comprobantes se guardan pero el monto se revisa a mano. Arreglo: Editor › Servicios (+) › Drive API › Agregar.');
     ver(!!cfg['Datos bancarios'], 'Datos bancarios', 'Config › Datos bancarios vacío: el cliente no ve a dónde pagar el anticipo.');
     ver(!!urlApp_(), 'App web publicada', 'La app web no está publicada. Arreglo: Implementar › Nueva implementación › App web.');

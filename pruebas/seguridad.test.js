@@ -306,6 +306,115 @@ prueba('Texto del sitio con fórmula queda como texto en la hoja', () => {
   ok(!formulas(s.hoja('Sitio')).length);
 });
 
+// ---------- correos: 1 al cliente por pedido, 1 resumen al día para el negocio ----------
+const NEG = 'duenos@pehn.test';
+const soloTexto = m => String(m.htmlBody).replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+
+prueba('Un pedido manda exactamente 1 correo (al cliente) y 0 al negocio', () => {
+  const s = nuevo(); ok(s.post(pedido(s)).ok);
+  ok(s.mails.length === 1, 'correos: ' + s.mails.length);
+  ok(s.mails[0].to === 'ana@correo.com' && s.mails.every(m => m.to !== NEG));
+  ok(s.hoja('Pedidos')[0]['Correo cliente'] === 'Enviado');
+});
+
+prueba('Comprobante en Mis pedidos ya no avisa al negocio', () => {
+  const s = sinAnticipo(); const { id } = s.post(pedido(s, { comprobante: '' })); s.mails.length = 0;
+  s.post({ token: s.config('Token del sitio'), accion: 'comprobante', id, phone: '98765432', file: JPG });
+  ok(s.mails.length === 0, 'correos: ' + s.mails.length);
+});
+
+prueba('Correo al cliente: ID, total y anticipo 50% con saldo (comprobante que coincide)', () => {
+  const s = nuevo(); s.ctx.__ocr = 'Monto L 375.00';
+  s.run(`setConfig_('Sitio web', 'https://pehn.test/')`);
+  const { id } = s.post(pedido(s)); const m = s.mails[0], t = soloTexto(m);
+  ok(m.subject.includes(id) && t.includes(id), 'lleva el ID');
+  ok(/Recibimos tu anticipo de L\s?375/.test(t) && /50%/.test(t) && /Falta L\s?375/.test(t), t);
+  ok(m.htmlBody.includes(`https://pehn.test/pedido.html?id=${id}`), 'enlace a Mis pedidos');
+});
+
+prueba('Correo al cliente: comprobante por revisar dice "verificando"', () => {
+  const s = nuevo(); s.ctx.__ocr = 'Monto L 900.00'; s.post(pedido(s));
+  ok(/Estamos verificando tu anticipo de L\s?375/.test(soloTexto(s.mails[0])), soloTexto(s.mails[0]));
+});
+
+prueba('Correo al cliente: sin anticipo pide el 50% con datos bancarios', () => {
+  const s = sinAnticipo(); s.run(`setConfig_('Datos bancarios', 'BAC 123456')`);
+  s.post(pedido(s, { comprobante: '' })); const t = soloTexto(s.mails[0]);
+  ok(/Para empezar paga el 50%\s*\(\s*L\s?375/.test(t) && t.includes('BAC 123456'), t);
+});
+
+prueba('Sin cuota de correo: el pedido se guarda y queda "Sin correo"', () => {
+  const s = nuevo(); s.estado.cuota = 1; // 1 = la reserva del resumen
+  const r = s.post(pedido(s)); ok(r.ok, r.error);
+  ok(s.mails.length === 0);
+  ok(/^Sin correo/.test(s.hoja('Pedidos')[0]['Correo cliente']), s.hoja('Pedidos')[0]['Correo cliente']);
+});
+
+prueba('Si el envío falla, el pedido se guarda con "Falló: motivo"', () => {
+  const s = nuevo(); s.estado.falla = 'Service invoked too many times';
+  const r = s.post(pedido(s)); ok(r.ok, r.error);
+  ok(/^Falló: Service invoked/.test(s.hoja('Pedidos')[0]['Correo cliente']), s.hoja('Pedidos')[0]['Correo cliente']);
+});
+
+prueba('Pedido sin correo del cliente: marca "Sin correo" y no envía nada', () => {
+  const s = nuevo(); s.post(pedido(s, { customer: { name: 'Sin Mail', phone: '98765432', city: 'X' } }));
+  ok(s.mails.length === 0 && s.hoja('Pedidos')[0]['Correo cliente'] === 'Sin correo');
+});
+
+prueba('resumenDiario_ manda 1 correo al negocio con los pedidos del día', () => {
+  const s = nuevo(); s.ctx.__ocr = 'Monto L 375.00';
+  const a = s.post(pedido(s)).id, b = s.post(pedido(s, { customer: { name: 'Beto Pérez', phone: '91112222', email: 'b@b.co', city: 'SPS', date: '2026-10-28' } })).id;
+  s.estado.cuota = 1; s.post(pedido(s, { customer: { name: 'Carla Sin Cuota', phone: '93334444', email: 'c@c.co', city: 'X' } }));
+  s.estado.cuota = 100; s.mails.length = 0;
+  s.run('resumenDiario_()');
+  ok(s.mails.length === 1 && s.mails[0].to === NEG, 'correos: ' + s.mails.length);
+  const t = soloTexto(s.mails[0]);
+  ok(t.includes(a) && t.includes(b) && t.includes('Beto Pérez') && t.includes('SPS'), t);
+  ok(/vendido hoy/.test(t) && /Correos al cliente que no salieron/.test(t) && t.includes('Carla Sin Cuota'), 'vendido y correos fallidos');
+  ok(/Pedidos activos por estado/.test(t) && /Inventario/.test(t), 'estados e inventario');
+});
+
+prueba('resumenDiario_ sin pedidos: correo corto "Sin pedidos hoy" con inventario', () => {
+  const s = nuevo(); s.run('resumenDiario_()');
+  ok(s.mails.length === 1 && /^Sin pedidos hoy/.test(s.mails[0].subject), s.mails.map(m => m.subject).join('|'));
+  ok(/Inventario/.test(soloTexto(s.mails[0])));
+});
+
+prueba('resumenDiario_ respeta "Resumen diario al negocio = No" y el ajuste viejo', () => {
+  const s = nuevo(); s.run(`setConfig_('Resumen diario al negocio', 'No')`); s.run('resumenDiario_()'); ok(s.mails.length === 0);
+  const v = nuevo(); v.run(`rows_('config').forEach(r => { if (r.Ajuste === 'Resumen diario al negocio') sheet_('config').getRange(r._row, 1).setValue('Aviso de stock bajo'); })`);
+  v.run(`setConfig_('Aviso de stock bajo', 'No')`); v.run('resumenDiario_()'); ok(v.mails.length === 0, 'respeta la fila vieja');
+});
+
+prueba('Configurar hojas deja el resumen a la hora de Config y sin resumenStockDiario_', () => {
+  const s = nuevo();
+  const res = () => s.triggers.filter(t => t.fn === 'resumenDiario_');
+  ok(res().length === 1 && res()[0].hora === 20, JSON.stringify(res()));
+  s.triggers.push({ fn: 'resumenStockDiario_', hora: 8 }); // disparador viejo
+  s.run(`setConfig_('Hora del resumen diario', 18)`);
+  s.ctx.Session.getActiveUser = () => ({ getEmail: () => NEG }); s.run('configurar()');
+  ok(res().length === 1 && res()[0].hora === 18, JSON.stringify(res()));
+  ok(!s.triggers.some(t => t.fn === 'resumenStockDiario_'), 'sigue el viejo');
+  ok(s.triggers.filter(t => t.fn === 'alEditar_').length === 1 && s.triggers.some(t => t.fn === 'respaldoSemanal_'));
+});
+
+prueba('Cambiar la hora en Config (al editar) rehace el disparador', () => {
+  const s = nuevo();
+  s.run(`setConfig_('Hora del resumen diario', 7)`);
+  s.run(`alEditar_({ value: '7', range: sheet_('config').getRange(rows_('config').find(r => r.Ajuste === 'Hora del resumen diario')._row, 2) })`);
+  const t = s.triggers.filter(x => x.fn === 'resumenDiario_'); ok(t.length === 1 && t[0].hora === 7, JSON.stringify(t));
+  ['', 'abc', 99, -3].forEach(v => { s.run(`setConfig_('Hora del resumen diario', ${JSON.stringify(v)})`); const h = s.run('horaResumen_()'); ok(h >= 0 && h <= 23, v + ' -> ' + h); });
+});
+
+prueba('Instalación vieja: "Aviso de stock bajo" migra a "Resumen diario al negocio"', () => {
+  const s = nuevo();
+  s.run(`rows_('config').forEach(r => { if (r.Ajuste === 'Resumen diario al negocio') sheet_('config').getRange(r._row, 1).setValue('Aviso de stock bajo'); })`);
+  s.run(`setConfig_('Aviso de stock bajo', 'No')`);
+  s.ctx.Session.getActiveUser = () => ({ getEmail: () => NEG }); s.run('configurar()');
+  ok(s.config('Resumen diario al negocio') === 'No', String(s.config('Resumen diario al negocio')));
+  ok(s.hoja('Config').filter(r => r.Ajuste === 'Resumen diario al negocio').length === 1, 'sin duplicar');
+});
+
 prueba('Revisión del sistema corre sin romperse', () => {
   const s = nuevo(); const t = s.run('revisarSistema()'); ok(/Hoja Pedidos/.test(t), t);
 });
