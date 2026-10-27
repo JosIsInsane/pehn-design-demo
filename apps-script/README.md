@@ -5,11 +5,10 @@ El sitio manda cada pedido a una hoja de Google con la foto del diseño. La hoja
 ## Qué hace
 
 - **Recibe pedidos** del sitio: cliente, productos, opciones, total en lempiras y **foto del diseño** (dentro de la celda y en Drive). Si el cliente sube imágenes, también se guardan.
-- **Confirma por correo** al cliente con la foto, y avisa al negocio de cada pedido nuevo.
+- **Confirma por correo** al cliente (un solo correo por pedido). Al negocio ya no le llega un aviso por pedido: ve *Correos* abajo.
 - **Calcula las piezas** de cada pedido con la hoja *Recetas* (ej. 2 cuerpos, 1 cabello largo, 1 marco blanco 23×23).
 - **Aparta y avisa**: al llegar un pedido revisa si alcanza el stock, contando los pedidos activos que ya apartaron piezas.
 - **Descuenta stock** cuando el pedido pasa a *En producción*. Si se cancela, lo regresa. Todo queda en *Movimientos*.
-- **Correo diario (8 am)** con lo que está bajo el mínimo y lo que no alcanza para pedidos activos.
 - **CRM aparte** (se abre en otra pestaña): Inicio con pendientes del día, Pedidos en tablero o lista (con foto), Clientes con historial, etiquetas y notas, Inventario, Recetas y Movimientos. Buscador para todo. Google Sheets solo guarda la información.
 
 ## Hojas
@@ -24,7 +23,7 @@ El sitio manda cada pedido a una hoja de Google con la foto del diseño. La hoja
 | Clientes | Una ficha por WhatsApp. Etiquetas y notas se editan en el CRM. |
 | Pagos | Comprobantes del anticipo: monto leído, esperado y si coincide. Se confirman en el CRM. |
 | Sitio | Colores, textos y fotos que ve el cliente. Se editan en CRM › Sitio web. |
-| Config | Correo del negocio, admins, estado que descuenta, avisos, token, clave del CRM. |
+| Config | Correo del negocio, hora del resumen, admins, estado que descuenta, token, clave del CRM. |
 
 ## Si el negocio ya tiene su propia hoja
 
@@ -33,8 +32,16 @@ El sitio manda cada pedido a una hoja de Google con la foto del diseño. La hoja
 Aun así, el código se protege solo:
 - Si encuentra una pestaña con el mismo nombre (Pedidos, Inventario, Clientes, Config…) pero con otros encabezados, **no la toca**. *Configurar hojas* se detiene sin cambiar nada y avisa cuáles chocan.
 - Nunca borra hojas, filas ni archivos. Solo agrega filas en sus propias hojas.
-- Los disparadores que instala son solo los suyos (`alEditar_`, `resumenStockDiario_`); no borra otros.
+- Los disparadores que instala son solo los suyos (`alEditar_`, `resumenDiario_`, `respaldoSemanal_`); no borra otros.
 - Si su hoja ya tiene un proyecto de Apps Script con `onOpen`, `doGet` o `doPost`, pegar estos archivos ahí los reemplazaría. Otra razón para usar una hoja nueva.
+
+## Correos (Gmail gratis: 100 destinatarios al día)
+
+- **Al cliente: 1 por pedido**, al confirmarlo: ID grande, productos, total, estado del anticipo (50 %), enlace a Mis pedidos y botón de WhatsApp. No hay más correos al cliente.
+- **Al negocio: 1 al día** (*Config › Correo del negocio*) con el resumen: pedidos y cobros de hoy, comprobantes por revisar, pedidos por estado, entregas de 3 días, correos de cliente que fallaron y el inventario. Sin pedidos manda "Sin pedidos hoy" con el stock.
+- Cambia la hora en *Config › Hora del resumen diario* (0 a 23; 20 = 8 pm). Se reprograma sola al guardar; si no, corre **Pehn › Configurar hojas**. Apágalo con *Resumen diario al negocio = No*.
+- Siempre queda 1 correo de reserva para el resumen. Sin cuota o si Gmail falla, el pedido se guarda igual y la columna *Correo cliente* dice "Sin correo" o "Falló: motivo" (sale en el resumen para escribirle por WhatsApp).
+- Con 48 pedidos al día salen 48 + 1 correos, bajo el límite de 100.
 
 ## Instalación (15 minutos)
 
@@ -59,9 +66,9 @@ Aun así, el código se protege solo:
 
 ## Actualizar una instalación que ya existe
 
-1. Pega todos los archivos otra vez (hay dos nuevos: `Pagos.gs` y `Sitio.gs`) y el `appsscript.json`.
+1. Pega todos los archivos otra vez (`Config.gs`, `Setup.gs`, `Orders.gs`, `Inventory.gs`, `Pagos.gs`) y publica una Nueva versión.
 2. Agrega el servicio **Drive API** (Servicios › +).
-3. Corre **Pehn › Configurar hojas**: crea las hojas *Pagos* y *Sitio* y los ajustes nuevos sin borrar nada. Google pedirá permisos otra vez (se agregó leer documentos, para el OCR).
+3. Corre **Pehn › Configurar hojas**: agrega la columna *Correo cliente* y los ajustes nuevos (hora del resumen), pasa el viejo *Aviso de stock bajo* a *Resumen diario al negocio* y cambia el disparador de las 8 am por el resumen de las 8 pm, sin borrar nada. Google pedirá permisos otra vez (se agregó leer documentos, para el OCR).
 4. En *Config* llena **Datos bancarios** (lo ve el cliente al pagar el anticipo) y **Sitio web** (dirección de la página).
 5. **Implementar › Gestionar implementaciones › Editar › Nueva versión**.
 6. **Pehn › Revisar que todo funcione.**
@@ -99,6 +106,6 @@ Detalle completo y pruebas en `docs/SEGURIDAD.md`.
 
 ## Límites de Google (cuenta gratis)
 
-- 100 correos al día.
+- 100 correos al día (ver *Correos*).
 - 6 minutos por ejecución. Un pedido normal tarda 2–5 segundos.
 - Si la foto no entra en la celda, queda un enlace "Ver imagen" al archivo en Drive.

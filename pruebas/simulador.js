@@ -9,6 +9,8 @@ function cargar(opts = {}) {
   const sheets = new Map();
   const files = new Map();
   const mails = [];
+  const triggers = []; // disparadores instalados: { fn, tipo, hora }
+  const estado = { cuota: 100 };
   const cache = new Map();
   let idN = 0;
   const nid = p => p + String(++idN).padStart(30, '0');
@@ -88,10 +90,13 @@ function cargar(opts = {}) {
     LockService: { getScriptLock: () => ({ tryLock: () => true, waitLock() {}, releaseLock() {} }) },
     CacheService: { getScriptCache: () => ({ get: k => cache.get(k) ?? null, put: (k, v) => cache.set(k, v), remove: k => cache.delete(k) }) },
     DriveApp: { Access: {}, Permission: {}, createFolder: makeFolder, getFolderById: id => { const f = files.get(id); if (!f || !f.createFolder) throw new Error('no existe'); return f; }, getFileById: id => { const f = files.get(id); if (!f) throw new Error('no existe'); return f; } },
-    MailApp: { sendEmail: m => mails.push(m), getRemainingDailyQuota: () => 100 },
+    MailApp: { sendEmail: m => { if (estado.falla) throw new Error(estado.falla); mails.push(m); }, getRemainingDailyQuota: () => estado.cuota },
     ContentService: { MimeType: { JSON: 'json' }, createTextOutput: s => ({ setMimeType() { return this; }, getContent: () => s }) },
     HtmlService: { createHtmlOutput: h => ({ setTitle() { return this; }, getContent: () => h }), createTemplateFromFile: () => ({ evaluate: () => ({ setTitle() { return this; }, addMetaTag() { return this; } }) }) },
-    ScriptApp: { getProjectTriggers: () => [], deleteTrigger() {}, newTrigger: () => builder({}), getService: () => ({ getUrl: () => 'https://script.google.com/macros/s/X/exec' }), WeekDay: {} },
+    ScriptApp: {
+      getProjectTriggers: () => triggers.map(t => ({ getHandlerFunction: () => t.fn, _t: t })),
+      deleteTrigger: tr => { const i = triggers.indexOf(tr._t); if (i >= 0) triggers.splice(i, 1); },
+      newTrigger: fn => { const t = { fn, tipo: '', hora: null }; const b = {}; ['forSpreadsheet', 'onEdit', 'timeBased', 'everyDays', 'onWeekDay', 'atHour', 'inTimezone'].forEach(k => { b[k] = (...a) => { if (k === 'atHour') t.hora = a[0]; if (k === 'timeBased') t.tipo = 'tiempo'; if (k === 'onEdit') t.tipo = 'edit'; return b; }; }); b.create = () => { triggers.push(t); return t; }; return b; }, getService: () => ({ getUrl: () => 'https://script.google.com/macros/s/X/exec' }), WeekDay: { MONDAY: 1 } },
     DocumentApp: { openById: () => ({ getBody: () => ({ getText: () => ctx.__ocr || '' }) }) },
   };
   if (opts.ocr !== false) ctx.Drive = { Files: { create: () => ({ id: nid('D') }) } };
@@ -110,7 +115,7 @@ function cargar(opts = {}) {
   const config = name => vm.runInContext(`config_()[${JSON.stringify(name)}]`, ctx);
   const get = params => JSON.parse(ctx.doGet({ parameter: params }).getContent());
   const post = body => JSON.parse(ctx.doPost({ postData: { contents: typeof body === 'string' ? body : JSON.stringify(body) } }).getContent());
-  return { ctx, hoja, config, post, get, mails, cache, x: ctx.__x, run: c => vm.runInContext(c, ctx) };
+  return { ctx, hoja, config, post, get, mails, cache, triggers, estado, x: ctx.__x, run: c => vm.runInContext(c, ctx) };
 }
 
 module.exports = { cargar };
