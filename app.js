@@ -536,18 +536,8 @@ addEventListener('popstate', e => {
 addEventListener('pagehide', () => { if (cur?.mov && $('#custom').classList.contains('open') && dirty() && !cur.done) guardarBorrador(); });
 
 (function initPaginaMov() {
-  const form = $('#cForm'), sheet = $('#custom .sheet'), prev = $('#cPreview'); if (!form) return;
-  // la vista previa se encoge al bajar por las opciones, y al tocarla vuelve a crecer
-  form.addEventListener('scroll', () => {
-    if (!cur?.mov || sheet.classList.contains('kb')) return;
-    const st = form.scrollTop, mini = sheet.classList.contains('mini');
-    if (!mini && st > 70 && form.scrollHeight - form.clientHeight - (prev.offsetHeight - 84) > 90) sheet.classList.add('mini');
-    else if (mini && st < 10) sheet.classList.remove('mini');
-  }, { passive: true });
-  prev.addEventListener('click', e => {
-    if (!cur?.mov || !sheet.classList.contains('mini') || e.target.closest('button')) return;
-    form.scrollTo({ top: 0, behavior: REDUCED ? 'auto' : 'smooth' });
-  });
+  const form = $('#cForm'), sheet = $('#custom .sheet'); if (!form) return;
+  // la vista previa tiene alto fijo (no se encoge al bajar: hacía saltar las opciones)
   // teclado: la vista previa se achica y el campo se centra para que no lo tape
   form.addEventListener('focusin', e => {
     if (!cur?.mov || !e.target.matches('input,textarea')) return;
@@ -722,12 +712,14 @@ $('#brkBtn')?.addEventListener('click', () => {
   b.hidden = !open; $('#brkBtn').setAttribute('aria-expanded', open);
   if (open) b.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: 'ease-out' });
 });
+// el SVG como imagen necesita xmlns una sola vez (repetido = imagen rota con "?")
+const conXmlns = svg => /^<svg[^>]*\sxmlns=/.test(svg) ? svg : svg.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ');
 $('#refBtn')?.addEventListener('click', () => {
   cur.showPhoto = !cur.showPhoto;
   $('#refBtn').classList.toggle('on', cur.showPhoto);
   $('#refBtn span').textContent = cur.showPhoto ? 'Mi diseño' : 'Pedido real';
   zReset();
-  $('#refBtn img').src = cur.showPhoto ? 'data:image/svg+xml,' + encodeURIComponent(renderProduct(cur.p, cur.cfg).replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ')) : cur.photo;
+  $('#refBtn img').src = cur.showPhoto ? 'data:image/svg+xml,' + encodeURIComponent(conXmlns(renderProduct(cur.p, cur.cfg))) : cur.photo;
   update();
 });
 

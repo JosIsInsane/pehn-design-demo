@@ -784,8 +784,8 @@ body[data-page="catalog"]{scroll-padding-top:calc(var(--nav-h) + 140px)}
 .c-bar-t h2{font-size:19px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .c-bar-t h2:focus{outline:none}
 .c-bar-t p{font-size:15px;line-height:1.3;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* vista previa: ~36 % del alto; mini al bajar o al escribir */
-#custom.pg .c-preview{flex:none;height:clamp(200px,36dvh,360px);transition:height .35s var(--ease)}
+/* vista previa: alto fijo ~30 %; solo se achica al escribir (teclado) */
+#custom.pg .c-preview{flex:none;height:clamp(180px,30dvh,300px);transition:height .35s var(--ease)}
 #custom.pg .sheet.mini .c-preview,#custom.pg .sheet.kb .c-preview{height:84px;cursor:zoom-in}
 #custom.pg .sheet.mini .zoom-ctl,#custom.pg .sheet.mini .ref,#custom.pg .sheet.mini .zoom-tip,#custom.pg .sheet.kb .zoom-ctl,#custom.pg .sheet.kb .ref,#custom.pg .sheet.kb .zoom-tip{display:none}
 #custom.pg .sheet.mini .zoom-layer,#custom.pg .sheet.kb .zoom-layer{padding:6px}
@@ -798,7 +798,7 @@ body[data-page="catalog"]{scroll-padding-top:calc(var(--nav-h) + 140px)}
 #custom.pg .c-panel{flex:1;min-height:0}
 #custom.pg .c-form{padding:0 20px 32px;scroll-padding:80px 0 120px}
 /* pasos: pegados arriba del área que se desliza */
-#custom.pg .steps-nav{margin:0 -20px 4px;padding:10px 8px 14px;gap:2px;box-shadow:0 1px 0 var(--line)}
+#custom.pg .steps-nav{margin:0 -20px 4px;padding:10px 8px 14px;gap:2px;background:var(--surface);box-shadow:0 1px 0 var(--line)}
 #custom.pg .steps-nav .bar{left:20px;right:20px;height:3px}
 #custom.pg .steps-nav button{flex-direction:column;gap:4px;min-height:58px;padding:4px 0;font-size:13px;border-radius:12px;min-width:0}
 #custom.pg .steps-nav button span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
