@@ -5,7 +5,7 @@ Revisión del 27 de octubre de 2026. Cubre el sitio (`*.html`, `*.js`), el CRM y
 ## Cómo se prueba
 
 ```bash
-node pruebas/seguridad.test.js   # 37 pruebas del servidor en un simulador de Google Apps Script
+node pruebas/seguridad.test.js   # 79 pruebas del servidor en un simulador de Google Apps Script
 node pruebas/sitio.test.js       # pedido de punta a punta en Chromium, con las cabeceras de _headers
 ```
 
@@ -27,13 +27,21 @@ Correr las dos antes de publicar cambios. Si alguna falla, no publicar.
 | Enlaces `javascript:` en datos de la hoja | El CRM los ponía como enlace | Solo enlaces `https` de Google |
 | Sitio dentro de un iframe ajeno (clickjacking), scripts inyectados | Sin cabeceras | `_headers`: CSP estricta (solo scripts propios), `frame-ancestors 'none'`, HSTS, nosniff |
 | Correo que falla (límite de 100 al día) | El cliente veía error aunque el pedido sí se guardó, y podía mandarlo dos veces | El pedido se guarda igual; el error del correo queda en Ejecuciones de Apps Script |
+| **XSS reflejado en el CRM** (`?k=` con código se pintaba en la página del dueño) y datos con `<!--<script>` que dejaban el CRM en blanco | Posible | `?k=` solo se refleja si es exactamente la clave; todo `<` va como `\u003c` en la clave y en los datos. Probado también en Chromium |
+| Clave del CRM en el correo diario, adivinada por tiempos | La clave viajaba en el enlace del resumen; comparación normal | El correo ya no lleva la clave; comparación en tiempo constante; intentos fallidos quedan en *Ejecuciones* (sin la clave); **Pehn › Cambiar clave del CRM** |
+| Usar el token público para llenar de correos a un tercero | Sin tope por destinatario | Máximo 1 correo por destinatario (hash SHA-256 en caché, ~6 h); regla estricta de correo (sin `?bcc=` ni saltos de línea) |
+| Archivo falso con tipo de imagen | Solo se miraba el tipo declarado | Se verifican los primeros bytes (JPG, PNG, WEBP, PDF) |
+| Pedidos lentos que bloqueaban a los demás | Drive, OCR y correo ocurrían dentro del candado | Fuera del candado; dentro solo ID, filas y stock |
+| Mensajes internos (nombres de hojas, SKU) visibles en el sitio | Se devolvía el texto del error | Solo mensajes de una lista conocida; el resto es genérico |
 | IDs repetidos al borrar filas | Sí | Usa el número más alto del día |
 
 ## Riesgos que quedan (y qué hacer)
 
-1. **El token del sitio es público** (vive en `datos.js`). Sirve contra spam simple, no contra un atacante decidido. Los topes de arriba limitan el daño. Si llega spam: cambiar el token en Config y en `datos.js`. Siguiente paso recomendado: **Cloudflare Turnstile** (captcha invisible gratis), requiere crear la llave en Cloudflare.
+1. **El token del sitio es público** (vive en `datos.js`). Sirve contra spam simple, no contra un atacante decidido. Los topes de arriba limitan el daño. Si llega spam: cambiar el token en Config y en `datos.js`. **Cloudflare Turnstile** (captcha invisible gratis) ya viene integrado y apagado: actívalo con la site key en `datos.js` y `TURNSTILE_SECRET` en Apps Script (ver `apps-script/README.md`).
 2. **El total lo calcula el navegador.** Alguien podría mandar un pedido con precio alterado. Por eso el flujo pide aprobar el diseño por WhatsApp antes de cobrar: **confirmen siempre el total antes de pedir el anticipo.**
 3. **Un comprobante puede ser falso.** El sistema lee el monto, no verifica con el banco. "Coincide" significa que el número es correcto, no que el dinero llegó: **confirmen en la app del banco antes de producir.**
-4. **Quien tenga el enlace del CRM entra.** No compartirlo. Si se filtra: cambiar Config › Clave del CRM.
+4. **Quien tenga el enlace del CRM entra.** No compartirlo. Si se filtra: **Pehn › Cambiar clave del CRM** (los enlaces viejos dejan de servir). El correo diario ya no lleva el enlace.
 5. **Fotos del sitio** subidas desde el CRM son públicas (deben serlo para mostrarse). Las de pedidos y comprobantes son privadas.
-6. El aviso de privacidad es un modelo de buenas prácticas: que lo revise un abogado en Honduras antes de darlo por definitivo.
+6. El límite de "1 correo por destinatario" usa la caché de Google, que guarda como máximo 6 horas: un mismo correo puede recibir otro pasado ese tiempo. Si hace falta un día exacto, habría que guardarlo en una hoja.
+7. Si una carpeta de pedido queda suelta en Drive porque un pedido falló a medias, se puede borrar sin problema.
+8. El aviso de privacidad es un modelo de buenas prácticas: que lo revise un abogado en Honduras antes de darlo por definitivo.
