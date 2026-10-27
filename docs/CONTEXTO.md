@@ -26,3 +26,5 @@ Pega esto al empezar: "Lee docs/CONTEXTO.md del repo JosIsInsane/pehn-design-dem
 2. Recibir datos del cliente (fotos, precios, textos, su hoja con miles de pedidos) y adaptar el CRM a su hoja (importador + archivo + búsqueda en servidor; ver plan).
 3. Módulo de **Finanzas** en el CRM (cobrado L 1,000 en el desglose).
 4. Automatizar WhatsApp/Instagram (opción recomendada: ManyChat; necesita cuentas Meta del cliente).
+5. Correos: Gmail gratis = 100/día; con 50–80 pedidos/día no alcanza. Propuesto: quitar avisos al negocio (ya están en el CRM) o resumen diario, o Google Workspace.
+6. Acceso para colaboradores en el CRM: hoja "Equipo" (nombre, clave propia, rol, activo). Cada uno entra con su enlace; el servidor revisa permisos por acción; Movimientos/Pagos registran quién hizo qué. No se les comparte la hoja de cálculo. Roles por definir con el usuario.
