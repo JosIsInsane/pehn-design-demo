@@ -1,6 +1,12 @@
 /**
  * Recepción de pedidos del sitio (doPost): guarda fotos en Drive,
  * escribe Pedidos y Partidas, revisa stock y manda correos.
+ *
+ * SI EL SITIO DICE "No se pudo enviar":
+ *   "Token inválido"   -> el token de app.js no es el de Config › Token del sitio (Pehn › Ver URL y token).
+ *   "Respuesta inválida" -> la app web no está publicada para "Cualquier usuario" o la URL de app.js es vieja.
+ *   Otro error         -> Extensiones › Apps Script › Ejecuciones: abre la de doPost y lee el mensaje.
+ * Después de cambiar código: Implementar › Gestionar implementaciones › Nueva versión (si no, sigue el viejo).
  */
 
 const LIMITS = { items: 20, imageChars: 7e6, perContact: 5 };
@@ -33,9 +39,7 @@ function recibirPedido_(d) {
   if (n >= LIMITS.perContact) throw new Error('Demasiados pedidos seguidos. Escríbenos por WhatsApp.');
   cache.put(ck, String(n + 1), 600);
 
-  const lock = LockService.getScriptLock();
-  lock.waitLock(20000);
-  try {
+  return conCandado_(() => {
     const id = nuevoId_();
     const folder = folder_().createFolder(`${id} · ${String(c.name).slice(0, 40)}`);
     const fecha = now_();
@@ -76,15 +80,13 @@ function recibirPedido_(d) {
     registrarClavesNuevas_(d.items);
     try { guardarCliente_(c, fecha); } catch (err) { console.error(err); } // nunca frena un pedido
 
-    correos_(id, d, partidas, disp, cfg);
+    // si el correo falla (límite de 100 al día) el pedido ya quedó guardado
+    try { correos_(id, d, partidas, disp, cfg); } catch (err) { console.error('Correo no enviado:', err); }
     return { id };
-  } finally {
-    lock.releaseLock();
-  }
+  });
 }
 
 // ficha del cliente (una por WhatsApp); las notas y etiquetas se editan en el CRM
-const telKey_ = t => { const n = String(t || '').replace(/\D/g, ''); return n.length === 8 ? '504' + n : n; };
 function guardarCliente_(c, fecha) {
   const sh = hojaClientes_(); if (!sh) return;
   const key = telKey_(c.phone), cur = rows_('clientes').find(r => telKey_(r.WhatsApp) === key);
@@ -96,11 +98,12 @@ function guardarCliente_(c, fecha) {
   }
 }
 
+// PEHN-AAMMDD-001. Toma el número más alto del día (no la cuenta): borrar una fila no repite IDs.
 function nuevoId_() {
   const tz = Session.getScriptTimeZone();
   const pre = 'PEHN-' + Utilities.formatDate(now_(), tz, 'yyMMdd') + '-';
-  const used = rows_('pedidos').filter(p => String(p.ID).startsWith(pre)).length;
-  return pre + String(used + 1).padStart(3, '0');
+  const max = rows_('pedidos').reduce((m, p) => String(p.ID).startsWith(pre) ? Math.max(m, Number(String(p.ID).slice(pre.length)) || 0) : m, 0);
+  return pre + String(max + 1).padStart(3, '0');
 }
 
 const stripImages_ = it => ({ product: it.product, qty: it.qty, unitPrice: it.unitPrice, total: it.total, options: it.options, bom: it.bom });
@@ -119,13 +122,12 @@ function guardarImagen_(folder, dataUrl, name) {
   return { id: file.getId(), url: file.getUrl(), dataUrl, blob };
 }
 
-// imagen dentro de la celda (no necesita hacer público el archivo); si falla, deja enlace
+// imagen dentro de la celda (no necesita hacer público el archivo); si es muy grande, deja enlace
 function ponerImagen_(cell, img) {
   try {
-    const ci = SpreadsheetApp.newCellImage().setSourceUrl(img.dataUrl).setAltTextTitle('Vista previa').build();
-    cell.setValue(ci);
+    cell.setValue(SpreadsheetApp.newCellImage().setSourceUrl(img.dataUrl).setAltTextTitle('Vista previa').build());
   } catch (err) {
-    cell.setFormula(`=HYPERLINK("${img.url}";"Ver imagen")`);
+    cell.setRichTextValue(SpreadsheetApp.newRichTextValue().setText('Ver imagen').setLinkUrl(img.url).build());
   }
 }
 
@@ -167,5 +169,3 @@ function correos_(id, d, partidas, disp, cfg) {
     });
   }
 }
-
-function esc_(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])); }

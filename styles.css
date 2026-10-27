@@ -1,6 +1,9 @@
 /* =====================================================================
    Pehn Design — sistema visual
    Marfil cálido + naranja de marca, serif editorial, sombras suaves.
+   Colores, radios y sombras viven en :root: cambia ahí, no en cada regla.
+   Pantallas: 1100px (tablet ancha), 960px (tablet/menú móvil), 640px (celular).
+   Una regla nueva para celular va DENTRO del bloque @media (max-width:640px) de "responsive".
    ===================================================================== */
 :root{
   --bg:#FBF7F2; --bg-2:#F4EDE4; --surface:#FFFFFF; --surface-2:#FCFAF7;
@@ -225,7 +228,7 @@ p{margin:0;text-wrap:pretty}
 .rev-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
 .rev{display:flex;flex-direction:column;gap:18px;padding:30px;border-radius:var(--r-lg);background:var(--surface);box-shadow:var(--sh-1)}
 .stars{display:flex;gap:3px}
-.stars svg{width:16px;height:16px;fill:var(--brand)}
+.stars svg{width:92px;height:16px;fill:var(--brand)}
 .rev blockquote{margin:0;font-family:var(--serif);font-size:19px;line-height:1.5;flex:1}
 .rev.empty-rev blockquote{color:var(--ink-3);font-style:italic}
 .rev footer{display:flex;align-items:center;gap:12px;padding-top:18px;border-top:1px solid var(--line)}
@@ -312,13 +315,13 @@ p{margin:0;text-wrap:pretty}
 .grid.swap-in{opacity:0;transform:translateY(-6px)}
 
 /* ---------- flotantes ---------- */
-.cart-fab{position:fixed;right:20px;bottom:20px;z-index:55;display:flex;align-items:center;gap:10px;min-height:56px;padding:0 10px 0 20px;border-radius:999px;background:var(--ink);color:#fff;font-weight:600;font-size:15px;box-shadow:0 18px 40px -14px rgba(30,22,17,.6);transition:transform .35s var(--spring)}
+.cart-fab{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom));z-index:55;display:flex;align-items:center;gap:10px;min-height:56px;padding:0 10px 0 20px;border-radius:999px;background:var(--ink);color:#fff;font-weight:600;font-size:15px;box-shadow:0 18px 40px -14px rgba(30,22,17,.6);transition:transform .35s var(--spring)}
 .cart-fab:hover{transform:translateY(-3px)}
 .cart-fab svg{width:20px;height:20px}
 .cart-fab b{display:grid;place-items:center;min-width:34px;height:34px;padding:0 8px;border-radius:999px;background:var(--brand);color:var(--ink);font-size:14px;font-variant-numeric:tabular-nums}
 .cart-fab.bump{animation:bumpFab .55s var(--spring)}
 @keyframes bumpFab{30%{transform:scale(1.14) rotate(-3deg)}60%{transform:scale(.97)}}
-.wa-float{position:fixed;right:24px;bottom:92px;z-index:54;width:52px;height:52px;border-radius:50%;background:#25D366;color:#fff;display:grid;place-items:center;box-shadow:0 14px 30px -12px rgba(37,211,102,.7);transition:transform .35s var(--spring)}
+.wa-float{position:fixed;right:24px;bottom:calc(92px + env(safe-area-inset-bottom));z-index:54;width:52px;height:52px;border-radius:50%;background:#25D366;color:#fff;display:grid;place-items:center;box-shadow:0 14px 30px -12px rgba(37,211,102,.7);transition:transform .35s var(--spring)}
 .wa-float:hover{transform:translateY(-3px) rotate(-6deg)}
 .wa-float svg{width:26px;height:26px}
 body.locked .ico-cart,body.locked #cartCount{display:none}
@@ -568,6 +571,7 @@ body:not(.locked) .ico-lock{display:none}
   .c-price b{font-size:24px}
   .sw button{width:44px;height:44px}
   .ch button{min-height:44px;font-size:14.5px}
+  .zoom-tip{left:12px;top:max(14px,env(safe-area-inset-top));transform:none;max-width:calc(100% - 84px);white-space:normal}
 }
 @keyframes sheetUp{from{transform:translateY(100%)}}
 @keyframes sheetDown{to{transform:translateY(100%)}}
@@ -594,12 +598,14 @@ body:not(.locked) .ico-lock{display:none}
   .sort{margin-left:0;flex:1}
   .sort select{width:100%}
   .co .row2{grid-template-columns:1fr}
-  .cart-fab{right:14px;bottom:14px;padding:0 8px 0 16px;min-height:52px}
+  .cart-fab{right:14px;bottom:calc(14px + env(safe-area-inset-bottom));padding:0 8px 0 16px;min-height:52px}
   .cart-fab span{display:none}
-  .wa-float{right:18px;bottom:78px;width:48px;height:48px}
+  .wa-float{right:18px;bottom:calc(78px + env(safe-area-inset-bottom));width:48px;height:48px}
   .copy{flex-direction:column}
   .announce .opt{display:none}
   .zoom-ctl output{display:none}
+  .hero .cta-row .btn{flex:1 1 100%}
+  .announce{font-size:12.5px;padding:8px 12px}
 }
 
 /* menos movimiento: se quitan bucles y desplazamientos grandes; los fundidos se quedan */
@@ -608,7 +614,6 @@ body:not(.locked) .ico-lock{display:none}
   .card:hover img.real,.ph:hover img,.cat-tile:hover .cat-art{transform:none}
 }
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-@media (max-width:960px){.zoom-tip{left:12px;top:max(14px,env(safe-area-inset-top));transform:none;max-width:calc(100% - 84px);white-space:normal}}
 
 /* ---------- accesorios combinables ---------- */
 .ch.multi button{padding-left:12px}
@@ -618,22 +623,15 @@ body:not(.locked) .ico-lock{display:none}
 .ch.multi button[aria-pressed="true"] .tick{background:var(--ink);border-color:var(--ink)}
 .ch.multi button[aria-pressed="true"] .tick::after{content:"";width:8px;height:5px;border:2px solid #fff;border-top:0;border-right:0;transform:translateY(-1px) rotate(-45deg)}
 
-/* ---------- guías de interfaz ---------- */
+/* ---------- formularios y anclas ---------- */
 body{-webkit-tap-highlight-color:transparent}
 [id]{scroll-margin-top:calc(var(--nav-h) + 20px)}
-.cart-fab{bottom:calc(20px + env(safe-area-inset-bottom))}
-.wa-float{bottom:calc(92px + env(safe-area-inset-bottom))}
 .co input[aria-invalid="true"]{border-color:var(--danger);background:#FFF7F5}
 .f-err{display:block;min-height:0;font-size:12.5px;font-weight:500;color:var(--danger)}
 .f-err:empty{display:none}
 .sec-head h2{margin:0}
-@media (max-width:640px){
-  .cart-fab{bottom:calc(14px + env(safe-area-inset-bottom))}
-  .wa-float{bottom:calc(78px + env(safe-area-inset-bottom))}
-}
-@media (max-width:640px){.hero .cta-row .btn{flex:1 1 100%}.announce{font-size:12.5px;padding:8px 12px}}
 
-/* ---------- revisión con Web Interface Guidelines ---------- */
+/* ---------- desplazamiento, textos largos y foco ---------- */
 html{scroll-padding-top:calc(var(--nav-h) + 16px)}
 body[data-page="catalog"]{scroll-padding-top:calc(var(--nav-h) + 140px)}
 @media (pointer:fine){html{overscroll-behavior:none}}

@@ -3,6 +3,10 @@
  * - Cada partida del sitio trae claves de consumo (bom), ej. "Figura · Cabello · Largo · Negro".
  * - La hoja Recetas traduce clave -> SKU y cantidad. "*" sirve de comodín.
  * - Al llegar al estado configurado se descuenta stock; al cancelar se regresa.
+ *
+ * SI EL STOCK NO CUADRA: revisa la hoja Movimientos (cada cambio queda ahí con quién y por qué).
+ *   Un pedido no descontó -> su receta no tiene SKU (Recetas › Por asignar) o el SKU no existe en Inventario.
+ *   Para corregir a mano, cambia el Stock en la hoja: el cambio queda registrado en Movimientos.
  */
 
 function recetas_() {
@@ -80,14 +84,19 @@ function registrarClavesNuevas_(items) {
 }
 
 // ---------- movimientos de stock ----------
+// toda entrada o salida pasa por aquí: así Movimientos siempre tiene el historial completo
+function registrarMovimiento_(sku, pieza, delta, despues, motivo, pedido) {
+  sheet_('movimientos').appendRow([now_(), sku, pieza, delta, despues, motivo, pedido || '', who_()]);
+}
+
 function moverStock_(sku, delta, motivo, pedido) {
   const inv = inventarioMap_(), item = inv[sku];
-  if (!item) throw new Error(`No existe el SKU ${sku}.`);
+  if (!item) throw new Error(`No existe el SKU ${sku} en Inventario. Agrégalo o corrige la receta que lo usa.`);
   const nuevo = (Number(item.Stock) || 0) + delta;
   const sh = sheet_('inventario');
   sh.getRange(item._row, COL.inventario.Stock).setValue(nuevo);
   sh.getRange(item._row, COL.inventario.Actualizado).setValue(now_());
-  sheet_('movimientos').appendRow([now_(), sku, item.Pieza, delta, nuevo, motivo, pedido || '', who_()]);
+  registrarMovimiento_(sku, item.Pieza, delta, nuevo, motivo, pedido);
   return nuevo;
 }
 
@@ -123,15 +132,11 @@ function alEditar_(e) {
   const sh = e.range.getSheet(), name = sh.getName(), r = e.range.getRow(), c = e.range.getColumn();
   if (r < 2 || e.range.getNumRows() > 1 || e.range.getNumColumns() > 1) return;
   if (!Object.keys(SHEETS).some(k => SHEETS[k] === name && esNuestra_(sh, k))) return; // hojas ajenas: nada
-  if (name === SHEETS.pedidos && c === COL.pedidos.Estado) {
-    const lock = LockService.getScriptLock(); lock.waitLock(20000);
-    try { aplicarEstado_(r, e.value); } finally { lock.releaseLock(); }
-  }
+  if (name === SHEETS.pedidos && c === COL.pedidos.Estado) conCandado_(() => aplicarEstado_(r, e.value));
   if (name === SHEETS.inventario && c === COL.inventario.Stock) {
     const antes = Number(e.oldValue) || 0, ahora = Number(e.value) || 0;
     if (antes !== ahora) {
-      const sku = sh.getRange(r, COL.inventario.SKU).getValue();
-      sheet_('movimientos').appendRow([now_(), sku, sh.getRange(r, COL.inventario.Pieza).getValue(), ahora - antes, ahora, 'Ajuste manual en la hoja', '', who_()]);
+      registrarMovimiento_(sh.getRange(r, COL.inventario.SKU).getValue(), sh.getRange(r, COL.inventario.Pieza).getValue(), ahora - antes, ahora, 'Ajuste manual en la hoja', '');
       sh.getRange(r, COL.inventario.Actualizado).setValue(now_());
     }
   }

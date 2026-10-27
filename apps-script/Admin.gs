@@ -3,11 +3,18 @@
  * Google Sheets guarda todo; aquí solo se consulta y se edita.
  * Acceso: enlace con la clave de Config (?k=…) o un correo de "Admins".
  * Toda respuesta viaja como texto JSON para evitar que Google la vacíe.
+ *
+ * SI EL CRM NO CARGA O SE QUEDA EN BLANCO:
+ *   1. Editor › Ejecutar › probarCRM y lee el registro: dice qué hoja o dato falla.
+ *   2. "Sin acceso" -> el enlace no trae la clave de Config › Clave del CRM; ábrelo desde Pehn › Abrir CRM.
+ *   3. Cambiaste el código y no se ve -> Implementar › Gestionar implementaciones › Nueva versión.
+ *   4. URL_APP vieja -> cópiala de Implementar › Gestionar implementaciones y pégala abajo.
+ * Para agregar una acción nueva: un case en crm() aquí, y en Admin.html una entrada en LOCAL si debe verse al instante.
  */
 
 function clave_() {
   let k = config_()['Clave del CRM'];
-  if (!k) { k = Utilities.getUuid().replace(/-/g, ''); setConfig_('Clave del CRM', k); }
+  if (!k) { k = nuevaClave_(); setConfig_('Clave del CRM', k); }
   return String(k);
 }
 
@@ -130,24 +137,18 @@ function crmDatosLeer_() {
 function crm(k, accion, args) {
   exigir_(k);
   args = args || {};
-  const lock = LockService.getScriptLock();
   switch (accion) {
     case 'datos': break;
-    case 'imagen': {
-      const b = DriveApp.getFileById(String(args.id)).getBlob();
-      return JSON.stringify({ src: `data:${b.getContentType()};base64,${Utilities.base64Encode(b.getBytes())}` });
-    }
     case 'imagenes': {
       const srcs = {};
       (args.ids || []).slice(0, 6).forEach(id => {
-        try { const b = DriveApp.getFileById(String(id)).getBlob(); srcs[id] = `data:${b.getContentType()};base64,${Utilities.base64Encode(b.getBytes())}`; } catch (e) { /* esa foto no se pudo leer */ }
+        try { srcs[id] = dataUrl_(DriveApp.getFileById(String(id)).getBlob()); } catch (e) { /* foto borrada o sin permiso: el CRM muestra "Sin foto" */ }
       });
       return JSON.stringify({ srcs });
     }
     case 'estado': {
       if (!ESTADOS.includes(args.estado)) throw new Error('Estado inválido.');
-      lock.waitLock(20000);
-      try { sheet_('pedidos').getRange(args.row, COL.pedidos.Estado).setValue(args.estado); aplicarEstado_(args.row, args.estado); } finally { lock.releaseLock(); }
+      conCandado_(() => { sheet_('pedidos').getRange(args.row, COL.pedidos.Estado).setValue(args.estado); aplicarEstado_(args.row, args.estado); });
       break;
     }
     case 'nota':
@@ -164,11 +165,10 @@ function crm(k, accion, args) {
     case 'ajuste': {
       const delta = Number(args.delta);
       if (!delta) throw new Error('Cantidad inválida.');
-      lock.waitLock(20000);
-      try { moverStock_(String(args.sku), delta, args.motivo || (delta > 0 ? 'Entrada de mercancía' : 'Salida manual'), ''); } finally { lock.releaseLock(); }
+      conCandado_(() => moverStock_(String(args.sku), delta, args.motivo || (delta > 0 ? 'Entrada de mercancía' : 'Salida manual'), ''));
       break;
     }
-    case 'pieza': guardarPieza_(args); break;
+    case 'pieza': conCandado_(() => guardarPieza_(args)); break;
     case 'receta': {
       const sh = sheet_('recetas'), sku = String(args.sku || '').trim().toUpperCase();
       sh.getRange(args.row, COL.recetas.SKU).setValue(sku);
@@ -189,12 +189,12 @@ function guardarPieza_(p) {
   if (cur) {
     const antes = Number(cur.Stock) || 0;
     sh.getRange(cur._row, 1, 1, 8).setValues([vals]);
-    if (antes !== vals[3]) sheet_('movimientos').appendRow([now_(), sku, p.pieza, vals[3] - antes, vals[3], 'Ajuste desde el CRM', '', who_()]);
+    if (antes !== vals[3]) registrarMovimiento_(sku, p.pieza, vals[3] - antes, vals[3], 'Ajuste desde el CRM', '');
     sh.getRange(cur._row, COL.inventario.Actualizado).setValue(now_());
   } else {
     const r = Math.max(sh.getLastRow(), 1) + 1;
     sh.getRange(r, 1, 1, 8).setValues([vals]);
     sh.getRange(r, COL.inventario.Actualizado).setValue(now_());
-    if (vals[3]) sheet_('movimientos').appendRow([now_(), sku, p.pieza, vals[3], vals[3], 'Alta de pieza', '', who_()]);
+    if (vals[3]) registrarMovimiento_(sku, p.pieza, vals[3], vals[3], 'Alta de pieza', '');
   }
 }

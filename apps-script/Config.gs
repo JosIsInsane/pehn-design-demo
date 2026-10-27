@@ -1,6 +1,16 @@
 /**
  * Pehn Design — pedidos e inventario en Google Sheets.
- * Nombres de hojas, columnas y estados en un solo lugar.
+ * Nombres de hojas, columnas, estados y utilidades compartidas en un solo lugar.
+ *
+ * Archivos:
+ *   Config.gs     este: nombres, columnas y utilidades
+ *   Setup.gs      menú, crear hojas, disparadores, respaldo y revisión
+ *   Orders.gs     recibir pedidos del sitio (doPost)
+ *   Inventory.gs  recetas, apartados y movimientos de stock
+ *   Admin.gs      datos y acciones del CRM; Admin.html es la pantalla
+ *
+ * SI ALGO FALLA: menú Pehn › Revisar que todo funcione. Dice qué está mal y cómo arreglarlo.
+ * Para cambiar una columna: agrégala AL FINAL de HEADERS (nunca en medio) y corre Pehn › Configurar hojas.
  */
 
 const SHEETS = {
@@ -25,6 +35,7 @@ const HEADERS = {
   config: ['Ajuste', 'Valor', 'Para qué sirve'],
 };
 
+// El orden importa: el CRM calcula el avance con él. Si agregas uno, agrégalo también en los colores de Setup.gs y Admin.html (.st-*).
 const ESTADOS = ['Nuevo', 'Diseño enviado', 'Aprobado', 'En producción', 'Listo', 'Enviado', 'Entregado', 'Cancelado'];
 
 // valores iniciales de la hoja Config (se pueden cambiar desde la hoja)
@@ -70,13 +81,19 @@ function esNuestra_(sh, key) {
   return ok;
 }
 
+// fila 1 con los encabezados y el estilo de la casa
+function ponerEncabezado_(sh, key) {
+  sh.getRange(1, 1, 1, HEADERS[key].length).setValues([HEADERS[key]])
+    .setFontWeight('bold').setBackground('#1E1611').setFontColor('#FFFFFF');
+  sh.setFrozenRows(1);
+}
+
 // la hoja Clientes se crea sola la primera vez (con los clientes de pedidos anteriores)
 function hojaClientes_() {
   let sh = ss_().getSheetByName(SHEETS.clientes);
   if (sh) return esNuestra_(sh, 'clientes') ? sh : null; // una hoja "Clientes" ajena no se toca
   sh = ss_().insertSheet(SHEETS.clientes);
-  sh.getRange(1, 1, 1, HEADERS.clientes.length).setValues([HEADERS.clientes]).setFontWeight('bold').setBackground('#1E1611').setFontColor('#FFFFFF');
-  sh.setFrozenRows(1);
+  ponerEncabezado_(sh, 'clientes');
   const map = {};
   rows_('pedidos').forEach(p => {
     const k = telKey_(p.WhatsApp); if (!k) return;
@@ -132,6 +149,19 @@ function money_(n, cur) {
   try { return new Intl.NumberFormat('es-HN', { style: 'currency', currency: cur || 'HNL', maximumFractionDigits: 0 }).format(Number(n) || 0); }
   catch (e) { return 'L ' + Math.round(Number(n) || 0).toLocaleString(); }
 }
+
+// un solo cambio a la vez (dos pedidos o dos clics al mismo tiempo no se pisan)
+function conCandado_(fn) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(20000)) throw new Error('La hoja está ocupada con otro cambio. Espera unos segundos e intenta de nuevo.');
+  try { return fn(); } finally { lock.releaseLock(); }
+}
+
+// WhatsApp como clave única: solo dígitos y con 504 si son 8 dígitos (Honduras)
+const telKey_ = t => { const n = String(t || '').replace(/\D/g, ''); return n.length === 8 ? '504' + n : n; };
+const nuevaClave_ = (largo = 32) => Utilities.getUuid().replace(/-/g, '').slice(0, largo);
+const dataUrl_ = blob => `data:${blob.getContentType()};base64,${Utilities.base64Encode(blob.getBytes())}`;
+function esc_(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch])); }
 
 function now_() { return new Date(); }
 function who_() { try { return Session.getActiveUser().getEmail() || 'sitio web'; } catch (e) { return 'sitio web'; } }

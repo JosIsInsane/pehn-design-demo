@@ -1,6 +1,6 @@
 /**
- * Menú, creación de hojas, datos de ejemplo y disparadores.
- * Corre `configurar()` una vez (Pehn › Configurar hojas).
+ * Menú, creación de hojas, datos de ejemplo, disparadores, respaldo y revisión.
+ * Corre `configurar()` una vez (Pehn › Configurar hojas). Se puede repetir: no borra nada.
  */
 
 function onOpen() {
@@ -10,6 +10,7 @@ function onOpen() {
     .addItem('Revisar stock ahora', 'revisarStockMenu')
     .addItem('Respaldar la hoja ahora', 'respaldarAhora')
     .addSeparator()
+    .addItem('Revisar que todo funcione', 'revisarSistema')
     .addItem('Configurar hojas', 'configurar')
     .addItem('Ver URL y token para el sitio', 'mostrarConexion')
     .addToUi();
@@ -26,19 +27,14 @@ function configurar() {
     return;
   }
   Object.keys(SHEETS).forEach(key => {
-    let sh = ss.getSheetByName(SHEETS[key]);
-    if (!sh) sh = ss.insertSheet(SHEETS[key]);
-    const head = HEADERS[key];
-    sh.getRange(1, 1, 1, head.length).setValues([head])
-      .setFontWeight('bold').setBackground('#1E1611').setFontColor('#FFFFFF');
-    sh.setFrozenRows(1);
+    ponerEncabezado_(ss.getSheetByName(SHEETS[key]) || ss.insertSheet(SHEETS[key]), key);
   });
 
   // Config: valores iniciales sin pisar lo que ya exista
   const cfg = config_();
   CONFIG_DEFAULTS.forEach(([k, v, note]) => { if (!(k in cfg)) sheet_('config').appendRow([k, v, note]); });
-  if (!config_()['Token del sitio']) setConfig_('Token del sitio', Utilities.getUuid().replace(/-/g, '').slice(0, 20));
-  if (!config_()['Clave del CRM']) setConfig_('Clave del CRM', Utilities.getUuid().replace(/-/g, ''));
+  if (!config_()['Token del sitio']) setConfig_('Token del sitio', nuevaClave_(20));
+  clave_();
   if (!config_()['Correo del negocio']) setConfig_('Correo del negocio', Session.getEffectiveUser().getEmail());
   if (!config_()['Admins']) setConfig_('Admins', Session.getEffectiveUser().getEmail());
   folder_();
@@ -65,6 +61,7 @@ function formatPedidos_() {
   sh.getRange(2, COL.pedidos.Fecha, sh.getMaxRows() - 1, 1).setNumberFormat('dd/mm/yyyy hh:mm');
   sh.hideColumns(COL.pedidos.Datos);
 
+  // mismos tonos que .st-* en Admin.html
   const colors = { 'Nuevo': '#FDEBD6', 'Diseño enviado': '#E8E0F7', 'Aprobado': '#DCEAF6', 'En producción': '#FBEFC4', 'Listo': '#E0EBDB', 'Enviado': '#D6F0E4', 'Entregado': '#C9E8D2', 'Cancelado': '#F3D6D2' };
   const range = sh.getRange(2, COL.pedidos.Estado, sh.getMaxRows() - 1, 1);
   const rules = sh.getConditionalFormatRules().filter(r => !r.getRanges().some(x => x.getColumn() === COL.pedidos.Estado));
@@ -199,6 +196,38 @@ function folder_() {
   const f = DriveApp.createFolder('Pehn Design · Pedidos');
   setConfig_('Carpeta de Drive', f.getId());
   return f;
+}
+
+// ---------- revisión: busca lo que suele romperse y dice cómo arreglarlo ----------
+function revisarSistema() {
+  const mal = [], ok = [];
+  const ver = (bien, okTxt, malTxt) => (bien ? ok.push('✓ ' + okTxt) : mal.push('✗ ' + malTxt));
+  const ss = ss_();
+  Object.keys(SHEETS).forEach(key => {
+    const sh = ss.getSheetByName(SHEETS[key]);
+    if (!sh) return mal.push(`✗ Falta la hoja "${SHEETS[key]}". Arreglo: Pehn › Configurar hojas.`);
+    const got = sh.getRange(1, 1, 1, HEADERS[key].length).getValues()[0].map(String);
+    const dif = HEADERS[key].filter((h, i) => got[i] !== h);
+    ver(!dif.length, `Hoja ${SHEETS[key]}`, `La hoja "${SHEETS[key]}" tiene columnas movidas o renombradas (${dif.slice(0, 3).join(', ')}). Arreglo: regresa las columnas a su lugar; no se insertan columnas en medio.`);
+  });
+  try {
+    const cfg = config_();
+    ver(!!cfg['Token del sitio'], 'Token del sitio', 'Sin token del sitio. Arreglo: Pehn › Configurar hojas.');
+    ver(!!cfg['Correo del negocio'], 'Correo del negocio', 'Config › Correo del negocio vacío: no llegan avisos.');
+    let carpeta = false; try { carpeta = !!DriveApp.getFolderById(cfg['Carpeta de Drive']); } catch (e) { }
+    ver(carpeta, 'Carpeta de Drive', 'La carpeta de Drive no existe. Arreglo: Pehn › Configurar hojas crea otra.');
+    const trig = ScriptApp.getProjectTriggers().map(t => t.getHandlerFunction());
+    ['alEditar_', 'resumenStockDiario_', 'respaldoSemanal_'].forEach(f => ver(trig.includes(f), `Disparador ${f}`, `Falta el disparador ${f}. Arreglo: Pehn › Configurar hojas.`));
+    ver(!!urlApp_(), 'App web publicada', 'La app web no está publicada. Arreglo: Implementar › Nueva implementación › App web.');
+    const sinSku = rows_('recetas').filter(r => /^Nueva/.test(r.Notas)).length;
+    if (sinSku) mal.push(`• ${sinSku} opción(es) nuevas sin pieza asignada. Arreglo: CRM › Recetas › Por asignar.`);
+    const cuota = MailApp.getRemainingDailyQuota();
+    if (cuota < 10) mal.push(`• Quedan ${cuota} correos hoy (Google da 100 al día). Mañana se reinicia.`);
+  } catch (e) { mal.push('✗ ' + (e.message || e)); }
+  const txt = (mal.length ? 'Hay que revisar:\n\n' + mal.join('\n') + '\n\n' : 'Todo bien.\n\n') + ok.join('\n');
+  console.log(txt);
+  try { SpreadsheetApp.getUi().alert('Revisión de Pehn', txt, SpreadsheetApp.getUi().ButtonSet.OK); } catch (e) { /* corrido desde el editor: ver el registro */ }
+  return txt;
 }
 
 function mostrarConexion() {
