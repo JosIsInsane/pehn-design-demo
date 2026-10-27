@@ -3,8 +3,8 @@
  * escribe Pedidos y Partidas, revisa stock y manda UN correo al cliente (al negocio solo le llega el resumen diario).
  *
  * SI EL SITIO DICE "No se pudo enviar":
- *   "Token inválido"   -> el token de app.js no es el de Config › Token del sitio (Pehn › Ver URL y token).
- *   "Respuesta inválida" -> la app web no está publicada para "Cualquier usuario" o la URL de app.js es vieja.
+ *   "Token inválido"   -> el token de datos.js no es el de Config › Token del sitio (Pehn › Ver URL y token).
+ *   "Respuesta inválida" -> la app web no está publicada para "Cualquier usuario" o la URL de datos.js es vieja.
  *   Otro error         -> Extensiones › Apps Script › Ejecuciones: abre la de doPost y lee el mensaje.
  * Después de cambiar código: Implementar › Gestionar implementaciones › Nueva versión (si no, sigue el viejo).
  */
