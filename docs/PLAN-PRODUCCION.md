@@ -19,7 +19,7 @@ Regla: nada llega a `main` sin `node pruebas/seguridad.test.js` y `node pruebas/
 | 3 | CRM escala | Carga solo activos + 3 meses, búsqueda en servidor (incluye Archivo), archivo mensual automático, caché 1 min | Fase 2 |
 | 4 | Equipo y roles | Hoja Equipo (nombre, clave, rol, activo), enlace por persona, permisos por acción en servidor, bitácora de quién hizo qué | Roles definidos |
 | 5 | Finanzas | Vista Finanzas: ventas, cobrado vs. por cobrar, gastos/compras de inventario, margen por producto, cierre del mes | Fase 1 (costos) |
-| 6 | Correos | Quitar avisos al negocio (ya están en CRM) + correo al cliente solo en hitos; si no alcanza la cuota, proveedor por API o Workspace | Investigación |
+| 6 | Correos | Pico real: 48 pedidos/día. Hoy cada pedido gasta hasta 4 correos (confirmación + aviso al negocio + 2 avisos de comprobante) = 192 > 100/día de Gmail. Cambio: avisos al negocio pasan a un resumen diario (1 correo) y ya se ven en el CRM; al cliente solo la confirmación → ~49/día, gratis. Si el correo del cliente falla por cuota, el pedido no se pierde y el CRM lo marca "sin correo" | — |
 | 7 | WhatsApp/IG | Opción A ya (respuestas rápidas, gratis). Luego ManyChat conectado a "¿cómo va mi pedido?" | Cuentas Meta |
 | 8 | Salida | Dominio propio, prueba punta a punta con pedido real, respaldo diario de la hoja, guía de uso para el equipo | Todo lo anterior |
 
