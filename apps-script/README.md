@@ -22,6 +22,8 @@ El sitio manda cada pedido a una hoja de Google con la foto del diseño. La hoja
 | Recetas | Qué pieza gasta cada opción del sitio. `*` sirve de comodín. |
 | Movimientos | Historial de cada entrada y salida de stock. |
 | Clientes | Una ficha por WhatsApp. Etiquetas y notas se editan en el CRM. |
+| Pagos | Comprobantes del anticipo: monto leído, esperado y si coincide. Se confirman en el CRM. |
+| Sitio | Colores, textos y fotos que ve el cliente. Se editan en CRM › Sitio web. |
 | Config | Correo del negocio, admins, estado que descuenta, avisos, token, clave del CRM. |
 
 ## Si el negocio ya tiene su propia hoja
@@ -38,8 +40,9 @@ Aun así, el código se protege solo:
 
 1. Crea una hoja nueva en Google Sheets. Menú **Extensiones › Apps Script**.
 2. Copia los archivos de esta carpeta en el editor, con el mismo nombre:
-   `Config.gs`, `Setup.gs`, `Orders.gs`, `Inventory.gs`, `Admin.gs` y `Admin.html` (este como archivo HTML).
+   `Config.gs`, `Setup.gs`, `Orders.gs`, `Inventory.gs`, `Pagos.gs`, `Sitio.gs`, `Admin.gs` y `Admin.html` (este como archivo HTML).
    En **Configuración del proyecto** activa *Mostrar el archivo de manifiesto* y pega `appsscript.json`.
+   En **Servicios (+)** agrega **Drive API** (para leer el monto de los comprobantes).
 3. Guarda, recarga la hoja y usa el menú **Pehn › Configurar hojas**. Acepta los permisos.
    Se crean las hojas, inventario y recetas de ejemplo, la carpeta de Drive y los avisos diarios.
 4. **Implementar › Nueva implementación › App web**:
@@ -54,6 +57,15 @@ Aun así, el código se protege solo:
 
 > Si cambias el código de Apps Script, vuelve a **Implementar › Gestionar implementaciones › Editar (lápiz) › Versión: Nueva versión › Implementar**. La URL no cambia. Sin este paso el sitio y el CRM siguen usando el código viejo.
 
+## Actualizar una instalación que ya existe
+
+1. Pega todos los archivos otra vez (hay dos nuevos: `Pagos.gs` y `Sitio.gs`) y el `appsscript.json`.
+2. Agrega el servicio **Drive API** (Servicios › +).
+3. Corre **Pehn › Configurar hojas**: crea las hojas *Pagos* y *Sitio* y los ajustes nuevos sin borrar nada. Google pedirá permisos otra vez (se agregó leer documentos, para el OCR).
+4. En *Config* llena **Datos bancarios** (lo ve el cliente al pagar el anticipo) y **Sitio web** (dirección de la página).
+5. **Implementar › Gestionar implementaciones › Editar › Nueva versión**.
+6. **Pehn › Revisar que todo funcione.**
+
 ## Uso diario
 
 - **CRM**: menú **Pehn › Abrir CRM (pestaña nueva)**. Guarda ese enlace en favoritos: lleva la clave de *Config › Clave del CRM*. Compártelo solo con tu equipo; si se filtra, cambia la clave.
@@ -63,6 +75,8 @@ Aun así, el código se protege solo:
 - **Respaldo:** **Pehn › Respaldar la hoja ahora** guarda una copia completa en Drive (carpeta *Respaldos*) y activa una copia automática cada lunes. Solo copia: no borra nada. De vez en cuando borra a mano las copias viejas para no llenar el Drive.
 - **Avisos en Inicio:** entregas de los próximos 7 días o vencidas, y pedidos *Nuevo* sin atender hace más de 2 días.
 - **Entrada de mercancía**: en el CRM, *Inventario › Entrada…*. También puedes editar el stock en la hoja: queda en *Movimientos*.
+- **Pagos**: cuando un cliente sube su comprobante en *Rastrear pedido*, el sistema lee el monto. "Coincide" ya cuenta como pagado; lo demás se confirma o rechaza en *CRM › Pagos*. Confirma siempre en tu banco antes de producir.
+- **Sitio web**: en *CRM › Sitio web* cambias colores, textos, fotos de portada e historia, preguntas frecuentes y WhatsApp. Se ve en la página en unos minutos.
 - **Opciones nuevas**: cuando alguien pide algo que no tiene receta, aparece en *Recetas › Por mapear*. Asigna el SKU o déjalo vacío si no gasta inventario.
 
 ## Ajustar a tu inventario real
@@ -75,6 +89,8 @@ Aun así, el código se protege solo:
 - Una clave puede tener varias filas si gasta varias piezas.
 
 ## Seguridad
+
+Detalle completo y pruebas en `docs/SEGURIDAD.md`.
 
 - El sitio manda un **token**. Sin él, el pedido se rechaza.
 - Hay un campo oculto contra bots y un límite de 5 pedidos cada 10 minutos por número de WhatsApp.
