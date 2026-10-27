@@ -57,6 +57,9 @@ function hatSVG(hat, f, k) {
       const h = f.torso && !isLight(f.torso) ? f.torso : '#B3262E', ho = shade(h, -0.35);
       return `<g fill="${h}" stroke="${ho}" stroke-width="1.6" stroke-linejoin="round"><path d="M66 44C64 12 136 12 134 44Z"/><path d="M60 44H152Q156 52 146 54H62Z"/></g><circle cx="100" cy="14" r="3.5" fill="${ho}"/><path d="M78 20Q96 10 110 14L108 38H78Z" fill="url(#${k}g)"/>`;
     }
+    case 'casco': return `<g fill="#F2B705" stroke="#8A6500" stroke-width="1.6" stroke-linejoin="round"><path d="M64 46C62 12 138 12 136 46Z"/><path d="M56 46H144Q148 54 140 55H60Q52 54 56 46Z"/><path d="M94 14H106V46H94Z" fill="#FFD84D"/></g><path d="M76 22Q92 12 100 16L98 40H76Z" fill="url(#${k}g)"/>`;
+    case 'cumple': return `<g stroke="#8A2C5A" stroke-width="1.6" stroke-linejoin="round"><path d="M78 40L100 -8L122 40Q100 46 78 40Z" fill="#F06AA6"/></g><g fill="#FFD23F"><circle cx="96" cy="22" r="3"/><circle cx="106" cy="30" r="3"/><circle cx="92" cy="34" r="2.4"/></g><path d="M86 24L98 2" stroke="#fff" stroke-opacity=".5" stroke-width="3" stroke-linecap="round"/><circle cx="100" cy="-8" r="6" fill="#FFD23F" stroke="#B88A2A" stroke-width="1.4"/>`;
+    case 'birrete': return `<g fill="#1E1A18" stroke="#000" stroke-width="1.6" stroke-linejoin="round"><path d="M76 30V44Q100 54 124 44V30Z"/><path d="M54 24L100 8L146 24L100 40Z"/></g><path d="M100 24L136 28V46" stroke="#E0B44C" stroke-width="2.4" fill="none"/><circle cx="136" cy="48" r="3.4" fill="#E0B44C"/><path d="M62 24L100 12" stroke="#fff" stroke-opacity=".25" stroke-width="2"/>`;
     case 'mono': return `<g transform="translate(124 26) rotate(18)" fill="#E45A84" stroke="#B33A63" stroke-width="1.4" stroke-linejoin="round"><path d="M0 0L-16-10V10Z"/><path d="M0 0L16-10V10Z"/><circle r="4.5"/></g>`;
     default: return '';
   }
@@ -102,6 +105,7 @@ function outfitSVG(f, k) {
         <path d="M88 90L100 104L112 90" fill="none" stroke="${b}" stroke-width="2.4"/><path d="M100 104V184" stroke="${b}" stroke-width="1.6"/>`;
     }
     case 'traje': return `<path d="M88 90L100 128L112 90Z" fill="#FFFDF9"/><path d="M96 98h8l5 40-9 10-9-10Z" fill="#7A1A24"/><path d="M86 90L100 150M114 90L100 150" stroke="${shade(t, 0.18)}" stroke-width="2.6"/><circle cx="100" cy="160" r="2.4" fill="${shade(t, 0.3)}"/>`;
+    case 'lego': return `<g fill="${isLight(t) ? shade(t, -0.18) : shade(t, 0.22)}" stroke="${o}" stroke-width="1.2">${[[86, 118], [114, 118], [86, 146], [114, 146]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="9"/>`).join('')}</g>`;
     case 'vestido': return `<path d="M82 92Q100 110 118 92" fill="none" stroke="${shade(t, 0.35)}" stroke-width="2.6"/><path d="M70 150H130" stroke="${o}" stroke-width="2.4"/>`;
     case 'blusa': return `<path d="M80 90Q100 112 120 90" fill="${f.skin || '#F6D3B3'}" stroke="${shade(f.skin || '#F6D3B3', -0.25)}" stroke-width="1.4"/>`;
     case 'texto': {
@@ -110,6 +114,16 @@ function outfitSVG(f, k) {
     }
     default: return '';
   }
+}
+
+// accesorio en la mano: etiqueta redonda con la inicial (son 23 accesorios; no se dibuja cada uno)
+const HAND_COLS = ['#E45A84', '#3E6E8E', '#2F8F5B', '#F08A1C', '#8E6CEF', '#D9363E', '#C9A44C'];
+function handSVG(v) {
+  const g = v && v !== 'ninguno' ? FIG_GROUPS.find(x => x.id === 'hand').options : null, i = g ? g.findIndex(o => o.v === v) : -1;
+  if (i < 1) return '';
+  const col = HAND_COLS[i % HAND_COLS.length];
+  return `<g><circle cx="168" cy="148" r="19" fill="${col}" stroke="${shade(col, -0.35)}" stroke-width="2"/><circle cx="168" cy="148" r="19" fill="#fff" opacity=".12"/>
+    <text x="168" y="156" text-anchor="middle" font-family="'Inter'" font-weight="700" font-size="22" fill="#fff">${esc(g[i].label.charAt(0).toUpperCase())}</text></g>`;
 }
 
 function minifig(f0, opts = {}) {
@@ -133,6 +147,7 @@ function minifig(f0, opts = {}) {
         <rect x="102" y="198" width="44" height="64" rx="4" fill="${legs}" stroke="${lo}" ${L}/><rect x="102" y="198" width="44" height="64" rx="4" ${H}/><rect x="102" y="198" width="44" height="64" rx="4" ${V}/>
         <rect x="50" y="256" width="50" height="14" rx="4" fill="${shade(legs, -0.08)}" stroke="${lo}" ${L}/>
         <rect x="100" y="256" width="50" height="14" rx="4" fill="${shade(legs, -0.08)}" stroke="${lo}" ${L}/>`;
+    if (f.outfit === 'falda') s += `<path d="M48 184H152L166 236H34Z" fill="${legs}" stroke="${lo}" ${L}/><path d="M48 184H152L166 236H34Z" ${H}/><path d="M76 188L66 234M100 188V234M124 188L134 234" stroke="${lo}" stroke-width="1.4" opacity=".5"/>`;
   }
   s += `<rect x="88" y="16" width="24" height="12" rx="3" fill="${skin}" stroke="${so}" ${L}/>
     <rect x="90" y="80" width="20" height="12" fill="${shade(skin, -0.15)}" stroke="${so}" ${L}/>
@@ -145,6 +160,7 @@ function minifig(f0, opts = {}) {
     <path d="M66 90H134L148 186H52Z" ${H}/>
     <g fill="${skin}" stroke="${so}" stroke-width="1.6"><circle cx="40" cy="164" r="11"/><circle cx="160" cy="164" r="11"/></g>
     <g fill="${so}"><circle cx="40" cy="166" r="4"/><circle cx="160" cy="166" r="4"/></g>
+    ${handSVG(f.hand)}
     <rect x="70" y="24" width="60" height="62" rx="18" fill="${skin}" stroke="${so}" ${L}/>
     <rect x="70" y="24" width="60" height="62" rx="18" ${H}/>
     <ellipse cx="84" cy="36" rx="9" ry="5" fill="#fff" opacity=".45"/>
@@ -162,7 +178,7 @@ const stand = tint => `<path d="M46 268H154L151 314H49Z" fill="${tint}" fill-opa
 
 function minifigSVG(c) {
   const name = String(c.name || '').trim();
-  const pack = c.pack === 'acrilico' ? `<rect x="12" y="2" width="176" height="350" rx="10" fill="#fff" fill-opacity=".14" stroke="#fff" stroke-width="3" stroke-opacity=".8"/><path d="M26 18L40 18L26 60Z" fill="#fff" opacity=".45"/>`
+  const pack = String(c.pack).startsWith('acrilico') ? `<rect x="12" y="2" width="176" height="350" rx="10" fill="#fff" fill-opacity=".14" stroke="#fff" stroke-width="3" stroke-opacity=".8"/><path d="M26 18L40 18L26 60Z" fill="#fff" opacity=".45"/>`
     : c.pack === 'kraft' ? `<g transform="translate(150 236) rotate(8)"><rect width="44" height="40" rx="4" fill="#C69C6D" stroke="#2A1A0E" stroke-width="2"/><path d="M22 0V40M0 16H44" stroke="#D9363E" stroke-width="4"/></g>` : '';
   return `<svg viewBox="0 0 200 356" xmlns="http://www.w3.org/2000/svg"><ellipse cx="100" cy="318" rx="62" ry="7" fill="#000" opacity=".18"/>${stand('#ffffff')}${minifig(c)}
     ${name ? `<text x="100" y="344" text-anchor="middle" font-family="'Playfair Display'" font-weight="700" font-size="24" fill="#2A1A0E">${esc(name)}</text>` : ''}${pack}</svg>`;
@@ -205,6 +221,8 @@ const HEART_D = 'M0 52C-62 16-70-26-40-40C-20-49-4-36 0-22C4-36 20-49 40-40C70-2
 const SPARK_D = 'M0-14c1 9 5 13 14 14-9 1-13 5-14 14-1-9-5-13-14-14 9-1 13-5 14-14Z';
 const CAT = (x, y, s = 1) => `<g transform="translate(${x} ${y}) scale(${s})" fill="#231C18"><path d="M-8 0Q-12-14-6-20L-6-28L-2-23H2L6-28L6-20Q12-14 8 0Z"/><path d="M8-2Q18-4 16-16" stroke="#231C18" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="-3" cy="-19" r="1.2" fill="#E9C46A"/><circle cx="3" cy="-19" r="1.2" fill="#E9C46A"/><path d="M-4-24Q0-27 4-24" stroke="#fff" stroke-opacity=".25" fill="none"/></g>`;
 const DOG = (x, y, s = 1, col = '#8A5634', spots = false) => `<g transform="translate(${x} ${y}) scale(${s})"><path d="M-14 0V-10Q-14-16-6-16H8L10-24Q18-26 18-18Q18-12 12-12V0H8V-6H-8V0Z" fill="${col}"/>${spots ? '<circle cx="-6" cy="-11" r="2.4" fill="#231C18"/><circle cx="2" cy="-13" r="1.8" fill="#231C18"/><circle cx="13" cy="-20" r="1.6" fill="#231C18"/>' : ''}<path d="M12-24Q8-22 9-15" fill="${shade(col, -0.35)}"/><circle cx="14" cy="-19" r="1.3" fill="#000"/><path d="M-14-12Q-20-16-18-22" stroke="${col}" stroke-width="3" fill="none" stroke-linecap="round"/></g>`;
+
+const BUNNY = (x, y, s = 1) => `<g transform="translate(${x} ${y}) scale(${s})"><ellipse cx="0" cy="-9" rx="11" ry="9" fill="#F4EEE6" stroke="#CFC4B6" stroke-width="1"/><circle cx="9" cy="-19" r="7" fill="#F4EEE6" stroke="#CFC4B6" stroke-width="1"/><path d="M6-25Q3-40 7-39Q11-38 10-25Z M11-25Q12-40 16-38Q18-36 14-25Z" fill="#F4EEE6" stroke="#CFC4B6" stroke-width="1"/><path d="M7-27Q6-36 8-36M13-27Q14-35 15-35" stroke="#F2B3C4" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="11" cy="-20" r="1.1" fill="#231C18"/><circle cx="-11" cy="-10" r="3.6" fill="#fff" stroke="#CFC4B6" stroke-width="1"/></g>`;
 
 // layout por estilo: centro del corazón (hy), base de las figuras (base), línea de nombres (ny)
 const LAYOUT = {
@@ -265,11 +283,11 @@ function frameSVG(c) {
 
   // mascotas a los lados
   let petsSVG = '';
-  const petList = [...Array(c.cats || 0).fill('c'), ...Array(c.dogs || 0).fill('d')];
+  const petList = [...Array(c.cats || 0).fill('c'), ...Array(c.dogs || 0).fill('d'), ...Array(c.bunnies || 0).fill('b')];
   petList.forEach((t, i) => {
     const left = i % 2 === 0, j = Math.floor(i / 2);
     const x = left ? x0 - 14 - j * 22 : x0 + total + 14 + j * 22;
-    petsSVG += t === 'c' ? CAT(x, base - 4, 0.62) : DOG(x, base - 4, 0.62, i % 3 === 2 ? '#BDB6AE' : '#8A5634', i % 3 === 2);
+    petsSVG += t === 'c' ? CAT(x, base - 4, 0.62) : t === 'b' ? BUNNY(x, base - 4, 0.7) : DOG(x, base - 4, 0.62, i % 3 === 2 ? '#BDB6AE' : '#8A5634', i % 3 === 2);
   });
 
   // detalles
@@ -280,6 +298,9 @@ function frameSVG(c) {
   if (c.deco === 'corazones') deco = `<g fill="#E45A84">${[[118, figTop - 6], [182, figTop - 6], [150, figTop - 14]].map(([x, y]) => `<path transform="translate(${x} ${y}) scale(.14)" d="${HEART_D}"/>`).join('')}</g>`;
   if (c.deco === 'pride') deco = `<g transform="translate(138 ${figTop - 20})">${['#E5484D', '#F6952A', '#FFD23F', '#2FB67C', '#4B7BF5', '#8E6CEF'].map((col, i) => `<rect y="${i * 2.6}" width="24" height="2.6" fill="${col}"/>`).join('')}</g>
     <g>${figs.map((_, i) => `<path transform="translate(${(x0 + i * (fw + gap) + fw / 2).toFixed(1)} ${ny - 4}) scale(.2)" d="${HEART_D}" fill="#F05AA0"/><path transform="translate(${(x0 + i * (fw + gap) + fw / 2 - 3).toFixed(1)} ${ny - 7}) scale(.06)" d="${HEART_D}" fill="#fff" opacity=".6"/>`).join('')}</g>`;
+
+  // luces (extra): hilo de foquitos arriba
+  const luces = (c.adds || []).includes('luces') ? `<path d="M40 40Q95 56 150 40T260 40" fill="none" stroke="#6B5A48" stroke-width="1"/>${[48, 82, 116, 150, 184, 218, 252].map((x, i) => `<circle cx="${x}" cy="${42 + (i % 2 ? 6 : 0) + (i === 3 ? -4 : 0)}" r="3.2" fill="${['#FFD23F', '#FF8FB1', '#8EC5F2'][i % 3]}" stroke="#fff" stroke-width=".8"/>`).join('')}` : '';
 
   // textos
   let text = '';
@@ -328,7 +349,7 @@ function frameSVG(c) {
     <rect x="32" y="32" width="236" height="236" fill="#FFFFFF"/>
     <rect x="32" y="32" width="236" height="236" fill="url(#${k}cs)"/>
     <rect x="32" y="32" width="236" height="236" fill="url(#${k}cl)"/>
-    ${heartSVG}${top}${petsSVG}${figsSVG}${deco}${text}
+    ${heartSVG}${top}${petsSVG}${figsSVG}${deco}${luces}${text}
     <text x="150" y="${base - 8}" text-anchor="middle" font-family="'Inter'" font-style="italic" font-size="5" fill="#fff" opacity=".75">@pehn.designn</text>
     <rect x="16" y="16" width="268" height="268" fill="url(#${k}gl)"/>
   </svg>`;
@@ -420,7 +441,7 @@ function cupSVG(c) {
 
 function tumblerSVG(c) {
   const k = 't' + (++UID), col = c.color || '#1E1611', t = String(c.name || '').trim() || 'Tu nombre';
-  const font = FONTS[c.font] || FONTS.firma, tall = c.cap === '750';
+  const font = FONTS[c.font] || FONTS.firma, tall = c.model === 'skinny';
   const h = tall ? 220 : 190, y0 = 290 - h;
   const ink = isLight(col) ? '#5C4C41' : '#E9E3DA';
   return `<svg viewBox="0 0 300 320" xmlns="http://www.w3.org/2000/svg">
@@ -453,8 +474,26 @@ function toteSVG(c) {
   </svg>`;
 }
 
-const RENDER = { minifig: minifigSVG, frame: frameSVG, keychain: keychainSVG, hoodie: hoodieSVG, shirt: shirtSVG, mug: mugSVG, cup: cupSVG, tumbler: tumblerSVG, tote: toteSVG };
-const renderProduct = (p, cfg) => RENDER[p.render](cfg);
+// productos de la tienda sin dibujo propio: su foto (p.photo) o una tarjeta de color con el nombre
+function genericoSVG(c, p = {}) {
+  const k = 'g' + (++UID), bg = p.bg || '#E9D8B4', name = String(p.name || ''), lines = wrap(name, 13).slice(0, 4);
+  const ink = isLight(bg) ? '#2A1A0E' : '#FFFDF9', fs = lines.length > 3 ? 22 : lines.some(l => l.length > 11) ? 25 : 30;
+  const y0 = 150 - (lines.length - 1) * fs * 0.6;
+  const col = c.color && /^#[0-9a-f]{6}$/i.test(c.color) ? c.color : '', det = [c.size, c.model].filter(Boolean).join(' · ');
+  const clip = `<clipPath id="${k}c"><rect x="10" y="10" width="280" height="280" rx="26"/></clipPath>`;
+  if (p.photo) return `<svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg"><defs>${clip}</defs><rect x="10" y="10" width="280" height="280" rx="26" fill="${bg}"/><image href="${esc(p.photo)}" x="10" y="10" width="280" height="280" preserveAspectRatio="xMidYMid slice" clip-path="url(#${k}c)"/></svg>`;
+  return `<svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg"><defs>
+    <linearGradient id="${k}g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".45"/><stop offset=".6" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".12"/></linearGradient></defs>
+    <rect x="10" y="10" width="280" height="280" rx="26" fill="${bg}"/><rect x="10" y="10" width="280" height="280" rx="26" fill="url(#${k}g)"/>
+    <circle cx="246" cy="54" r="64" fill="#fff" opacity=".18"/><circle cx="36" cy="270" r="54" fill="#fff" opacity=".14"/>
+    <text x="150" y="${(y0 - fs - 6).toFixed(1)}" text-anchor="middle" font-family="'Inter'" font-weight="700" font-size="11" letter-spacing="3" fill="${ink}" opacity=".6">${esc(catName(p.cat).toUpperCase())}</text>
+    <text text-anchor="middle" font-family="'Playfair Display'" font-weight="700" font-size="${fs}" fill="${ink}">${lines.map((l, i) => `<tspan x="150" y="${(y0 + i * fs * 1.2).toFixed(1)}">${esc(l)}</tspan>`).join('')}</text>
+    ${col || det ? `<g transform="translate(150 252)">${col ? `<circle cx="${det ? -Math.min(60, 4 + det.length * 5) : 0}" cy="0" r="12" fill="${col}" stroke="${ink}" stroke-opacity=".5" stroke-width="2"/>` : ''}${det ? `<text x="${col ? 8 : 0}" text-anchor="middle" y="5" font-family="'Inter'" font-weight="700" font-size="15" fill="${ink}">${esc(det)}</text>` : ''}</g>` : ''}
+  </svg>`;
+}
+
+const RENDER = { minifig: minifigSVG, frame: frameSVG, keychain: keychainSVG, hoodie: hoodieSVG, shirt: shirtSVG, mug: mugSVG, cup: cupSVG, tumbler: tumblerSVG, tote: toteSVG, generico: genericoSVG };
+const renderProduct = (p, cfg) => RENDER[p.render](cfg, p);
 
 // cara chiquita para las pestañas de figuras
 function headSVG(f) {
