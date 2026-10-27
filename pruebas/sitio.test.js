@@ -254,6 +254,23 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
     await c360.close();
   }
 
+  // CRM: el HTML que genera el servidor con datos hostiles (<!--<script>) debe seguir corriendo y no ejecutar nada
+  {
+    const adm = cargar({ silencio: true, usuario: 'duenos@pehn.test' });
+    const malo = '<!--<script>window.__xss=1</script> </script><script>window.__xss=1</script>';
+    adm.post({ token: adm.config('Token del sitio'), fillMs: 9000, website: '', customer: { name: malo, phone: '9876 5432', email: '', city: malo, date: '', notes: malo },
+      items: [{ product: 'Cuadro', qty: 1, total: 750, options: [], bom: [] }], total: 750, currency: 'HNL', comprobante: 'data:image/jpeg;base64,/9j/4AAQ' });
+    const html = adm.run(`crmHtml_('"</script><script>window.__xss=1</script>')`).getContent();
+    const crm = await b.newPage();
+    const errCrm = []; crm.on('pageerror', e => errCrm.push(e.message));
+    await crm.addInitScript(() => { window.google = { script: { run: new Proxy({}, { get: () => function () { return this; } }) } }; });
+    await crm.setContent(html); await crm.waitForTimeout(400);
+    ok(await crm.evaluate(() => typeof D === 'object' && D && D.pedidos.length === 1 && D.pedidos[0].cliente.startsWith('<!--<script>')), 'CRM: con datos "<!--<script>" el script corre y D queda definido');
+    ok(await crm.evaluate(() => K === '' && !window.__xss), 'CRM: ?k= ajeno no se refleja y nada ejecuta código');
+    ok(!errCrm.length, 'CRM: sin errores de JavaScript' + (errCrm.length ? ': ' + errCrm.join(' | ') : ''));
+    await crm.close();
+  }
+
   ok(!(await page.evaluate(() => window.__xss)), 'Ningún texto del cliente ejecutó código');
   ok(!errores.length, 'Sin errores de JavaScript' + (errores.length ? ': ' + errores.join(' | ') : ''));
   await b.close(); server.close();

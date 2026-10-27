@@ -18,8 +18,20 @@ function clave_() {
   return String(k);
 }
 
+// comparación en tiempo constante (no revela cuántas letras acertó); la longitud sí se compara antes
+function iguales_(a, b) {
+  a = String(a); b = String(b);
+  if (a.length !== b.length) return false;
+  let x = 0;
+  for (let i = 0; i < a.length; i++) x |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return x === 0;
+}
+
 function autorizado_(k) {
-  if (k && String(k) === clave_()) return true;
+  if (k) {
+    if (iguales_(k, clave_())) return true;
+    console.warn('CRM: intento de acceso con una clave incorrecta.'); // nunca se registra la clave
+  }
   const me = (Session.getActiveUser().getEmail() || '').toLowerCase();
   const admins = String(config_()['Admins'] || '').toLowerCase().split(/[,\s]+/).filter(Boolean);
   return !!me && admins.includes(me);
@@ -40,7 +52,9 @@ function doGet(e) {
 
 function crmHtml_(k) {
   const t = HtmlService.createTemplateFromFile('Admin');
-  t.k = k || clave_();
+  // solo se refleja la clave verdadera; cualquier otra cosa (un ?k= ajeno) queda vacía.
+  // Un Admin por correo entra con K vacío: crm() lo autoriza por su correo.
+  t.k = k && iguales_(k, clave_()) ? String(k) : '';
   try { t.inicial = crmDatosJson_(); t.error = ''; } catch (err) { t.inicial = 'null'; t.error = String(err && err.stack || err); }
   return t.evaluate();
 }
@@ -66,6 +80,20 @@ function abrirCRM() {
 // versión dentro de la hoja
 function abrirPanel() {
   SpreadsheetApp.getUi().showModelessDialog(crmHtml_(clave_()).setWidth(1280).setHeight(820), 'Pehn · CRM');
+}
+
+// Pehn › Cambiar clave del CRM: los enlaces con la clave vieja dejan de servir al instante
+function rotarClave_() {
+  if (!Session.getActiveUser().getEmail()) throw new Error('Corre esto desde la hoja: Pehn › Cambiar clave del CRM.');
+  const k = nuevaClave_(32);
+  setConfig_('Clave del CRM', k);
+  return k;
+}
+function cambiarClaveCRM() {
+  const ui = SpreadsheetApp.getUi();
+  if (ui.alert('Cambiar clave del CRM', 'Los enlaces y favoritos del CRM que tengan la clave anterior dejarán de funcionar. ¿Continuar?', ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
+  rotarClave_();
+  ui.alert('Listo. La clave nueva ya está en Config. Abre el CRM desde Pehn › Abrir CRM y vuelve a guardar el enlace en favoritos.');
 }
 
 // para revisar desde el editor si algo falla: Ejecutar › probarCRM y mirar el registro

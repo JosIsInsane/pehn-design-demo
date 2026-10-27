@@ -419,5 +419,76 @@ prueba('Revisión del sistema corre sin romperse', () => {
   const s = nuevo(); const t = s.run('revisarSistema()'); ok(/Hoja Pedidos/.test(t), t);
 });
 
+// ---------- CRM: XSS y clave (CN-001, CN-002, CN-003) ----------
+const fsx = require('fs'), pathx = require('path');
+const leerGs = f => fsx.readFileSync(pathx.join(__dirname, '..', 'apps-script', f), 'utf8');
+const crmHtml = (s, k) => s.run(`crmHtml_(${JSON.stringify(k)})`).getContent();
+const lineaDe = (html, ini) => html.split('\n').find(l => l.startsWith(ini));
+
+prueba('CRM: ?k= con basura no se refleja; K sale vacío y escapado', () => {
+  const s = nuevo({ usuario: 'duenos@pehn.test' });
+  const html = crmHtml(s, '"</script><script>alert(1)</script>');
+  ok(lineaDe(html, 'const K = ') === 'const K = "";', lineaDe(html, 'const K = '));
+  ok(!html.includes('alert(1)'), 'la basura llegó a la página');
+});
+
+prueba('CRM: con la clave verdadera K la lleva; sin ella (Admin por correo) crm() funciona', () => {
+  const s = nuevo({ usuario: 'duenos@pehn.test' });
+  const k = s.run('clave_()');
+  ok(lineaDe(crmHtml(s, k), 'const K = ') === `const K = "${k}";`);
+  ok(JSON.parse(s.run(`crm('', 'datos')`)).pedidos, 'Admin por correo con K vacío');
+  const ext = nuevo({ usuario: '' }); // desconocido: sin clave no entra
+  let negado = false; try { ext.run(`crm('', 'datos')`); } catch (e) { negado = true; }
+  ok(negado, 'sin clave ni correo debe negarse');
+});
+
+prueba('CRM: datos con <!--<script> y </script> no rompen el bloque de datos', () => {
+  const s = nuevo({ usuario: 'duenos@pehn.test' });
+  const malo = '<!--<script> </script><script>alert(1)</script>';
+  ok(s.post(pedido(s, { customer: { name: malo, phone: '9876 5432', email: 'a@b.co', city: malo, date: '', notes: malo } })).ok);
+  const html = crmHtml(s, '');
+  const ini = html.indexOf('let D = '), fin = html.indexOf('\nconst ERROR', ini);
+  const bloque = html.slice(ini, fin);
+  ok(bloque.length > 100 && fin > ini, 'no se halló el bloque');
+  ok(!bloque.includes('<'), 'queda un "<" dentro del bloque de datos');
+  ok(JSON.parse(bloque.slice(8).replace(/;\s*$/, '')).pedidos[0].cliente.startsWith('<!--<script>'), 'el texto no se conserva');
+});
+
+prueba('Clave del CRM: comparación en tiempo constante', () => {
+  const s = nuevo();
+  ok(s.run(`iguales_('abc123', 'abc123')`) === true);
+  ['abc124', 'abc12', 'abc1234', '', 'ABC123'].forEach(x => ok(s.run(`iguales_('abc123', ${JSON.stringify(x)})`) === false, x));
+  ok(!/===\s*clave_\(\)|clave_\(\)\s*===/.test(leerGs('Admin.gs')), 'queda un === con la clave');
+});
+
+prueba('Clave del CRM: intento fallido deja aviso sin la clave; sin clave no avisa', () => {
+  const s = nuevo(); const avisos = [];
+  s.ctx.console.warn = (...a) => avisos.push(a.join(' '));
+  ok(s.run(`autorizado_('mala-clave')`) === false);
+  ok(avisos.length === 1 && !avisos[0].includes('mala-clave'), JSON.stringify(avisos));
+  s.run(`autorizado_('')`); ok(avisos.length === 1, 'avisó sin clave');
+});
+
+prueba('Clave del CRM: Pehn › Cambiar clave genera una nueva de 32 y la vieja deja de servir', () => {
+  const s = nuevo({ usuario: 'duenos@pehn.test' });
+  const vieja = s.run('clave_()');
+  const nueva = s.run('rotarClave_()');
+  ok(/^[0-9a-f]{32}$/.test(nueva) && nueva !== vieja, nueva);
+  ok(s.config('Clave del CRM') === nueva && s.run('clave_()') === nueva);
+  s.ctx.Session.getActiveUser = () => ({ getEmail: () => '' }); // ya no es el dueño: solo cuenta la clave
+  ok(s.run(`autorizado_(${JSON.stringify(vieja)})`) === false, 'la vieja sigue sirviendo');
+  ok(s.run(`autorizado_(${JSON.stringify(nueva)})`) === true);
+  ok(/Cambiar clave del CRM/.test(leerGs('Setup.gs')), 'falta el menú');
+});
+
+prueba('Resumen diario: el correo ya no lleva la clave del CRM', () => {
+  const s = nuevo();
+  s.post(pedido(s));
+  s.mails.length = 0; s.run('resumenDiario_()');
+  const m = s.mails.find(x => /Resumen de hoy/.test(x.subject)); ok(m, 'no salió el resumen: ' + JSON.stringify(s.mails.map(x => x.subject)));
+  ok(!/k=/.test(m.htmlBody) && !m.htmlBody.includes(s.run('clave_()')), 'lleva la clave');
+  ok(/Abrir la hoja/.test(m.htmlBody) && /Abrir CRM/.test(m.htmlBody));
+});
+
 console.log(`\n${n - fallas} de ${n} pruebas pasaron.`);
 process.exit(fallas ? 1 : 0);

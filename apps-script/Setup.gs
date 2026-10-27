@@ -7,6 +7,7 @@ function onOpen() {
   SpreadsheetApp.getUi().createMenu('Pehn')
     .addItem('Abrir CRM (pestaña nueva)', 'abrirCRM')
     .addItem('Abrir CRM aquí', 'abrirPanel')
+    .addItem('Cambiar clave del CRM', 'cambiarClaveCRM')
     .addItem('Revisar stock ahora', 'revisarStockMenu')
     .addItem('Cargar catálogo de piezas', 'cargarCatalogo')
     .addItem('Respaldar la hoja ahora', 'respaldarAhora')
