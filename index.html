@@ -17,7 +17,7 @@
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="estrellas" viewBox="0 0 96 16"><g id="estrella"><path transform="scale(.6667)" d="M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3l-5.9 3.3 1.3-6.6L2.5 9.4l6.6-.8Z"/></g><use href="#estrella" x="19"/><use href="#estrella" x="38"/><use href="#estrella" x="57"/><use href="#estrella" x="76"/></symbol></svg>
 <a class="skip" href="#main">Saltar al contenido</a>
 
-<div class="announce">Apruebas tu diseño antes de que lo hagamos</div>
+<div class="announce" data-edit="anuncio">Apruebas tu diseño antes de que lo hagamos</div>
 
 <header data-marco="menu"></header>
 
@@ -26,15 +26,15 @@
   <section class="hero">
     <div class="wrap hero-in">
       <div class="hero-copy">
-        <h1 class="display">Ustedes, en <span class="it">minifigura</span>.</h1>
-        <p class="lead">Elige peinado, ropa, mascotas y la frase de su historia. Ves el cuadro y el precio mientras lo armas; nosotros lo hacemos a mano.</p>
+        <h1 class="display"><span data-edit="hero.titulo">Ustedes, en</span> <span class="it" data-edit="hero.resaltado">minifigura</span>.</h1>
+        <p class="lead" data-edit="hero.texto">Elige peinado, ropa, mascotas y la frase de su historia. Ves el cuadro y el precio mientras lo armas; nosotros lo hacemos a mano.</p>
         <div class="cta-row">
           <a href="catalogo.html?card=0" class="btn btn-primary">Diseñar mi cuadro <svg class="arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
           <a href="catalogo.html" class="btn btn-ghost">Ver catálogo</a>
         </div>
       </div>
       <div class="hero-art">
-        <figure class="hero-photo" style="margin:0"><img src="fotos/cuadro-amor.jpg" alt="Cuadro real con las minifiguras de Fer y Clau sobre un corazón rosa" width="476" height="606" fetchpriority="high"><figcaption>Pedido real · Fer & Clau</figcaption></figure>
+        <figure class="hero-photo" style="margin:0"><img src="fotos/cuadro-amor.jpg" data-edit-img="hero.foto" alt="Cuadro real hecho por Pehn Design" width="476" height="606" fetchpriority="high"><figcaption data-edit="hero.foto.pie">Pedido real · Fer &amp; Clau</figcaption></figure>
         <div class="hero-card"><div class="hero-fig" id="heroFig" aria-label="Ejemplos de cuadros personalizados" role="img"></div></div>
         <div class="hero-ctl"><button class="shuffle" id="shuffle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>Otro diseño</button><button class="hero-pause" id="heroPause" aria-pressed="false" aria-label="Pausar cambio automático"></button></div>
       </div>
@@ -45,7 +45,7 @@
   <section class="sec">
     <div class="wrap">
       <div class="sec-head">
-        <div><h2 class="h2">Elige qué personalizar</h2></div>
+        <div><h2 class="h2" data-edit="seccion.categorias">Elige qué personalizar</h2></div>
         <a class="link-arrow" href="catalogo.html">Ver todo el catálogo <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
       </div>
       <div class="cats" id="cats"></div>
@@ -56,7 +56,7 @@
   <section class="sec" style="padding-top:0">
     <div class="wrap">
       <div class="sec-head">
-        <div><h2 class="h2">Los más pedidos</h2></div>
+        <div><h2 class="h2" data-edit="seccion.destacados">Los más pedidos</h2></div>
         <a class="link-arrow" href="catalogo.html?cat=cuadros">Ver cuadros <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
       </div>
       <div class="grid" id="featured"></div>
@@ -68,11 +68,11 @@
     <div class="wrap">
       <div class="how">
         <div>
-          <h2 class="h2">Así se hace un pedido</h2>
+          <h2 class="h2" data-edit="como.titulo">Así se hace un pedido</h2>
           <div class="how-steps">
-            <div class="how-step"><span class="n">1</span><div><h3>Elige un diseño</h3><p>Parte de un pedido real o empieza desde cero. Cuadros, figuras, ropa, bolsas y vasos.</p></div></div>
-            <div class="how-step"><span class="n">2</span><div><h3>Hazlo suyo</h3><p>Peinado, ropa, mascotas, nombres, colores y frase. La vista previa y el precio cambian al momento.</p></div></div>
-            <div class="how-step"><span class="n">3</span><div><h3>Aprueba y recibe</h3><p>Te mandamos tu diseño por WhatsApp, lo apruebas y lo armamos a mano para enviártelo.</p></div></div>
+            <div class="how-step"><span class="n">1</span><div><h3 data-edit="como.1.titulo">Elige un diseño</h3><p data-edit="como.1.texto">Parte de un pedido real o empieza desde cero. Cuadros, figuras, ropa, bolsas y vasos.</p></div></div>
+            <div class="how-step"><span class="n">2</span><div><h3 data-edit="como.2.titulo">Hazlo suyo</h3><p data-edit="como.2.texto">Peinado, ropa, mascotas, nombres, colores y frase. La vista previa y el precio cambian al momento.</p></div></div>
+            <div class="how-step"><span class="n">3</span><div><h3 data-edit="como.3.titulo">Aprueba y recibe</h3><p data-edit="como.3.texto">Te mandamos tu diseño por WhatsApp, lo apruebas y lo armamos a mano para enviártelo.</p></div></div>
           </div>
           <div class="cta-row"><a class="btn btn-primary" href="catalogo.html?card=0">Probar el personalizador <svg class="arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></div>
         </div>
@@ -102,13 +102,11 @@
   <!-- HISTORIA -->
   <section class="story" id="historia">
     <div class="wrap story-in">
-      <figure class="ph"><img width="481" height="625" decoding="async" src="fotos/cuadros-varios.jpg" alt="Cuadros terminados en el taller de Pehn Design" loading="lazy" style="object-position:50% 20%"></figure>
+      <figure class="ph"><img width="481" height="625" decoding="async" src="fotos/cuadros-varios.jpg" data-edit-img="historia.foto" alt="Cuadros terminados en el taller de Pehn Design" loading="lazy" style="object-position:50% 20%"></figure>
       <div>
-        <!-- TODO: texto real de la marca -->
-        <h2 class="h2" style="margin-top:0">Hecho a mano, pieza por pieza</h2>
-        <p>Pehn Design nació de las ganas de regalar algo que no se compra en cualquier tienda. Empezamos armando un cuadro para alguien especial y hoy cada pedido es una historia nueva: aniversarios, cumpleaños, familias completas y hasta mascotas.</p>
-        <p>Cada figura se elige pieza por pieza para que se parezca a ti, y cada cuadro se arma, se pinta y se empaca a mano.</p>
-        <!-- TODO historia real: quién está detrás, cómo empezó, desde dónde envían -->
+        <h2 class="h2" style="margin-top:0" data-edit="historia.titulo">Hecho a mano, pieza por pieza</h2>
+        <p data-edit="historia.texto1">Pehn Design nació de las ganas de regalar algo que no se compra en cualquier tienda. Empezamos armando un cuadro para alguien especial y hoy cada pedido es una historia nueva: aniversarios, cumpleaños, familias completas y hasta mascotas.</p>
+        <p data-edit="historia.texto2">Cada figura se elige pieza por pieza para que se parezca a ti, y cada cuadro se arma, se pinta y se empaca a mano.</p>
       </div>
     </div>
   </section>
@@ -150,14 +148,15 @@
     <div class="wrap faq">
       <div>
         <h2 class="h2">Preguntas frecuentes</h2>
-        <div class="faq-card"><b>¿Tienes otra idea?</b><p>Escríbenos y la armamos contigo. Pedidos de 5 piezas o más tienen 10% de descuento.</p><a class="btn btn-dark btn-sm wa-link" href="#" target="_blank" rel="noopener">Escribir por WhatsApp</a></div>
+        <div class="faq-card"><b data-edit="faq.extra.titulo">¿Tienes otra idea?</b><p data-edit="faq.extra.texto">Escríbenos y la armamos contigo. Pedidos de 5 piezas o más tienen 10% de descuento.</p><a class="btn btn-dark btn-sm wa-link" href="#" target="_blank" rel="noopener">Escribir por WhatsApp</a></div>
       </div>
       <div>
-        <details><summary>¿Cuánto tarda mi pedido?</summary><p>Producimos entre 5 y 8 días hábiles según el producto. Te confirmamos la fecha exacta al aprobar tu diseño.</p></details>
-        <details><summary>¿Cómo hacen que se parezcan a nosotros?</summary><p>En el personalizador eliges lo básico y por WhatsApp puedes mandarnos fotos o detalles (lentes, tatuajes, peinado). Buscamos las piezas más parecidas.</p></details>
-        <details><summary>¿Veo el diseño antes de que lo hagan?</summary><p>Sí. Te mandamos una vista previa para aprobar antes de producir.</p></details>
-        <details><summary>¿Cómo pago?</summary><p>Te enviamos los datos de pago al confirmar. Aceptamos transferencia y tarjeta.</p></details>
-        <details><summary>¿Hacen envíos?</summary><p>Sí, enviamos a todo el país. El costo se calcula según tu ciudad.</p></details>
+        <details><summary data-edit="faq.1.p">¿Cuánto tarda mi pedido?</summary><p data-edit="faq.1.r">Producimos entre 5 y 8 días hábiles según el producto. Te confirmamos la fecha exacta al aprobar tu diseño.</p></details>
+        <details><summary data-edit="faq.2.p">¿Cómo hacen que se parezcan a nosotros?</summary><p data-edit="faq.2.r">En el personalizador eliges lo básico y por WhatsApp puedes mandarnos fotos o detalles (lentes, tatuajes, peinado). Buscamos las piezas más parecidas.</p></details>
+        <details><summary data-edit="faq.3.p">¿Veo el diseño antes de que lo hagan?</summary><p data-edit="faq.3.r">Sí. Te mandamos una vista previa para aprobar antes de producir.</p></details>
+        <details><summary data-edit="faq.4.p">¿Cómo pago?</summary><p data-edit="faq.4.r">Pagas el 50% de anticipo para empezar y el resto al entregar. Puedes subir tu comprobante en <a href="pedido.html">Rastrear pedido</a>.</p></details>
+        <details><summary data-edit="faq.5.p">¿Hacen envíos?</summary><p data-edit="faq.5.r">Sí, enviamos a todo el país. El costo se calcula según tu ciudad.</p></details>
+        <details hidden><summary data-edit="faq.6.p"></summary><p data-edit="faq.6.r"></p></details>
       </div>
     </div>
   </section>

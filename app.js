@@ -9,7 +9,7 @@ const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const productoDe = id => PRODUCTS.find(p => p.id === id);
 const HOLA = '¡Hola Pehn Design! ✦';
 // claves del navegador (localStorage): cambiarlas vacía el carrito guardado de todos
-const KEY_CART = 'pehn_cart', KEY_CONTACT = 'pehn_contact', KEY_ORDERS = 'pehn_pedidos', KEY_CONSENT = 'pehn_aviso';
+const KEY_CART = 'pehn_cart', KEY_CONTACT = 'pehn_contact', KEY_ORDERS = 'pehn_pedidos', KEY_CONSENT = 'pehn_aviso', KEY_SITIO = 'pehn_sitio';
 // lectura/escritura segura del navegador: en modo privado o sin permiso no truena
 const leer = (k, def) => { try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; } };
 const guardar = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* sin almacenamiento: sigue sin recordar */ } };
@@ -565,7 +565,45 @@ function waText(p, cfg, qty) {
     hasImg ? '(Te mando mi imagen por aquí)' : '',
   ].join('\n').trim();
 }
-document.querySelectorAll('.wa-link').forEach(el => { el.href = waURL(`${HOLA} Quiero cotizar un diseño.`); });
+const pintarWa = () => document.querySelectorAll('.wa-link').forEach(el => { el.href = waURL(`${HOLA} Quiero cotizar un diseño.`); });
+pintarWa();
+
+/* ---------- contenido editable (CRM › Sitio web, hoja "Sitio") ----------
+   Llega de Apps Script (?api=sitio) y se guarda en el navegador para la siguiente visita.
+   Seguridad: los textos se ponen con textContent (nunca como HTML), los colores y enlaces se validan aquí también.
+   Si no hay conexión o falla, se queda lo que trae el HTML. */
+const HEX = /^#[0-9a-f]{6}$/i;
+const luz = h => { const c = [1, 3, 5].map(i => parseInt(h.substr(i, 2), 16) / 255).map(v => (v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4)); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; };
+const contraste = (a, b) => { const [x, y] = [luz(a), luz(b)].sort((m, n) => n - m); return (x + .05) / (y + .05); };
+function aplicarSitio(v) {
+  if (!v || typeof v !== 'object') return;
+  const r = document.documentElement.style;
+  if (HEX.test(v['color.marca'] || '')) { const m = v['color.marca']; r.setProperty('--brand', m); r.setProperty('--brand-600', shade(m, -0.1)); r.setProperty('--brand-ink', shade(m, -0.45)); r.setProperty('--brand-soft', shade(m, 0.85)); }
+  const fondo = HEX.test(v['color.fondo'] || '') ? v['color.fondo'] : null, tinta = HEX.test(v['color.texto'] || '') ? v['color.texto'] : null;
+  // los colores de fondo y texto solo se aplican si se leen bien juntos (contraste 4.5:1)
+  if (fondo && tinta && contraste(fondo, tinta) < 4.5) console.warn('[Pehn] color.fondo y color.texto casi no contrastan: se dejan los de siempre.');
+  else {
+    if (fondo) { r.setProperty('--bg', fondo); r.setProperty('--bg-2', shade(fondo, -0.04)); document.querySelector('meta[name=theme-color]')?.setAttribute('content', fondo); }
+    if (tinta) { r.setProperty('--ink', tinta); r.setProperty('--ink-2', shade(tinta, 0.3)); }
+  }
+  document.querySelectorAll('[data-edit]').forEach(el => {
+    const k = el.dataset.edit; if (!(k in v)) return;
+    const txt = String(v[k]);
+    if (/\.p$/.test(k)) { const d = el.closest('details'); if (d) d.hidden = !txt.trim(); }
+    if (el.textContent.trim() !== txt.trim()) el.textContent = txt; // si es igual se respeta el HTML (por ejemplo, un enlace)
+  });
+  document.querySelectorAll('[data-edit-img]').forEach(el => {
+    const u = String(v[el.dataset.editImg] || '');
+    if (/^(fotos\/[\w.-]+|https:\/\/(lh3\.googleusercontent\.com|drive\.google\.com)\/\S+)$/.test(u) && el.getAttribute('src') !== u) el.src = u;
+  });
+  const wa = String(v['contacto.whatsapp'] || '').replace(/\D/g, '');
+  if (wa.length >= 8) { CONFIG.whatsapp = wa; pintarWa(); }
+  if (/^https:\/\/(www\.)?instagram\.com\//.test(v['contacto.instagram'] || '')) document.querySelectorAll('.ig-link').forEach(a => { a.href = v['contacto.instagram']; });
+}
+aplicarSitio(leer(KEY_SITIO, null)); // lo guardado: la página sale con el contenido nuevo sin esperar
+if (CONFIG.sheetsUrl) {
+  fetch(CONFIG.sheetsUrl + '?api=sitio').then(r => r.json()).then(r => { if (r && r.ok && r.sitio) { aplicarSitio(r.sitio); guardar(KEY_SITIO, r.sitio); } }).catch(() => { /* sin conexión: queda el HTML */ });
+}
 
 /* ---------- carrito ---------- */
 let cart = [];
@@ -1100,7 +1138,7 @@ document.addEventListener('click', e => {
 });
 
 $('#borrarDatos')?.addEventListener('click', () => {
-  [KEY_CART, KEY_CONTACT, KEY_ORDERS, KEY_CONSENT].forEach(borrar); cart = []; saveCart();
+  [KEY_CART, KEY_CONTACT, KEY_ORDERS, KEY_CONSENT, KEY_SITIO].forEach(borrar); cart = []; saveCart();
   try { sessionStorage.clear(); } catch { }
   toast('Listo: borramos todo lo que este sitio guardó en tu navegador.');
 });

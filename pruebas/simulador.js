@@ -64,7 +64,7 @@ function cargar(opts = {}) {
     const f = {
       id, name, getId: () => id, getUrl: () => 'https://drive.google.com/drive/folders/' + id,
       createFolder: n => { const s = makeFolder(n); return s; },
-      createFile: blob => { const fid = nid('A'); const file = { getId: () => fid, getUrl: () => 'https://drive.google.com/file/d/' + fid, getBlob: () => blob, setTrashed() {}, makeCopy: () => file }; files.set(fid, file); return file; },
+      createFile: blob => { const fid = nid('A'); const file = { setSharing() {}, getId: () => fid, getUrl: () => 'https://drive.google.com/file/d/' + fid, getBlob: () => blob, setTrashed() {}, makeCopy: () => file }; files.set(fid, file); return file; },
       getFoldersByName: () => ({ hasNext: () => false }),
     };
     files.set(id, f);
@@ -86,8 +86,8 @@ function cargar(opts = {}) {
     },
     Session: { getScriptTimeZone: () => 'America/Tegucigalpa', getActiveUser: () => ({ getEmail: () => opts.usuario || '' }), getEffectiveUser: () => ({ getEmail: () => 'duenos@pehn.test' }) },
     LockService: { getScriptLock: () => ({ tryLock: () => true, waitLock() {}, releaseLock() {} }) },
-    CacheService: { getScriptCache: () => ({ get: k => cache.get(k) ?? null, put: (k, v) => cache.set(k, v) }) },
-    DriveApp: { createFolder: makeFolder, getFolderById: id => { const f = files.get(id); if (!f || !f.createFolder) throw new Error('no existe'); return f; }, getFileById: id => { const f = files.get(id); if (!f) throw new Error('no existe'); return f; } },
+    CacheService: { getScriptCache: () => ({ get: k => cache.get(k) ?? null, put: (k, v) => cache.set(k, v), remove: k => cache.delete(k) }) },
+    DriveApp: { Access: {}, Permission: {}, createFolder: makeFolder, getFolderById: id => { const f = files.get(id); if (!f || !f.createFolder) throw new Error('no existe'); return f; }, getFileById: id => { const f = files.get(id); if (!f) throw new Error('no existe'); return f; } },
     MailApp: { sendEmail: m => mails.push(m), getRemainingDailyQuota: () => 100 },
     ContentService: { MimeType: { JSON: 'json' }, createTextOutput: s => ({ setMimeType() { return this; }, getContent: () => s }) },
     HtmlService: { createHtmlOutput: h => ({ setTitle() { return this; }, getContent: () => h }), createTemplateFromFile: () => ({ evaluate: () => ({ setTitle() { return this; }, addMetaTag() { return this; } }) }) },
@@ -97,7 +97,7 @@ function cargar(opts = {}) {
   if (opts.ocr !== false) ctx.Drive = { Files: { create: () => ({ id: nid('D') }) } };
   vm.createContext(ctx);
   const dir = path.join(__dirname, '..', 'apps-script');
-  const code = ['Config', 'Setup', 'Orders', 'Inventory', 'Pagos', 'Admin'].map(f => fs.readFileSync(path.join(dir, f + '.gs'), 'utf8')).join('\n;\n');
+  const code = ['Config', 'Setup', 'Orders', 'Inventory', 'Pagos', 'Sitio', 'Admin'].map(f => fs.readFileSync(path.join(dir, f + '.gs'), 'utf8')).join('\n;\n');
   // las const de arriba quedan visibles para las pruebas
   vm.runInContext(code + '\n;globalThis.__x = { COL, HEADERS, LIMITS, telKey_, celda_, montosEn_, elegirMonto_, numeroDe_ };', ctx);
 
@@ -108,8 +108,9 @@ function cargar(opts = {}) {
 
   const hoja = name => { const sh = sheets.get(name); const head = sh._g[0].map(valor); return sh._g.slice(1).filter(r => r.some(x => x !== '')).map(r => Object.fromEntries(head.map((h, i) => [h, r[i]]))); };
   const config = name => vm.runInContext(`config_()[${JSON.stringify(name)}]`, ctx);
+  const get = params => JSON.parse(ctx.doGet({ parameter: params }).getContent());
   const post = body => JSON.parse(ctx.doPost({ postData: { contents: typeof body === 'string' ? body : JSON.stringify(body) } }).getContent());
-  return { ctx, hoja, config, post, mails, cache, x: ctx.__x, run: c => vm.runInContext(c, ctx) };
+  return { ctx, hoja, config, post, get, mails, cache, x: ctx.__x, run: c => vm.runInContext(c, ctx) };
 }
 
 module.exports = { cargar };

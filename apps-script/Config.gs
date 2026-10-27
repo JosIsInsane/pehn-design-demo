@@ -7,6 +7,8 @@
  *   Setup.gs      menú, crear hojas, disparadores, respaldo y revisión
  *   Orders.gs     recibir pedidos del sitio (doPost)
  *   Inventory.gs  recetas, apartados y movimientos de stock
+ *   Pagos.gs      Rastrear pedido y comprobantes del anticipo (lee el monto)
+ *   Sitio.gs      colores, textos y fotos del sitio que se cambian desde el CRM
  *   Admin.gs      datos y acciones del CRM; Admin.html es la pantalla
  *
  * SI ALGO FALLA: menú Pehn › Revisar que todo funcione. Dice qué está mal y cómo arreglarlo.
@@ -21,6 +23,7 @@ const SHEETS = {
   movimientos: 'Movimientos',
   clientes: 'Clientes',
   pagos: 'Pagos',
+  sitio: 'Sitio',
   config: 'Config',
 };
 
@@ -33,6 +36,7 @@ const HEADERS = {
   recetas: ['Clave', 'SKU', 'Cantidad', 'Notas'],
   movimientos: ['Fecha', 'SKU', 'Pieza', 'Cantidad', 'Stock después', 'Motivo', 'Pedido', 'Usuario'],
   clientes: ['WhatsApp', 'Nombre', 'Correo', 'Ciudad', 'Primer pedido', 'Último pedido', 'Etiquetas', 'Notas'],
+  sitio: ['Clave', 'Valor', 'Tipo', 'Para qué sirve'],
   pagos: ['Fecha', 'Pedido', 'Monto leído', 'Esperado', 'Resultado', 'Comprobante', 'Texto leído', 'Revisado por', 'Notas'],
   config: ['Ajuste', 'Valor', 'Para qué sirve'],
 };
@@ -53,6 +57,7 @@ const CONFIG_DEFAULTS = [
   ['Aviso de stock bajo', 'Sí', 'Sí / No. Correo diario a las 8 am con lo que hay que reponer.'],
   ['Carpeta de Drive', '', 'Se llena sola. Aquí se guardan fotos y vistas previas.'],
   ['Moneda', 'HNL', 'Lempiras.'],
+  ['Sitio web', '', 'Dirección de la página (ej. https://pehndesign.com). El CRM la usa para "Ver sitio".'],
   ['Anticipo (%)', 50, 'Porcentaje que se paga para empezar el pedido. El sitio lo muestra en Mi pedido.'],
   ['Datos bancarios', '', 'Cuenta para el anticipo. Se muestra al cliente en Mi pedido (ej. BAC · Ahorro · 123456789 · Pehn Design).'],
 ];

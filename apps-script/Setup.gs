@@ -43,6 +43,7 @@ function configurar() {
   formatInventario_();
   seedInventario_();
   seedRecetas_();
+  seedSitio_();
   instalarDisparadores_();
 
   ss.setActiveSheet(sheet_('pedidos'));

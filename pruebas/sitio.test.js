@@ -31,6 +31,10 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
   page.on('dialog', d => { errores.push('dialog: ' + d.message()); d.dismiss(); });
   // Google Sheets simulado: el sitio manda su token real; aquí se cambia por el del simulador
   await page.route(/script\.google\.com/, async route => {
+    if (route.request().method() === 'GET') {
+      const q = Object.fromEntries(new URL(route.request().url()).searchParams);
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(sim.get(q)) });
+    }
     const body = JSON.parse(route.request().postData() || '{}');
     if (body.accion === 'comprobante') sim.ctx.__ocr = `Transferencia BAC\nMonto L ${global.anticipo}.00\nRef 8812`;
     const out = sim.post({ ...body, token });
@@ -95,7 +99,17 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
   await page.fill('[name=phone]', '9111 2222'); await page.click('#seguirBtn'); await page.waitForTimeout(400);
   ok(/No encontramos/.test(await page.textContent('#seguirErr')), 'WhatsApp ajeno no ve el pedido');
 
-  // 6. resto de páginas
+  // 6. contenido editable desde el CRM
+  const k = JSON.stringify(sim.config('Clave del CRM'));
+  sim.run(`crm(${k}, "sitio", { cambios: [{ clave: 'anuncio', valor: 'Envíos gratis esta semana' }, { clave: 'hero.titulo', valor: '<img src=x onerror="window.__xss=1">Hola' }, { clave: 'color.marca', valor: '#3355AA' }, { clave: 'faq.2.p', valor: '' }, { clave: 'contacto.whatsapp', valor: '50499998888' }] })`);
+  await page.goto(base + 'index.html'); await page.waitForTimeout(600);
+  ok((await page.textContent('.announce')) === 'Envíos gratis esta semana', 'Anuncio cambiado desde el CRM');
+  ok((await page.textContent('[data-edit="hero.titulo"]')).startsWith('<img'), 'Texto con HTML se muestra como texto');
+  ok((await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--brand').trim().toUpperCase())) === '#3355AA', 'Color de marca cambiado');
+  ok(await page.evaluate(() => document.querySelector('[data-edit="faq.2.p"]').closest('details').hidden), 'Pregunta vacía se oculta');
+  ok((await page.getAttribute('.wa-float', 'href')).includes('50499998888'), 'WhatsApp nuevo en los botones');
+
+  // 7. resto de páginas
   for (const p of ['index.html', 'privacidad.html']) { await page.goto(base + p); await page.waitForTimeout(300); ok(await page.locator('header.nav').count() === 1, p + ' carga con menú'); }
   await page.click('#borrarDatos');
   ok(await page.evaluate(() => !localStorage.getItem('pehn_pedidos') && !localStorage.getItem('pehn_contact')), 'Botón borrar limpia el navegador');

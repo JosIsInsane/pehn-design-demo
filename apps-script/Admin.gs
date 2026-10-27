@@ -27,6 +27,10 @@ function autorizado_(k) {
 function exigir_(k) { if (!autorizado_(k)) throw new Error('Sin acceso. Abre el CRM desde la hoja: Pehn › Abrir CRM.'); }
 
 function doGet(e) {
+  // público: solo el contenido de la hoja Sitio (colores y textos de la página)
+  if (e && e.parameter && e.parameter.api === 'sitio') {
+    try { return json_(sitioPublico_()); } catch (err) { return json_({ ok: false, error: 'Sin contenido' }); }
+  }
   const k = (e && e.parameter && e.parameter.k) || '';
   if (!autorizado_(k)) {
     return HtmlService.createHtmlOutput('<div style="font:16px/1.6 system-ui;padding:48px;max-width:520px"><h2 style="font-weight:500">Pehn · CRM</h2><p>Este enlace no tiene acceso. Ábrelo desde la hoja: <b>Pehn › Abrir CRM (pestaña nueva)</b>.</p></div>').setTitle('Pehn · CRM');
@@ -135,7 +139,8 @@ function crmDatosLeer_() {
     estados: ESTADOS, gatillo: txt(cfg['Estado que descuenta stock']) || 'En producción',
     negocio: txt(cfg['Nombre del negocio']) || 'Pehn Design', waNegocio: txt(cfg['WhatsApp del negocio']),
     hoja: ss_().getUrl(), generado: new Date().toISOString(),
-    anticipo: Number(cfg['Anticipo (%)']) || 50,
+    anticipo: Number(cfg['Anticipo (%)']) || 50, web: txt(cfg['Sitio web']),
+    sitio: sitioCrm_(),
     pedidos, clientes, inventario, recetas, movs, pagos,
   };
 }
@@ -184,6 +189,8 @@ function crm(k, accion, args) {
       break;
     }
     case 'pieza': conCandado_(() => guardarPieza_(args)); break;
+    case 'sitio': conCandado_(() => guardarSitio_(args.cambios)); break;
+    case 'sitioImagen': return JSON.stringify({ url: subirImagenSitio_(String(args.dataUrl || '')) });
     case 'receta': {
       const sh = sheet_('recetas'), row = filaValida_('recetas', args.row), sku = linea_(args.sku, 40).toUpperCase();
       sh.getRange(row, COL.recetas.SKU, 1, 3).setValues([fila_([sku, Math.max(1, Math.round(Number(args.qty) || 1)), sku ? '' : 'Sin inventario'])]);
@@ -220,4 +227,12 @@ function guardarPieza_(p) {
     sh.getRange(r, COL.inventario.Actualizado).setValue(now_());
     if (vals[3]) registrarMovimiento_(sku, p.pieza, vals[3], vals[3], 'Alta de pieza', '');
   }
+}
+
+// campos del sitio para el CRM (valor actual + tipo + ayuda), en el orden de SITIO_DEFAULTS
+function sitioCrm_() {
+  try {
+    const actual = {}; rows_('sitio').forEach(r => { actual[String(r.Clave)] = String(r.Valor == null ? '' : r.Valor); });
+    return SITIO_DEFAULTS.map(([clave, def, tipo, ayuda]) => ({ clave, valor: clave in actual ? actual[clave] : def, tipo, ayuda }));
+  } catch (e) { return []; } // hoja Sitio aún no creada: Pehn › Configurar hojas
 }

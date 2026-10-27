@@ -301,7 +301,7 @@
     .app{grid-template-columns:1fr;background:none}
     .side{position:fixed;z-index:15;bottom:0;top:auto;height:auto;width:100%;flex-direction:row;padding:6px 8px calc(6px + env(safe-area-inset-bottom));border-top:1px solid var(--darkLine)}
     .logo,.side .foot,.slbl,.side .sl{display:none}
-    .nav{grid-auto-flow:column;grid-auto-columns:1fr;width:100%}
+    .nav{grid-auto-flow:column;grid-auto-columns:minmax(64px,1fr);width:100%;overflow-x:auto;scrollbar-width:none}
     .nav button{flex-direction:column;gap:2px;font-size:10.5px;padding:6px 2px;align-items:center;text-align:center;position:relative}
     .nav button[aria-current="page"]{box-shadow:inset 0 -2px 0 var(--brand)}
     .nav .ct{position:absolute;top:0;right:12%;min-width:18px;height:18px;font-size:10px;margin:0}
@@ -319,6 +319,26 @@
     .item{grid-template-columns:96px 1fr}
     .pnh .search{max-width:none}
   }
+  /* sitio web */
+  .sitio-g{margin-bottom:16px}
+  .campos{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px 18px}
+  .campo{display:grid;gap:6px;align-content:start;padding:10px;border-radius:12px;border:1px solid transparent}
+  .campo.cambio{border-color:var(--brand);background:var(--brandSoft)}
+  .campo label{display:grid;gap:1px;font-size:13px}
+  .campo label small{font-size:11px}
+  .campo textarea{min-height:76px;height:auto;padding:8px 10px}
+  .colorin{display:flex;align-items:center;gap:10px}
+  .colorin input{width:48px;height:36px;padding:2px;border:1px solid var(--line2);border-radius:9px;background:var(--sf);cursor:pointer}
+  .fotosit{display:flex;gap:12px;align-items:center}
+  .fotosit img{width:72px;height:90px;object-fit:cover;border-radius:10px;background:var(--bg2)}
+  .fotosit div{display:grid;gap:6px;min-width:0}
+  .fotosit small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px}
+  .savebar{position:sticky;bottom:16px;z-index:5;display:flex;gap:10px;align-items:center;justify-content:flex-end;margin-top:12px;padding:10px 12px 10px 18px;border-radius:14px;background:var(--ink);color:#fff;box-shadow:0 20px 40px -20px rgba(0,0,0,.5)}
+  .savebar span{margin-right:auto;font-weight:600}
+  .savebar .ghost{color:#fff}
+  .savebar .dark{background:var(--brand);border-color:var(--brand);color:var(--ink)}
+  .savebar[hidden]{display:none}
+  @media (max-width:820px){.savebar{bottom:76px}.campos{grid-template-columns:1fr}}
   @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -336,6 +356,7 @@
       <button data-v="inventario"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5Z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg><span>Inventario</span><b class="ct" id="cInv" hidden></b></button>
       <button data-v="recetas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg><span>Recetas</span><b class="ct" id="cRec" hidden></b></button>
       <button data-v="movimientos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v16M3 8l4-4 4 4M17 20V4M13 16l4 4 4-4"/></svg><span><span class="lbl-l">Movimientos</span><span class="lbl-s">Movs</span></span></button>
+      <button data-v="sitio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg><span><span class="lbl-l">Sitio web</span><span class="lbl-s">Sitio</span></span><b class="ct" id="cSit" hidden></b></button>
     </nav>
     <div class="slbl">Accesos</div>
     <a class="sl" id="hoja" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M10 9v12"/></svg>Google Sheets ↗</a>
@@ -436,6 +457,14 @@
         </div>
       </section>
 
+      <!-- SITIO WEB -->
+      <section class="view" id="v-sitio" hidden>
+        <p class="note">Lo que cambies aquí sale en la página en unos minutos. Los textos se ven tal cual (sin formato). Los colores de fondo y letra solo se aplican si se leen bien juntos.</p>
+        <div id="sitioBody"></div>
+        <div class="savebar" id="sitioBar" hidden><span id="sitioN"></span><button class="btn sm ghost" id="sitioUndo">Descartar</button><button class="btn sm dark" id="sitioSave">Guardar cambios</button></div>
+        <input type="file" id="sitioFile" accept="image/jpeg,image/png,image/webp" hidden>
+      </section>
+
       <!-- MOVIMIENTOS -->
       <section class="view" id="v-movimientos" hidden>
         <div class="panel">
@@ -530,6 +559,7 @@ const LOCAL = {
     if (i) Object.assign(i, v); else D.inventario.push({ ...v, row: 0, unidad: 'pza', actualizado: '', apartado: 0 });
   },
   pago: a => { const x = (D.pagos || []).find(y => y.row === a.row); if (x) { x.resultado = a.resultado; if (a.monto !== '' && a.monto !== undefined) x.monto = +a.monto; x.revisado = 'tú'; } },
+  sitio: a => a.cambios.forEach(c => { const f = (D.sitio || []).find(x => x.clave === c.clave); if (f) f.valor = c.valor; }),
   receta: a => { const r = D.recetas.find(x => x.row === a.row); if (r) { r.sku = String(a.sku || '').trim().toUpperCase(); r.qty = +a.qty || 1; r.notas = r.sku ? '' : 'Sin inventario'; } },
 };
 // pendientes: los datos del servidor solo se aplican cuando ya no queda ninguno en camino
@@ -595,7 +625,7 @@ function loadImg(el) {
 const watchImgs = () => document.querySelectorAll('img[data-img]:not([src])').forEach(i => io.observe(i));
 
 // ---------- navegación ----------
-const TITLES = { inicio: 'Inicio', pedidos: 'Pedidos', clientes: 'Clientes', pagos: 'Pagos', inventario: 'Inventario', recetas: 'Recetas', movimientos: 'Movimientos' };
+const TITLES = { sitio: 'Sitio web', inicio: 'Inicio', pedidos: 'Pedidos', clientes: 'Clientes', pagos: 'Pagos', inventario: 'Inventario', recetas: 'Recetas', movimientos: 'Movimientos' };
 function go(v, opts = {}) {
   view = v;
   document.querySelectorAll('#nav button').forEach(b => { if (b.dataset.v === v) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
@@ -623,10 +653,10 @@ function render() {
   const nuevos = D.pedidos.filter(p => p.estado === 'Nuevo').length;
   const inv = D.inventario.filter(i => i.stock <= i.min || i.apartado > i.stock).length;
   const rec = D.recetas.filter(r => /^Nueva/.test(r.notas)).length;
-  [['#cPed', nuevos], ['#cInv', inv], ['#cRec', rec], ['#cPag', (D.pagos || []).filter(porRevisar).length]].forEach(([s, n]) => { $(s).hidden = !n; $(s).textContent = n; });
+  [['#cPed', nuevos], ['#cInv', inv], ['#cRec', rec], ['#cPag', (D.pagos || []).filter(porRevisar).length], ['#cSit', SIT.size]].forEach(([s, n]) => { $(s).hidden = !n; $(s).textContent = n; });
   $('#skus').innerHTML = D.inventario.map(i => `<option value="${esc(i.sku)}">${esc(i.pieza)}</option>`).join('');
   $('#cats').innerHTML = [...new Set(D.inventario.map(i => i.cat).filter(Boolean))].map(c => `<option value="${esc(c)}">`).join('');
-  ({ inicio: rInicio, pedidos: rPedidos, clientes: rClientes, pagos: rPagos, inventario: rInv, recetas: rRec, movimientos: rMovs })[view]();
+  ({ inicio: rInicio, pedidos: rPedidos, clientes: rClientes, pagos: rPagos, inventario: rInv, recetas: rRec, movimientos: rMovs, sitio: rSitio })[view]();
   const escribiendo = document.activeElement && document.activeElement.closest('#dBody') && document.activeElement.matches('input,textarea');
   if (open && !escribiendo) { const fn = open.type === 'pedido' ? openPedido : openCliente; const it = open.type === 'pedido' ? D.pedidos.find(p => p.row === open.key) : D.clientes.find(c => (c.tel || c.nombre) === open.key); if (it) fn(it, true); }
   watchImgs();
@@ -891,6 +921,51 @@ function rPagos() {
     || `<tr><td colspan="7" class="empty">${fPg === 'Por revisar' ? 'Nada por revisar. 👌' : 'Sin comprobantes todavía.'}</td></tr>`;
 }
 
+// ---------- sitio web: colores, textos, fotos y contacto que ven los clientes ----------
+// cambios sin guardar: clave -> valor
+const SIT = new Map();
+const GRUPOS_SITIO = [['Colores', /^color[.]/], ['Portada', /^(anuncio|hero[.]|seccion[.])/], ['Cómo funciona', /^como[.]/], ['Historia', /^historia[.]/], ['Preguntas frecuentes', /^faq[.]/], ['Contacto y pie de página', /^(pie|contacto[.])/]];
+const webSegura = u => /^https:[/][/][\w.-]+[.][a-z]{2,}([/]\S*)?$/i.test(String(u)) ? String(u).replace(/[/]$/, '') : '';
+const fotoSitio = v => /^https:/.test(v) ? urlSegura(v) || (/^https:[/][/]lh3[.]googleusercontent[.]com[/]/.test(v) ? v : '') : (webSegura(D.web) && /^fotos[/]/.test(v) ? webSegura(D.web) + '/' + v : '');
+function campoSitio(f) {
+  const v = SIT.has(f.clave) ? SIT.get(f.clave) : f.valor, id = 'sf_' + f.clave.replace(/[^\w]/g, '_'), a = `id="${id}" data-s="${esc(f.clave)}"`;
+  const cambio = SIT.has(f.clave) ? ' cambio' : '';
+  let input;
+  if (f.tipo === 'color') input = `<span class="colorin"><input type="color" ${a} value="${esc(/^#[0-9a-f]{6}$/i.test(v) ? v : '#000000')}"><code>${esc(v)}</code></span>`;
+  else if (f.tipo === 'largo') input = `<textarea class="in" rows="3" maxlength="900" ${a}>${esc(v)}</textarea>`;
+  else if (f.tipo === 'imagen') { const src = fotoSitio(v); input = `<div class="fotosit">${src ? `<img src="${esc(src)}" alt="">` : '<span class="muted">Vista previa al poner la dirección del sitio en Config</span>'}<div><button class="btn sm" data-subir="${esc(f.clave)}">Subir otra foto</button><small class="muted">${esc(v)}</small></div></div>`; }
+  else input = `<input class="in" ${a} value="${esc(v)}" maxlength="${f.tipo === 'texto' ? 160 : 300}" ${f.tipo === 'whatsapp' ? 'inputmode="tel" placeholder="50498765432"' : ''} autocomplete="off">`;
+  return `<div class="campo${cambio}"><label for="${id}"><b>${esc(f.ayuda)}</b><small class="muted">${esc(f.clave)}</small></label>${input}</div>`;
+}
+function rSitio() {
+  const F = D.sitio || [];
+  $('#pSub').innerHTML = `Cambia lo que ven tus clientes sin tocar código.${webSegura(D.web) ? ` <a href="${esc(webSegura(D.web))}" target="_blank" rel="noopener">Ver sitio ↗</a>` : ' Pon la dirección de tu página en Config › Sitio web para ver las fotos aquí.'}`;
+  $('#sitioBody').innerHTML = F.length ? GRUPOS_SITIO.map(([t, re]) => { const fs = F.filter(f => re.test(f.clave)); return fs.length ? `<div class="card sitio-g"><h3>${t}</h3><div class="campos">${fs.map(campoSitio).join('')}</div></div>` : ''; }).join('')
+    : '<div class="empty">Falta la hoja Sitio. En la hoja de cálculo corre Pehn › Configurar hojas.</div>';
+  $('#sitioBar').hidden = !SIT.size;
+  $('#sitioN').textContent = `${plural(SIT.size, 'cambio', 'cambios')} sin guardar`;
+}
+function marcaSitio(clave, valor) {
+  const f = (D.sitio || []).find(x => x.clave === clave); if (!f) return;
+  if (valor === f.valor) SIT.delete(clave); else SIT.set(clave, valor);
+  $('#sitioBar').hidden = !SIT.size; $('#sitioN').textContent = `${plural(SIT.size, 'cambio', 'cambios')} sin guardar`;
+  $('#cSit').hidden = !SIT.size; $('#cSit').textContent = SIT.size;
+  document.querySelector(`[data-s="${CSS.escape(clave)}"]`)?.closest('.campo')?.classList.toggle('cambio', SIT.has(clave));
+}
+document.addEventListener('input', e => { const el = e.target.closest('[data-s]'); if (!el) return; marcaSitio(el.dataset.s, el.value); if (el.type === 'color') el.nextElementSibling.textContent = el.value.toUpperCase(); });
+// foto nueva: se achica aquí (máx. 1600 px) y se sube a Drive; la dirección queda como cambio sin guardar
+let subiendoA = '';
+function achicar(file, max) {
+  return new Promise((ok, ko) => { const img = new Image(), r = new FileReader(); r.onload = () => { img.src = r.result; }; r.onerror = ko; img.onerror = ko;
+    img.onload = () => { const k = Math.min(1, max / Math.max(img.width, img.height)), cv = document.createElement('canvas'); cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k); cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height); ok(cv.toDataURL('image/jpeg', 0.86)); };
+    r.readAsDataURL(file); });
+}
+$('#sitioFile').addEventListener('change', async e => {
+  const file = e.target.files[0]; e.target.value = ''; if (!file || !subiendoA) return;
+  try { toast('Subiendo foto…'); const r = await call('sitioImagen', { dataUrl: await achicar(file, 1600) }); marcaSitio(subiendoA, r.url); rSitio(); toast('Foto lista: guarda los cambios para publicarla'); }
+  catch (x) { toast('No se pudo subir: ' + (x.message || x)); }
+});
+
 function rMovs() {
   const q = $('#qM').value.trim().toLowerCase();
   $('#pSub').textContent = 'Historial de cada entrada y salida de stock (últimos 120).';
@@ -971,6 +1046,9 @@ document.addEventListener('click', async e => {
   if (d.adj) return act('ajuste', { sku: d.adj, delta: +d.d, motivo: +d.d > 0 ? 'Ajuste +1 desde el CRM' : 'Ajuste −1 desde el CRM' }, 'Stock actualizado');
   if (d.in) { const n = await ask({ title: `Entrada de ${d.in}`, text: '¿Cuántas piezas llegaron?', input: 10, ok: 'Sumar al stock' }); if (n && +n) act('ajuste', { sku: d.in, delta: +n, motivo: 'Entrada de mercancía' }, `+${n} ${d.in}`); return; }
   if (d.edit) { const i = D.inventario.find(x => x.sku === d.edit), f = $('#fPieza'); $('#addPieza').open = true; ['sku', 'pieza', 'cat', 'stock', 'min', 'costo', 'proveedor'].forEach(k => { f.elements[k].value = i[k] ?? ''; }); f.elements.pieza.focus(); return; }
+  if (d.subir) { subiendoA = d.subir; return $('#sitioFile').click(); }
+  if (t.id === 'sitioSave') { const cambios = [...SIT].map(([clave, valor]) => ({ clave, valor })); SIT.clear(); return act('sitio', { cambios }, 'Sitio actualizado: se verá en unos minutos'); }
+  if (t.id === 'sitioUndo') { SIT.clear(); return render(); }
   if (d.fpg) { fPg = d.fpg; return rPagos(); }
   if (d.pago) { const m = document.querySelector(`[data-pmonto="${d.pago}"]`); return act('pago', { row: +d.pago, resultado: d.res, monto: m ? m.value : '' }, d.res === 'Confirmado' ? 'Pago confirmado' : 'Comprobante rechazado'); }
   if (d.rsave) { const r = d.rsave; return act('receta', { row: +r, sku: document.querySelector(`[data-rsku="${r}"]`).value, qty: +document.querySelector(`[data-rqty="${r}"]`).value }, 'Receta guardada'); }

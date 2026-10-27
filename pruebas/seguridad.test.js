@@ -237,6 +237,37 @@ prueba('CRM: confirmar un pago lo suma como pagado', () => {
   ok(/inválido/.test(err));
 });
 
+// ---------- contenido del sitio ----------
+prueba('API pública del sitio solo entrega textos y colores, nunca pedidos', () => {
+  const s = nuevo(); s.post(pedido(s));
+  const r = s.get({ api: 'sitio' });
+  ok(r.ok && r.sitio['color.marca'] === '#F08A1C' && r.sitio['hero.titulo'], JSON.stringify(r).slice(0, 200));
+  const t = JSON.stringify(r); ['Ana', 'ana@correo', '98765432', 'Token', 'Clave'].forEach(x => ok(!t.includes(x), 'filtra ' + x));
+});
+
+prueba('Sin clave, ?k= vacío no abre el CRM', () => {
+  const s = nuevo(); const h = s.ctx.doGet({ parameter: {} }).getContent(); ok(/no tiene acceso/.test(h));
+});
+
+prueba('Guardar sitio: valida colores, enlaces, fotos y WhatsApp', () => {
+  const s = nuevo(); const k = JSON.stringify(s.config('Clave del CRM'));
+  s.run(`crm(${k}, "sitio", { cambios: [{ clave: 'color.marca', valor: '#112233' }, { clave: 'hero.titulo', valor: '<script>alert(1)</script>' }, { clave: 'contacto.whatsapp', valor: '+504 9876-5432' }] })`);
+  const r = s.get({ api: 'sitio' }).sitio;
+  ok(r['color.marca'] === '#112233' && r['contacto.whatsapp'] === '50498765432');
+  ok(r['hero.titulo'] === '<script>alert(1)</script>', 'el texto se guarda tal cual; el sitio lo pinta como texto, no como HTML');
+  [['color.marca', 'red;background:url(x)'], ['hero.foto', 'javascript:alert(1)'], ['hero.foto', 'https://evil.com/x.jpg'], ['contacto.instagram', 'javascript:alert(1)'], ['contacto.whatsapp', '12'], ['no.existe', 'x']].forEach(([clave, valor]) => {
+    let err = ''; try { s.run(`crm(${k}, "sitio", { cambios: [${JSON.stringify({ clave, valor })}] })`); } catch (e) { err = e.message; }
+    ok(/No se guardaron/.test(err), clave + ' = ' + valor + ' debió rechazarse');
+  });
+  ok(s.get({ api: 'sitio' }).sitio['color.marca'] === '#112233', 'lo inválido no pisó lo bueno');
+});
+
+prueba('Texto del sitio con fórmula queda como texto en la hoja', () => {
+  const s = nuevo(); const k = JSON.stringify(s.config('Clave del CRM'));
+  s.run(`crm(${k}, "sitio", { cambios: [{ clave: 'anuncio', valor: '=IMPORTXML("http://x";"//a")' }] })`);
+  ok(!formulas(s.hoja('Sitio')).length);
+});
+
 prueba('Revisión del sistema corre sin romperse', () => {
   const s = nuevo(); const t = s.run('revisarSistema()'); ok(/Hoja Pedidos/.test(t), t);
 });
