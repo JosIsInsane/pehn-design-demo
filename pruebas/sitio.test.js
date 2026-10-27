@@ -147,12 +147,12 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
     ok(await m.evaluate(() => document.activeElement.id === 'cScreen'), 'Móvil: el foco va al título de la pantalla');
     await m.click('.fsec.open [data-g="hair"][data-v]:not([aria-pressed="true"])'); await m.waitForTimeout(200);
     await m.click('.sec-h[data-sec="fcara"]'); // plegar
-    const etiqueta = await m.evaluate(() => figLab(cur.cfg.figs[0], 'hair'));
+    const etiqueta = await m.evaluate(() => figLab(App.cur.cfg.figs[0], 'hair'));
     ok((await m.textContent('[data-secsum="cara"]')).includes('Peinado: ' + etiqueta), 'Móvil: el encabezado plegado muestra la elección (Peinado: ' + etiqueta + ')');
-    const peinado = await m.evaluate(() => cur.cfg.figs[0].hair);
+    const peinado = await m.evaluate(() => App.cur.cfg.figs[0].hair);
     await m.evaluate(() => history.back()); await m.waitForTimeout(500);
-    ok(await m.evaluate(() => !cur.sub && document.querySelectorAll('.figrow').length === 2), 'Móvil: Atrás del navegador vuelve a la lista de figuras');
-    ok(await m.evaluate(h => cur.cfg.figs[0].hair === h, peinado), 'Móvil: lo elegido se conserva');
+    ok(await m.evaluate(() => !App.cur.sub && document.querySelectorAll('.figrow').length === 2), 'Móvil: Atrás del navegador vuelve a la lista de figuras');
+    ok(await m.evaluate(h => App.cur.cfg.figs[0].hair === h, peinado), 'Móvil: lo elegido se conserva');
     for (let i = 0; i < 3; i++) { await m.click('#addBtn'); await m.waitForTimeout(250); }
     ok((await m.textContent('#addLabel')) === 'Agregar al pedido', 'Móvil: último paso con "Agregar al pedido"');
     const tam = await m.evaluate(() => [...document.querySelectorAll('#cForm button, #addBtn, #backBtn, #brkBtn')].filter(e => e.offsetParent).every(e => { const r = e.getBoundingClientRect(); return r.height >= 43.5 && r.width >= 43.5; }));

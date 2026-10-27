@@ -1,8 +1,10 @@
 /* Pehn Design — DATOS DEL CATÁLOGO
    Aquí se cambia lo que vende la tienda: precios, opciones, colores, productos y tarjetas.
-   No hace falta tocar dibujos.js ni app.js para eso.
+   No hace falta tocar dibujos.js ni js/ para eso.
 
-   Orden de carga (todas las páginas): piezas.js → datos.js → datos-tienda.js → dibujos.js → app.js.
+   Orden de carga (todas las páginas): piezas.js → datos.js → datos-tienda.js → js/base.js → dibujos.js → marco.js → js/*.js
+   (cada página carga solo los módulos que usa; el orden exacto está en el <script> de cada .html y la lista en docs/CONTEXTO.md).
+   Lo que datos.js usa de js/base.js (clone) se llama al usar la página, no al cargar el archivo.
    datos-tienda.js lo genera herramientas/generar-tienda.js desde docs/inventario/catalogo-base.csv (no se edita a mano).
 
    PRECIOS = los de venta por pieza del CSV. Un producto armado cuesta la SUMA de sus piezas.
@@ -14,7 +16,7 @@
    - Una opción con precio: op('valor', 'Texto', 'SKU') dentro de options (el precio sale del CSV). Gratis: { v, label, price: 0 }.
    - Un producto: copia uno de PRODUCTS, cambia id/name/base y su render (debe existir en RENDER de dibujos.js).
    - Una tarjeta del catálogo: agrega { id: 'producto' } a CARDS (cfg y photo son opcionales).
-   SI ALGO SE VE MAL: abre la consola del navegador (F12). revisarDatos() en app.js avisa con "[Pehn]"
+   SI ALGO SE VE MAL: abre la consola del navegador (F12). revisarDatos() en js/arranque.js avisa con "[Pehn]"
    cuando una tarjeta apunta a un producto que no existe o a un dibujo que falta. */
 
 /* Pehn Design — catálogo + personalizador
@@ -59,7 +61,6 @@ const colSw = names => names.map(n => ({ v: COLORES[n], label: n, price: 0 }));
 const TALLAS = ['S', 'M', 'L', 'XL'].map(t => ({ v: t, label: t, price: 0 }));
 // [valor, nombre] -> opción sin costo extra
 const sw = arr => arr.map(([v, label]) => ({ v, label, price: 0 }));
-const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 // letras del personalizador (deben estar también en el <link> de Google Fonts de los .html)
 const FONTS = { groovy: "'Bagel Fat One'", clasica: "'Outfit'", script: "'Pacifico'", serif: "'Playfair Display'", college: "'Alfa Slab One'", firma: "'Great Vibes'" };
@@ -143,7 +144,7 @@ function varInicio(p, cfg) {
   varSets(p).forEach(s => Object.keys(s.map).forEach(d => { cfg[s.map[d]] = r.o[d]; }));
 }
 const varLabel = (p, id, v) => p.groups.find(g => g.id === id)?.options.find(o => o.v === v)?.label ?? v;
-// clave de receta de la variante elegida: la usan bomOf (app.js) y el generador de recetas
+// clave de receta de la variante elegida: la usan bomOf (js/envio.js) y el generador de recetas
 const varKey = (p, s, cfg) => `${p.name} · ${Object.keys(s.map).map(d => varLabel(p, s.map[d], cfg[s.map[d]])).join(' · ') || 'Estándar'}`;
 function varLines(p, cfg) {
   const act = varActivos(p, cfg);

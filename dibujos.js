@@ -2,16 +2,11 @@
    Cada producto tiene una función que recibe su configuración y regresa un <svg>.
    Las conecta RENDER (al final). Un producto nuevo necesita su función aquí y su nombre en RENDER.
    SI UN DIBUJO SALE EN BLANCO: en la consola (F12) prueba renderProduct(PRODUCTS[0], defaults(PRODUCTS[0])).
-   Un error ahí dice qué opción llega vacía. */
+   Un error ahí dice qué opción llega vacía.
+   Depende de: datos.js (CONFIG, PRODUCTS…) y js/base.js (esc, shade). */
 
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 let UID = 0; // ids únicos para gradientes/filtros dentro de cada SVG
 
-function shade(hex, p) {
-  const n = parseInt(hex.slice(1), 16);
-  const f = c => Math.max(0, Math.min(255, Math.round(c + (p < 0 ? c : 255 - c) * p)));
-  return '#' + [f(n >> 16), f((n >> 8) & 255), f(n & 255)].map(x => x.toString(16).padStart(2, '0')).join('');
-}
 const isLight = hex => { const n = parseInt(hex.slice(1), 16); return ((n >> 16) * 299 + ((n >> 8) & 255) * 587 + (n & 255) * 114) / 1000 > 170; };
 const MONTH_FMT = new Intl.DateTimeFormat(CONFIG.locale, { month: 'long' });
 
