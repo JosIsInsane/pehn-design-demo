@@ -248,6 +248,14 @@ function calendarSVG(iso) {
   return s;
 }
 
+// medidas de las figuras dentro del cuadro (en unidades del dibujo, 300×300); el personalizador las usa para acercar la figura que se edita
+function frameGeom(c) {
+  const n = (c.figs || []).length, tpl = LAYOUT[c.tpl] ? c.tpl : 'amor', { base } = LAYOUT[tpl];
+  const sc = tpl === 'calendario' ? (n > 2 ? 0.2 : 0.25) : n > 3 ? 0.22 : n > 2 ? 0.27 : 0.32;
+  const fw = 200 * sc, gap = 7 * (sc / 0.32), total = n * fw + (n - 1) * gap;
+  return { sc, fw, gap, total, x0: 150 - total / 2, fy: base - 314 * sc };
+}
+function frameFigBox(c, i) { const g = frameGeom(c); return { x: g.x0 + i * (g.fw + g.gap), y: g.fy, w: g.fw, h: 314 * g.sc }; }
 function frameSVG(c) {
   const k = 'f' + (++UID);
   const figs = c.figs || [], n = figs.length;
@@ -270,10 +278,7 @@ function frameSVG(c) {
     </g>`;
 
   // figuras
-  const sc = tpl === 'calendario' ? (n > 2 ? 0.2 : 0.25) : n > 3 ? 0.22 : n > 2 ? 0.27 : 0.32;
-  const fw = 200 * sc, gap = 7 * (sc / 0.32);
-  const total = n * fw + (n - 1) * gap;
-  const x0 = 150 - total / 2, fy = base - 314 * sc;
+  const { sc, fw, gap, total, x0, fy } = frameGeom(c);
   const figsSVG = figs.map((f, i) => {
     const x = x0 + i * (fw + gap);
     const name = String(f.name || '').trim();
