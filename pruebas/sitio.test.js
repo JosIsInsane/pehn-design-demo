@@ -9,10 +9,12 @@ const { cargar } = require('./simulador');
 
 const RAIZ = path.join(__dirname, '..');
 const TIPOS = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg' };
+// mismas cabeceras de seguridad que Cloudflare (archivo _headers): si la política bloquea algo, la prueba lo ve
+const CABECERAS = Object.fromEntries(fs.readFileSync(path.join(RAIZ, '_headers'), 'utf8').split('\n').filter(l => /^\s+\S+:/.test(l)).map(l => { const i = l.indexOf(':'); return [l.slice(0, i).trim(), l.slice(i + 1).trim()]; }));
 const server = http.createServer((req, res) => {
   const f = path.join(RAIZ, decodeURIComponent(new URL(req.url, 'http://x').pathname));
   if (!f.startsWith(RAIZ) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
-  res.writeHead(200, { 'Content-Type': TIPOS[path.extname(f)] || 'application/octet-stream' }); fs.createReadStream(f).pipe(res);
+  res.writeHead(200, { ...CABECERAS, 'Content-Type': TIPOS[path.extname(f)] || 'application/octet-stream' }); fs.createReadStream(f).pipe(res);
 });
 
 let fallas = 0;
@@ -28,6 +30,7 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
   const page = await ctx.newPage();
   const errores = [];
   page.on('pageerror', e => errores.push(e.message));
+  page.on('console', m => { if (m.type() === 'error' && /Content Security Policy|Refused/.test(m.text())) errores.push('CSP: ' + m.text()); });
   page.on('dialog', d => { errores.push('dialog: ' + d.message()); d.dismiss(); });
   // Google Sheets simulado: el sitio manda su token real; aquí se cambia por el del simulador
   await page.route(/script\.google\.com/, async route => {

@@ -107,7 +107,7 @@ function cardHTML(card, ci, href) {
     <div class="card-media" style="--tint:${tint}">
       ${badge ? `<span class="badge">${badge}</span>` : ''}
       <div class="art-illus">${renderProduct(p, cfg)}</div>
-      ${hasPhoto ? `<img class="real" src="${card.photo}" alt="" width="480" height="600" loading="lazy" decoding="async" style="object-position:${card.photoPos || '50% 50%'}" onerror="this.closest('.card').classList.remove('has-photo');this.nextElementSibling.remove();this.remove()"><span class="real-chip"><i></i>Pedido real</span>` : ''}
+      ${hasPhoto ? `<img class="real" src="${card.photo}" alt="" width="480" height="600" loading="lazy" decoding="async" style="object-position:${card.photoPos || '50% 50%'}" data-real><span class="real-chip"><i></i>Pedido real</span>` : ''}
       <span class="card-cta">Personalizar ${ARROW}</span>
     </div>
     <div class="card-body">
@@ -118,6 +118,12 @@ function cardHTML(card, ci, href) {
     </div>
   </${tag}>`;
 }
+
+// foto real que no carga: la tarjeta se queda con el dibujo. Se escucha en captura porque "error" no burbujea.
+document.addEventListener('error', e => {
+  const img = e.target; if (!(img instanceof HTMLImageElement) || !img.matches('img[data-real]')) return;
+  img.closest('.card')?.classList.remove('has-photo'); img.nextElementSibling?.remove(); img.remove();
+}, true);
 
 function results() {
   const q = norm(state.q.trim());
@@ -456,6 +462,7 @@ $('#cForm')?.addEventListener('click', e => {
   } else if (b.dataset.d) obj[id] = Math.max(g.min, Math.min(g.max, obj[id] + Number(b.dataset.d)));
   const y = $('#cForm').scrollTop; buildForm(); $('#cForm').scrollTop = y; update();
 });
+$('#cForm')?.addEventListener('submit', e => e.preventDefault());
 $('#cForm')?.addEventListener('input', e => {
   const el = e.target; if (!el.dataset.t) return;
   const sc = el.dataset.sc, id = el.dataset.g, g = groupsOf(sc).find(x => x.id === id);

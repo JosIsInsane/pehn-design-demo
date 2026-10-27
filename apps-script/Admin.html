@@ -5,6 +5,8 @@
 <meta charset="utf-8">
 <meta name="pehn-crm" content="v5">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- el enlace del CRM lleva la clave: que no viaje a otros sitios al abrir WhatsApp o Drive -->
+<meta name="referrer" content="no-referrer">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -359,7 +361,7 @@
       <button data-v="sitio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg><span><span class="lbl-l">Sitio web</span><span class="lbl-s">Sitio</span></span><b class="ct" id="cSit" hidden></b></button>
     </nav>
     <div class="slbl">Accesos</div>
-    <a class="sl" id="hoja" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M10 9v12"/></svg>Google Sheets ↗</a>
+    <a class="sl" id="hoja" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M4 9h16M4 15h16M10 9v12"/></svg>Google Sheets ↗</a>
     <button class="sl" data-csv="pedidos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>Exportar pedidos</button>
     <div class="foot">
       <div class="me"><b aria-hidden="true">P</b><div><strong id="biz2">Pehn Design</strong><small id="upd"></small></div></div>
@@ -689,7 +691,7 @@ function rInicio() {
   const prox = P.filter(p => activo(p) && p.paraDia && (new Date(p.paraDia + 'T00:00:00') - hoy0) / 864e5 <= 7);
   const repo = D.inventario.filter(i => i.stock <= i.min || i.apartado > i.stock).length;
   $('#holaSub').textContent = `Tienes ${plural(nuevos.length, 'pedido', 'pedidos')} por confirmar, ${plural(prox.length, 'entrega', 'entregas')} en los próximos 7 días y ${plural(repo, 'pieza', 'piezas')} por reponer.`;
-  $('#holaAct').innerHTML = `<button class="btn gold" data-go="pedidos" data-f="Nuevo">${ICON.bag} Ver pedidos nuevos</button><button class="btn" data-go="inventario" data-fi="Reponer">${ICON.plus} Entrada de mercancía</button><a class="btn" href="${esc(D.hoja)}" target="_blank" rel="noopener">Abrir Google Sheets ↗</a>`;
+  $('#holaAct').innerHTML = `<button class="btn gold" data-go="pedidos" data-f="Nuevo">${ICON.bag} Ver pedidos nuevos</button><button class="btn" data-go="inventario" data-fi="Reponer">${ICON.plus} Entrada de mercancía</button><a class="btn" href="${esc(D.hoja)}" target="_blank" rel="noopener noreferrer">Abrir Google Sheets ↗</a>`;
   const todo = [];
   const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
   const dias = p => p.paraDia ? Math.round((new Date(p.paraDia + 'T00:00:00') - hoy) / 864e5) : null;
@@ -721,7 +723,7 @@ function detalleFila(p) {
   return `<tr class="det"><td colspan="9"><div class="xg">
     <div class="xp">${fotos}<div>${it}</div></div>
     <div class="xd">${f('WhatsApp', esc(p.wa))}${f('Correo', esc(p.correo))}${f('Ciudad', esc(p.ciudad))}${f('Entrega', p.paraDia || p.para ? esc(p.para || p.paraDia) : '')}${f('Inventario', stockTag(p.stock))}${f('Notas del cliente', esc(p.notasCliente))}${f('Notas internas', esc(p.notas))}
-      <div class="row"><button class="btn sm dark" data-ped="${p.row}">Abrir ficha completa</button>${urlSegura(p.carpeta) ? `<a class="btn sm" href="${esc(urlSegura(p.carpeta))}" target="_blank" rel="noopener">Carpeta en Drive ↗</a>` : ''}</div></div></div></td></tr>`;
+      <div class="row"><button class="btn sm dark" data-ped="${p.row}">Abrir ficha completa</button>${urlSegura(p.carpeta) ? `<a class="btn sm" href="${esc(urlSegura(p.carpeta))}" target="_blank" rel="noopener noreferrer">Carpeta en Drive ↗</a>` : ''}</div></div></div></td></tr>`;
 }
 const PAGINA = 25;
 let sortP = 'fecha', dirP = -1, pagP = 0;
@@ -794,7 +796,7 @@ function openPedido(p, keep) {
     <div class="pipe" role="group" aria-label="Estado del pedido">${E.map((s, j) => `<button aria-pressed="${s === p.estado}" class="${j < i && p.estado !== 'Cancelado' ? 'done' : ''} ${s === D.gatillo ? 'trig' : ''}" data-mv="${p.row}" data-to="${esc(s)}">${esc(s)}</button>`).join('')}</div>
     <div class="actions" style="margin-top:14px">
       ${nx ? `<button class="btn dark" data-mv="${p.row}" data-to="${esc(nx)}">Pasar a ${esc(nx)} →</button>` : ''}
-      <a class="btn wa" target="_blank" rel="noopener" href="${waLink(p.wa, (MSG[p.estado] || MSG.Nuevo)(p))}">${ICON.wa.replace('<svg', '<svg width="16" height="16"')} WhatsApp: mensaje de “${esc(p.estado)}”</a>
+      <a class="btn wa" target="_blank" rel="noopener noreferrer" href="${waLink(p.wa, (MSG[p.estado] || MSG.Nuevo)(p))}">${ICON.wa.replace('<svg', '<svg width="16" height="16"')} WhatsApp: mensaje de “${esc(p.estado)}”</a>
     </div>
     <p class="muted" style="font-size:12.5px;margin:8px 0 0">Al pasar a <b>${esc(D.gatillo)}</b> se descuenta el inventario. Al cancelar, se regresa.</p>
     <div class="info">
@@ -805,7 +807,7 @@ function openPedido(p, keep) {
     </div>
     <div class="actions">${cli ? `<button class="btn sm" data-cli="${esc(cli.tel || cli.nombre)}">${ICON.user.replace('<svg', '<svg width="15" height="15"')} Ficha del cliente · ${cli.pedidos.length} pedido${cli.pedidos.length > 1 ? 's' : ''}</button>` : ''}
       ${p.correo ? `<a class="btn sm" href="mailto:${esc(p.correo)}?subject=${encodeURIComponent('Tu pedido ' + p.id)}">Correo</a>` : ''}
-      ${urlSegura(p.carpeta) ? `<a class="btn sm" target="_blank" rel="noopener" href="${esc(urlSegura(p.carpeta))}">Carpeta en Drive ↗</a>` : ''}</div>
+      ${urlSegura(p.carpeta) ? `<a class="btn sm" target="_blank" rel="noopener noreferrer" href="${esc(urlSegura(p.carpeta))}">Carpeta en Drive ↗</a>` : ''}</div>
     ${p.notasCliente ? `<div class="note"><b>Notas del cliente:</b> ${esc(p.notasCliente)}</div>` : ''}
     <h3 class="sec">Productos</h3>
     ${p.items.map((it, j) => `<div class="item"><div class="ph">${p.previews[j] ? `<img data-img="${p.previews[j]}" data-zoom="${p.previews[j]}" data-name="${esc(p.id + '-' + (j + 1))}" alt="Vista previa de ${esc(it.product)}">` : '<span class="muted">Sin foto</span>'}</div>
@@ -822,7 +824,7 @@ function openCliente(c, keep) {
   open = { type: 'cliente', key: c.tel || c.nombre };
   const ps = D.pedidos.filter(p => c.pedidos.includes(p.id));
   drawer(`${c.pedidos.length} pedido${c.pedidos.length > 1 ? 's' : ''} · cliente desde ${fdate(c.primero, dshort)}`, c.nombre, `
-    <div class="actions"><a class="btn wa" target="_blank" rel="noopener" href="${waLink(c.wa, '¡Hola ' + c.nombre + '! ')}">${ICON.wa.replace('<svg', '<svg width="16" height="16"')} Escribir por WhatsApp</a>${c.correo ? `<a class="btn" href="mailto:${esc(c.correo)}">Correo</a>` : ''}</div>
+    <div class="actions"><a class="btn wa" target="_blank" rel="noopener noreferrer" href="${waLink(c.wa, '¡Hola ' + c.nombre + '! ')}">${ICON.wa.replace('<svg', '<svg width="16" height="16"')} Escribir por WhatsApp</a>${c.correo ? `<a class="btn" href="mailto:${esc(c.correo)}">Correo</a>` : ''}</div>
     <div class="info">
       <div><small>WhatsApp</small>${esc(c.wa)}</div><div><small>Correo</small>${esc(c.correo || '—')}</div>
       <div><small>Ciudad</small>${esc(c.ciudad || '—')}</div><div><small>Total comprado</small><span class="money">${money(c.total)}</span></div>
@@ -916,7 +918,7 @@ function rPagos() {
     <td class="num"><input class="in" style="max-width:110px;text-align:right" type="number" min="0" step="0.01" value="${x.leido === '' ? '' : x.monto}" data-pmonto="${x.row}" aria-label="Monto de ${esc(x.pedido)}" title="${esc(x.texto)}"></td>
     <td class="num money">${money(x.esperado)}</td>
     <td><span class="tag ${tono(x.resultado)}">${esc(x.resultado)}</span>${x.revisado ? `<br><small class="muted">${esc(x.revisado)}</small>` : ''}</td>
-    <td>${urlSegura(x.url) ? `<a class="btn sm" href="${esc(urlSegura(x.url))}" target="_blank" rel="noopener">Ver ↗</a>` : ''}</td>
+    <td>${urlSegura(x.url) ? `<a class="btn sm" href="${esc(urlSegura(x.url))}" target="_blank" rel="noopener noreferrer">Ver ↗</a>` : ''}</td>
     <td class="nw"><button class="btn sm dark" data-pago="${x.row}" data-res="Confirmado">Confirmar</button> <button class="btn sm ghost" data-pago="${x.row}" data-res="Rechazado">Rechazar</button></td></tr>`).join('')
     || `<tr><td colspan="7" class="empty">${fPg === 'Por revisar' ? 'Nada por revisar. 👌' : 'Sin comprobantes todavía.'}</td></tr>`;
 }
@@ -939,7 +941,7 @@ function campoSitio(f) {
 }
 function rSitio() {
   const F = D.sitio || [];
-  $('#pSub').innerHTML = `Cambia lo que ven tus clientes sin tocar código.${webSegura(D.web) ? ` <a href="${esc(webSegura(D.web))}" target="_blank" rel="noopener">Ver sitio ↗</a>` : ' Pon la dirección de tu página en Config › Sitio web para ver las fotos aquí.'}`;
+  $('#pSub').innerHTML = `Cambia lo que ven tus clientes sin tocar código.${webSegura(D.web) ? ` <a href="${esc(webSegura(D.web))}" target="_blank" rel="noopener noreferrer">Ver sitio ↗</a>` : ' Pon la dirección de tu página en Config › Sitio web para ver las fotos aquí.'}`;
   $('#sitioBody').innerHTML = F.length ? GRUPOS_SITIO.map(([t, re]) => { const fs = F.filter(f => re.test(f.clave)); return fs.length ? `<div class="card sitio-g"><h3>${t}</h3><div class="campos">${fs.map(campoSitio).join('')}</div></div>` : ''; }).join('')
     : '<div class="empty">Falta la hoja Sitio. En la hoja de cálculo corre Pehn › Configurar hojas.</div>';
   $('#sitioBar').hidden = !SIT.size;
