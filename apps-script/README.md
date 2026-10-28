@@ -43,6 +43,16 @@ Aun así, el código se protege solo:
 - Siempre queda 1 correo de reserva para el resumen. Sin cuota o si Gmail falla, el pedido se guarda igual y la columna *Correo cliente* dice "Sin correo" o "Falló: motivo" (sale en el resumen para escribirle por WhatsApp).
 - Con 48 pedidos al día salen 48 + 1 correos, bajo el límite de 100.
 
+## Comprobantes: verificación al instante (Verificacion.gs)
+
+Apenas el cliente sube su comprobante, el sitio lo manda a verificar y en unos segundos le dice si pasó.
+Se rechaza si: no se puede leer · no parece comprobante de banco · el monto no es el anticipo (pagar de más sí pasa) ·
+no aparecen los últimos 4 dígitos de la cuenta de **Config › Datos bancarios** · la fecha es de hace más de 7 días ·
+el mismo archivo o la misma referencia ya se usó. El total del pedido tampoco puede ser menor que el precio de sus piezas.
+**Config › Comprobante que no pasa la verificación**: `Rechazar` (por defecto) o `Revisar` (lo acepta y queda en CRM › Pagos).
+Límite honesto: leer una imagen no prueba que el banco movió el dinero; una captura editada con todos los datos
+correctos pasaría. Para eso hay que comparar con el estado de cuenta (o las alertas de transferencia del banco).
+
 ## Instalación (15 minutos)
 
 1. Crea una hoja nueva en Google Sheets. Menú **Extensiones › Apps Script**.

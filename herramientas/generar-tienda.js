@@ -214,9 +214,9 @@ const gs = `/**
  * (cargarCatalogo en Setup.gs): agrega lo que falte y no toca lo que ya existe.
  */
 
-// [SKU, Pieza (producto + talla + color), Categoría]
+// [SKU, Pieza (producto + talla + color), Categoría, Precio de venta (L)]
 const CATALOGO_PIEZAS = [
-${piezas.map(c => fila([c.sku, nombrePieza(c), c.categoria])).join('\n')}
+${piezas.map(c => fila([c.sku, nombrePieza(c), c.categoria, Number(c.precio)])).join('\n')}
 ];
 
 // [Clave que manda el sitio, SKU (vacío = no gasta inventario), Cantidad, Notas]

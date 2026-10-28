@@ -23,22 +23,23 @@ export function reinsertarEnCarrito(idx, renglon) { carrito.splice(idx, 0, rengl
 export function vaciarCarrito() { carrito = []; }
 
 // ---------- el cajón del pedido: paso, datos del paso 1, comprobante y cuándo se mostró el formulario ----------
-const caja = { vista: 'cart', datos: null, comprobante: '', desde: 0 };
+const caja = { vista: 'cart', datos: null, comprobante: '', ficha: '', desde: 0 };
 // qué paso se ve: 'cart' | 'checkout' | 'anticipo'
 export const vistaDeCaja = () => caja.vista;
 export function irAVistaDeCaja(vista) { caja.vista = vista; }
 // lo que la persona escribió en el paso 1 (null si aún nada)
 export const datosDeCaja = () => caja.datos;
 export function guardarDatosDeCaja(datos) { caja.datos = datos; }
-// foto o PDF del comprobante, ya como texto ('' si aún no hay)
+// foto o PDF del comprobante YA VERIFICADO, como texto ('' si aún no hay), y la ficha que dio el servidor al verificarlo
 export const comprobanteDeCaja = () => caja.comprobante;
-export function guardarComprobanteDeCaja(comprobante) { caja.comprobante = comprobante; }
+export const fichaDeCaja = () => caja.ficha;
+export function guardarComprobanteDeCaja(comprobante, ficha = '') { caja.comprobante = comprobante; caja.ficha = comprobante ? ficha : ''; }
 // anota la hora en que se mostró el formulario (solo la primera vez): el servidor rechaza envíos "instantáneos" de bots
 export function marcarInicioDeFormulario() { if (!caja.desde) caja.desde = performance.now(); }
 // milisegundos desde que se mostró el formulario
 export const msDesdeElFormulario = () => Math.round(performance.now() - caja.desde);
 // después de enviar el pedido: el cajón vuelve a empezar
-export function reiniciarCaja() { Object.assign(caja, { vista: 'cart', datos: null, comprobante: '', desde: 0 }); }
+export function reiniciarCaja() { Object.assign(caja, { vista: 'cart', datos: null, comprobante: '', ficha: '', desde: 0 }); }
 
 // ---------- el diseño abierto en el personalizador ----------
 // { p (producto), cfg (opciones elegidas), qty, editIdx (posición en el carrito, o null si es nuevo), fig (figura activa),

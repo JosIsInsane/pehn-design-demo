@@ -37,7 +37,7 @@ const HEADERS = {
   movimientos: ['Fecha', 'SKU', 'Pieza', 'Cantidad', 'Stock después', 'Motivo', 'Pedido', 'Usuario'],
   clientes: ['WhatsApp', 'Nombre', 'Correo', 'Ciudad', 'Primer pedido', 'Último pedido', 'Etiquetas', 'Notas'],
   sitio: ['Clave', 'Valor', 'Tipo', 'Para qué sirve'],
-  pagos: ['Fecha', 'Pedido', 'Monto leído', 'Esperado', 'Resultado', 'Comprobante', 'Texto leído', 'Revisado por', 'Notas'],
+  pagos: ['Fecha', 'Pedido', 'Monto leído', 'Esperado', 'Resultado', 'Comprobante', 'Texto leído', 'Revisado por', 'Notas', 'Huella'],
   config: ['Ajuste', 'Valor', 'Para qué sirve'],
 };
 
@@ -62,6 +62,7 @@ const CONFIG_DEFAULTS = [
   ['Datos bancarios', '', 'Cuenta para el anticipo. Se muestra al cliente en Mi pedido (ej. BAC · Ahorro · 123456789 · Pehn Design).'],
   ['Hora del resumen diario', 20, 'Hora (0 a 23) en que llega el resumen al Correo del negocio. 20 = 8 pm. Al cambiarla se reprograma sola.'],
   ['Resumen diario al negocio', 'Sí', 'Sí / No. Reemplaza al viejo "Aviso de stock bajo" (si ese ajuste existía, se copia aquí su valor).'],
+  ['Comprobante que no pasa la verificación', 'Rechazar', 'Rechazar = el sitio no deja enviar un comprobante que no cuadra (monto, cuenta, fecha, repetido). Revisar = lo acepta y queda en CRM › Pagos para revisarlo a mano.'],
 ];
 
 // hora del resumen: entero 0–23; vacío o inválido = 20

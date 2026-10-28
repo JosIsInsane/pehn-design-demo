@@ -3,8 +3,8 @@
  * - Para ver un pedido se pide el número de pedido Y el WhatsApp con el que se hizo. Si no coinciden
  *   se responde lo mismo que si no existiera (así nadie puede adivinar pedidos ajenos).
  * - Nunca se devuelve nombre, correo, ciudad ni notas: solo estado, productos y montos.
- * - El comprobante se guarda en la carpeta del pedido y se lee el monto con OCR de Google Drive.
- *   El resultado ("Coincide" o "Revisar") es una ayuda: el pago se confirma a mano en el CRM › Pagos.
+ * - El comprobante se verifica en el momento (Verificacion.gs): si no pasa, se rechaza o queda en revisión
+ *   según Config. "Coincide" = pasó todas las reglas; el CRM › Pagos permite confirmar a mano.
  *
  * SI NO LEE EL MONTO ("Sin lectura"):
  *   Editor › Servicios (+) › Drive API › Agregar. Sin ese servicio el comprobante se guarda igual,
@@ -51,29 +51,32 @@ function recibirComprobante_(d, cfg) {
   if (p.Estado === 'Cancelado') throw new Error('Este pedido está cancelado. Escríbenos por WhatsApp.');
   const pago = resumenPago_(p, cfg);
   const esperado = pago.porPagarAnticipo || pago.saldo;
+  if (!comprobanteValido_(d.file)) throw new Error('El comprobante debe ser foto (JPG, PNG) o PDF de menos de 5 MB.');
 
-  const leido = prepararComprobante_(carpetaDePedido_(p), d.file); // Drive y OCR sin candado
-  return conCandado_(() => anotarPago_(p, leido, esperado));
+  // lo lento (OCR y Drive) va FUERA del candado; si no pasa y Config dice Rechazar, no se guarda nada
+  const lectura = leerComprobante_(d.file);
+  const revision = revisarComprobante_(lectura, esperado, pago.saldo || esperado, cfg);
+  if (!revision.ok && rechazarSinVerificar_(cfg)) throw new Error(revision.motivo);
+  const archivo = guardarComprobante_(carpetaDePedido_(p), d.file);
+  return conCandado_(() => anotarPago_(p, { archivo, lectura, revision }, esperado));
 }
 
 // ¿el archivo parece un comprobante válido? (tipo, tamaño y firma de bytes; se revisa antes de crear nada)
 const comprobanteValido_ = s => !!dataUrlValido_(s);
 
-// Lo lento, FUERA del candado: guarda el archivo en Drive y lee el monto con OCR. Si luego el pedido falla,
-// el archivo queda suelto en Drive (sin daño).
-function prepararComprobante_(carpeta, dataUrl) {
+function guardarComprobante_(carpeta, dataUrl) {
   const archivo = guardarImagen_(carpeta, dataUrl, `Comprobante ${Utilities.formatDate(now_(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH.mm')}`);
   if (!archivo) throw new Error('El comprobante debe ser foto (JPG, PNG) o PDF de menos de 5 MB.');
-  return { archivo, lectura: leerTexto_(archivo.blob) };
+  return archivo;
 }
 
-// Solo la fila en Pagos: esto sí va dentro del candado. p: { ID }
-function anotarPago_(p, { archivo, lectura }, esperado) {
-  const monto = lectura === null ? null : elegirMonto_(montosEn_(lectura), esperado);
-  const resultado = lectura === null ? 'Sin lectura' : monto == null ? 'Revisar: sin monto' : Math.abs(monto - esperado) <= 1 ? 'Coincide' : 'Revisar: no coincide';
+// Solo la fila en Pagos: esto sí va dentro del candado. p: { ID }; revision viene de Verificacion.gs
+function anotarPago_(p, { archivo, lectura, revision }, esperado) {
+  const monto = revision.monto;
+  const resultado = revision.ok ? 'Coincide' : lectura.texto == null ? 'Sin lectura' : 'Revisar: ' + revision.nota;
   sheet_('pagos').appendRow(fila_([now_(), p.ID, monto == null ? '' : monto, esperado, resultado, archivo.url,
-    texto_(lectura || '', 2000), '', '']));
-  return { resultado: resultado === 'Coincide' ? 'Coincide' : 'Revisión', monto, esperado };
+    texto_(lectura.texto || '', 2000), '', revision.ok ? '' : revision.motivo, marcaDe_(lectura)]));
+  return { resultado: revision.ok ? 'Coincide' : 'Revisión', monto, esperado };
 }
 
 // "Mis pedidos": varios pedidos de este dispositivo a la vez (cada uno con su WhatsApp)
