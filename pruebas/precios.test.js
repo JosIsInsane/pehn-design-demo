@@ -20,6 +20,14 @@ const server = http.createServer((req, res) => {
   if (!f.startsWith(RAIZ) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
   res.writeHead(200, { 'Content-Type': TIPOS[path.extname(f)] || 'application/octet-stream' }); fs.createReadStream(f).pipe(res);
 });
+// Corre fn dentro de la página con los módulos del sitio ya cargados (son los mismos que usa la página: import() comparte caché).
+// fn recibe (modulos, arg): saca de modulos lo que necesite, por ejemplo ({ productoDe, defaults }, cambios) => …
+const conSitio = (pagina, fn, arg = null) => pagina.evaluate(`(async () => {
+  const rutas = ['/datos.js', '/js/producto.js', '/js/envio.js', '/js/utiles.js'];
+  const modulos = Object.assign({}, ...(await Promise.all(rutas.map(r => import(r)))));
+  return (${fn})(modulos, ${JSON.stringify(arg)});
+})()`);
+
 let fallas = 0;
 const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
 
@@ -40,23 +48,23 @@ const CSV = Object.fromEntries(filas.map(r => [r[0], Number(r[5])]));
   await page.click('[data-aviso="ok"]');
 
   // 1. el cuadro cuesta la suma de sus piezas
-  const precio = (cambios) => page.evaluate(c => { const p = productoDe('cuadro'), cfg = defaults(p); Object.assign(cfg, c); return priceOf(p, cfg).unit; }, cambios);
+  const precio = cambios => conSitio(page, ({ productoDe, defaults, priceOf }, c) => { const p = productoDe('cuadro'), cfg = defaults(p); Object.assign(cfg, c); return priceOf(p, cfg).unit; }, cambios);
   ok(await precio({ size: 'gra', dogs: 1, adds: ['luces'] }) === 570 + 180 + 70 + 90, 'Cuadro: Retratera 3D grande + 2 figuras + 1 perro + luces = 910');
   ok(await precio({ size: 'peq' }) === 500 + 180, 'Cuadro: Retratera 3D pequeña + 2 figuras = 680');
   ok(await precio({ size: 'med', cats: 1, bunnies: 2 }) === 530 + 180 + 70 + 140, 'Cuadro: mediana + gatito + 2 conejitos');
   ok(await precio({ size: 'med', adds: ['luces', 'dedicatoria', 'iniciales', 'fotos', 'fondo', 'dulces'] }) === 530 + 180 + 90 + 30 + 40 + 30 + 30 + 120, 'Cuadro: los seis extras suman sus piezas');
   ok(await precio({ size: 'med', tpl: 'calendario', deco: 'pride', frame: '#B9824C' }) === 530 + 180, 'Calendario, arcoíris y marco madera no cuestan');
-  const conFig = await page.evaluate(() => {
+  const conFig = await conSitio(page, ({ productoDe, defaults, priceOf }) => {
     const p = productoDe('cuadro'), cfg = defaults(p); cfg.size = 'med';
     Object.assign(cfg.figs[0], { hat: 'cumple', outfit: 'falda', hand: 'moto', extras: ['lentes', 'barba', 'aretes'] });
     Object.assign(cfg.figs[1], { hat: 'birrete', outfit: 'lego', hand: 'bebe' });
     return priceOf(p, cfg).unit;
   });
   ok(conFig === 530 + 180 + (90 + 30 + 120) + (60 + 30 + 90), 'Figuras: gorrito 90 + falda 30 + moto 120 + birrete 60 + camisa Lego 30 + bebé 90 (lentes, barba y aretes a 0)');
-  ok(await page.evaluate(() => { const g = FIG_GROUPS.find(x => x.id === 'hand'); return g.options.length === 24 && g.options[0].price === 0; }), 'Accesorio en la mano: Ninguno + 23 accesorios');
+  ok(await conSitio(page, ({ FIG_GROUPS }) => { const g = FIG_GROUPS.find(x => x.id === 'hand'); return g.options.length === 24 && g.options[0].price === 0; }), 'Accesorio en la mano: Ninguno + 23 accesorios');
 
   // 2. todas las opciones con piezas cuestan lo que dice el CSV
-  const opciones = await page.evaluate(() => {
+  const opciones = await conSitio(page, ({ FIG_GROUPS, PRODUCTS }) => {
     const out = [], ver = (what, skus, price) => out.push({ what, skus, price });
     const grupos = (gs, p) => gs.forEach(g => {
       (g.options || []).forEach(o => { if (o.skus) ver(`${p} · ${g.label} · ${o.label}`, o.skus, o.price); else if (o.price) ver(`${p} · ${o.label} (sin pieza)`, [], o.price); });
@@ -73,10 +81,10 @@ const CSV = Object.fromEntries(filas.map(r => [r[0], Number(r[5])]));
   });
   const malas = opciones.filter(o => o.skus.reduce((s, k) => s + (CSV[k] ?? NaN), 0) !== o.price || (!o.skus.length));
   ok(opciones.length > 200 && !malas.length, `${opciones.length} opciones/variantes con precio = suma de sus piezas del CSV` + (malas.length ? ': ' + malas.slice(0, 5).map(m => m.what).join(' | ') : ''));
-  ok(await page.evaluate(() => PRODUCTS.flatMap(p => (p.variants || []).map(v => v.sku)).length), 'Hay variantes');
+  ok(await conSitio(page, ({ PRODUCTS }) => PRODUCTS.flatMap(p => (p.variants || []).map(v => v.sku)).length), 'Hay variantes');
 
   // 3. variantes: cambia el precio con talla/color y solo existen combinaciones reales
-  const v = await page.evaluate(() => {
+  const v = await conSitio(page, ({ productoDe, defaults, varFix, priceOf, COLORES, varDisp }) => {
     const out = {}, pr = id => productoDe(id), at = (id, c) => { const p = pr(id), cfg = defaults(p); Object.assign(cfg, c); varFix(p, cfg); return { cfg, price: priceOf(p, cfg).unit }; };
     const mini = pr('t-retratera-mini'), col = id => mini.groups.find(g => g.id === 'color').options.find(o => o.label === id).v;
     out.miniBlanco = at('t-retratera-mini', { color: col('Blanco') }).price; out.miniNegro = at('t-retratera-mini', { color: col('Negro') }).price;
@@ -99,17 +107,18 @@ const CSV = Object.fromEntries(filas.map(r => [r[0], Number(r[5])]));
   ok(v.boxer === 420, 'Boxer 420');
 
   // 3b. en pantalla: la tarjeta de la retratera mini cambia de precio al elegir color
-  await page.evaluate(() => openCustom('t-retratera-mini'));
+  const tarjeta = await conSitio(page, ({ CARDS }) => CARDS.findIndex(c => c.id === 't-retratera-mini'));
+  await page.goto(base + 'catalogo.html?card=' + tarjeta); // abre el personalizador (se descarga en ese momento)
   await page.waitForSelector('#custom.open');
   const t0 = (await page.textContent('#cTotal')).replace(/\D/g, '');
   await page.click('#cForm .sw button[title="Negro"]'); await page.waitForTimeout(700);
   const t1 = (await page.textContent('#cTotal')).replace(/\D/g, '');
   ok(t0 === '190' || t1 === '190', `Precio en pantalla sigue al color (${t0} → ${t1})`);
   ok((await page.locator('#cForm .ch button:disabled, #cForm .sw button:disabled').count()) >= 0, 'Opciones inexistentes salen deshabilitadas');
-  await page.evaluate(() => closeModal('#custom'));
+  await page.keyboard.press('Escape');
 
   // 4. recetas: toda clave que arma el sitio tiene receta, y cada pieza con precio descuenta su SKU
-  const claves = await page.evaluate(() => {
+  const claves = await conSitio(page, ({ PRODUCTS, FIG_GROUPS, defaults, clone, varFix, varSets, bomOf }) => {
     const out = [];
     PRODUCTS.forEach(p => {
       const probar = (cfg, tag) => bomOf(p, cfg, 1).forEach(k => out.push({ k: k.key, tag: `${p.name} ${tag}` }));
@@ -136,7 +145,7 @@ const CSV = Object.fromEntries(filas.map(r => [r[0], Number(r[5])]));
   const skusUsados = [...new Set(res.flat().filter(Boolean))];
   ok(skusUsados.every(s => inv.has(s)), `${skusUsados.length} SKU de las recetas existen en Inventario`);
   // cada opción con precio descuenta justo las piezas que cobra
-  const faltan = await page.evaluate(() => {
+  const faltan = await conSitio(page, ({ PRODUCTS, FIG_GROUPS }) => {
     const todos = [];
     const rev = (gs, p) => gs.forEach(g => (g.options || []).forEach(o => { if (o.skus && o.skus.length) todos.push([`${p} · ${g.label} · ${o.label}`, o.skus]); }));
     PRODUCTS.forEach(p => rev(p.groups.filter(g => !(p.groups.some(x => x.id === 'extras') && FIG_GROUPS.some(f => f.id === g.id))), p.name));

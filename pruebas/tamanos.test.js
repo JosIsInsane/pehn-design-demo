@@ -14,7 +14,7 @@ const lista = (dir, ext) => fs.existsSync(path.join(RAIZ, dir))
   ? fs.readdirSync(path.join(RAIZ, dir)).filter(f => ext.test(f)).map(f => (dir ? dir + '/' : '') + f)
   : [];
 const archivos = [
-  ...lista('js', /\.js$/), ...lista('css', /\.css$/),
+  ...lista('js', /\.js$/), ...lista('js/paginas', /\.js$/), ...lista('css', /\.css$/),
   ...lista('apps-script', /\.(gs|html)$/), ...lista('', /\.html$/),
 ].filter(f => !GENERADOS.has(f));
 

@@ -1,15 +1,21 @@
 /* Pehn Design — PERSONALIZADOR · FORMULARIO: el HTML de cada grupo de opciones, los pasos y el botón principal.
-   Funciones que solo leen App.cur y regresan HTML (no escuchan eventos). Depende de: base.js, producto.js,
-   datos.js (FIG_GROUPS, LOOKS, varDisp), dibujos.js (headSVG). Lo usan: personalizador-movil.js (que también dibuja el formulario) y -eventos.js. */
+   Funciones que solo leen el diseño abierto y regresan HTML (no escuchan eventos).
+   Lo usan: personalizador-movil.js (que también dibuja el formulario) y -eventos.js. */
+import { CONFIG, FIG_GROUPS, LOOKS, varDisp } from '../datos.js';
+import { headSVG } from '../dibujos.js';
+import { $, esc, movimientoReducido } from './utiles.js';
+import { fmt, fmtDate } from './formato.js';
+import { disenoActual, cambiarFigura } from './estado.js';
+import { visible } from './producto.js';
 
-const plus = n => n > 0 ? `+${fmt(n)}` : n < 0 ? `−${fmt(-n)}` : '';
-const multiTxt = n => n ? `${n} elegido${n > 1 ? 's' : ''}` : 'Puedes elegir varios';
-const cntTxt = (len, g) => `${len}/${g.max}${g.price ? ' · ' + plus(g.price) : ''}`;
-const isLast = () => !App.cur.p.steps || App.cur.step === App.cur.p.steps.length - 1;
-const dirty = () => App.cur && JSON.stringify([App.cur.cfg, App.cur.qty]) !== App.cur.start;
+export const plus = n => n > 0 ? `+${fmt(n)}` : n < 0 ? `−${fmt(-n)}` : '';
+export const multiTxt = n => n ? `${n} elegido${n > 1 ? 's' : ''}` : 'Puedes elegir varios';
+export const cntTxt = (len, g) => `${len}/${g.max}${g.price ? ' · ' + plus(g.price) : ''}`;
+export const isLast = () => !disenoActual().p.steps || disenoActual().step === disenoActual().p.steps.length - 1;
+export const dirty = () => disenoActual() && JSON.stringify([disenoActual().cfg, disenoActual().qty]) !== disenoActual().start;
 // sc = 'p' (producto) o 'f' (figura activa)
-const target = sc => sc === 'f' ? App.cur.cfg.figs[App.cur.fig] : App.cur.cfg;
-const groupsOf = sc => sc === 'f' ? FIG_GROUPS : App.cur.p.groups;
+export const target = sc => sc === 'f' ? disenoActual().cfg.figs[disenoActual().fig] : disenoActual().cfg;
+export const groupsOf = sc => sc === 'f' ? FIG_GROUPS : disenoActual().p.groups;
 
 // ---------- un grupo de opciones, según su tipo ----------
 const grpHead = (label, em) => `<div class="grp-h"><span class="l">${label}</span><em>${em}</em></div>`;
@@ -18,7 +24,7 @@ const precioChip = o => o.price ? `<small>${plus(o.price)}</small>` : '';
 
 // colores (swatch) y opciones únicas (choice)
 function opcionesHTML(g, cfg, sc) {
-  const v = cfg[g.id], a = attrsDe(sc, g), { p } = App.cur;
+  const v = cfg[g.id], a = attrsDe(sc, g), { p } = disenoActual();
   const sel = g.options.find(o => o.v === v);
   const off = o => (sc === 'p' && p.variants && !varDisp(p, g.id, o.v, cfg) ? ' disabled' : '');
   const body = g.type === 'swatch'
@@ -57,8 +63,8 @@ function contadorHTML(g, cfg, sc) {
 }
 // figuras del cuadro (escritorio): pestañas, estilos rápidos y las opciones de la figura activa
 function figurasHTML(g, cfg, sc) {
-  const v = cfg[g.id], a = attrsDe(sc, g), cur = App.cur;
-  const i = Math.min(cur.fig, v.length - 1); cur.fig = i;
+  const v = cfg[g.id], a = attrsDe(sc, g), cur = disenoActual();
+  const i = Math.min(cur.fig, v.length - 1); if (i !== cur.fig) cambiarFigura(i);
   const f = v[i];
   return `<div class="grp figs-grp">${grpHead(`${g.label} · ${fmt(g.pricePer)} c/u`, `${v.length} de ${g.max}`)}
       <div class="ftabs" role="tablist">${v.map((x, j) => `<button type="button" role="tab" aria-selected="${j === i}" aria-pressed="${j === i}" data-tab="${j}"><span class="av">${headSVG(x)}</span><span class="nm">${esc(String(x.name || '').trim() || 'Figura ' + (j + 1))}</span></button>`).join('')}
@@ -70,22 +76,22 @@ function figurasHTML(g, cfg, sc) {
       </div></div>`;
 }
 const HTML_DE_GRUPO = { swatch: opcionesHTML, choice: opcionesHTML, multi: multiHTML, text: textoHTML, textarea: textoHTML, date: fechaHTML, file: archivoHTML, stepper: contadorHTML, figs: figurasHTML };
-function groupHTML(g, cfg, sc) {
+export function groupHTML(g, cfg, sc) {
   if (!visible(g, cfg)) return '';
   return HTML_DE_GRUPO[g.type]?.(g, cfg, sc) ?? '';
 }
 
 // ---------- cantidad, pasos y botón principal ----------
-const qtyHTML = () => `<div class="grp row"><div class="grp-h"><span class="l">Cantidad</span><em>${CONFIG.bulkPct}% menos desde ${CONFIG.bulkMin}</em></div>
-  <div class="step-n"><button type="button" data-qty="-1" aria-label="Menos" ${App.cur.qty <= 1 ? 'disabled' : ''}>−</button><b aria-live="polite">${App.cur.qty}</b><button type="button" data-qty="1" aria-label="Más">+</button></div></div>`;
-const stepsNavHTML = (p, s) => `<nav class="steps-nav" aria-label="Pasos"><span class="bar" style="--p:${(s + 1) / p.steps.length}"></span>${p.steps.map((t, i) => `<button type="button" data-step="${i}" ${i === s ? 'aria-current="step"' : ''} class="${i < s ? 'done' : ''}"><i>${i < s ? '✓' : i + 1}</i><span>${t}</span></button>`).join('')}</nav>`;
+export const qtyHTML = () => `<div class="grp row"><div class="grp-h"><span class="l">Cantidad</span><em>${CONFIG.bulkPct}% menos desde ${CONFIG.bulkMin}</em></div>
+  <div class="step-n"><button type="button" data-qty="-1" aria-label="Menos" ${disenoActual().qty <= 1 ? 'disabled' : ''}>−</button><b aria-live="polite">${disenoActual().qty}</b><button type="button" data-qty="1" aria-label="Más">+</button></div></div>`;
+export const stepsNavHTML = (p, s) => `<nav class="steps-nav" aria-label="Pasos"><span class="bar" style="--p:${(s + 1) / p.steps.length}"></span>${p.steps.map((t, i) => `<button type="button" data-step="${i}" ${i === s ? 'aria-current="step"' : ''} class="${i < s ? 'done' : ''}"><i>${i < s ? '✓' : i + 1}</i><span>${t}</span></button>`).join('')}</nav>`;
 
 // entra deslizando (con "menos movimiento" solo se funde)
-function slideIn(el, dir) {
-  el.animate([{ opacity: 0, transform: REDUCED ? 'none' : `translateX(${dir * 28}px)` }, { opacity: 1, transform: 'none' }], { duration: REDUCED ? 160 : 280, easing: 'cubic-bezier(.22,1,.36,1)' });
+export function slideIn(el, dir) {
+  el.animate([{ opacity: 0, transform: movimientoReducido() ? 'none' : `translateX(${dir * 28}px)` }, { opacity: 1, transform: 'none' }], { duration: movimientoReducido() ? 160 : 280, easing: 'cubic-bezier(.22,1,.36,1)' });
 }
-function updateCTA() {
-  const cur = App.cur, label = $('#addLabel');
+export function updateCTA() {
+  const cur = disenoActual(), label = $('#addLabel');
   if (cur.mov) { $('#backBtn').hidden = cur.sub || cur.step === 0; }
   if (cur.mov && cur.sub) label.textContent = 'Listo';
   else if (!isLast()) label.textContent = `Siguiente: ${cur.p.steps[cur.step + 1]}`;
@@ -94,12 +100,12 @@ function updateCTA() {
 }
 
 // formulario de escritorio: todo el producto, o un paso a la vez
-function buildFormEscritorio(dir = 0) {
-  const { p } = App.cur, form = $('#cForm');
-  const grupos = (s) => p.groups.filter(g => (g.step || 0) === s).map(g => groupHTML(g, App.cur.cfg, 'p')).join('');
-  if (!p.steps) form.innerHTML = p.groups.map(g => groupHTML(g, App.cur.cfg, 'p')).join('') + qtyHTML();
+export function buildFormEscritorio(dir = 0) {
+  const { p } = disenoActual(), form = $('#cForm');
+  const grupos = (s) => p.groups.filter(g => (g.step || 0) === s).map(g => groupHTML(g, disenoActual().cfg, 'p')).join('');
+  if (!p.steps) form.innerHTML = p.groups.map(g => groupHTML(g, disenoActual().cfg, 'p')).join('') + qtyHTML();
   else {
-    const s = App.cur.step;
+    const s = disenoActual().step;
     form.innerHTML = stepsNavHTML(p, s) + `<div class="step-body">${grupos(s)}${isLast() ? qtyHTML() : ''}</div>`;
   }
   if (dir) { const b = form.querySelector('.step-body'); b && slideIn(b, dir); }

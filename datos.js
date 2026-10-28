@@ -2,10 +2,10 @@
    Aquí se cambia lo que vende la tienda: precios, opciones, colores, productos y tarjetas.
    No hace falta tocar dibujos.js ni js/ para eso.
 
-   Orden de carga (todas las páginas): piezas.js → datos.js → datos-tienda.js → js/base.js → dibujos.js → marco.js → js/*.js
-   (cada página carga solo los módulos que usa; el orden exacto está en el <script> de cada .html y la lista en docs/CONTEXTO.md).
-   Lo que datos.js usa de js/base.js (clone) se llama al usar la página, no al cargar el archivo.
-   datos-tienda.js lo genera herramientas/generar-tienda.js desde docs/inventario/catalogo-base.csv (no se edita a mano).
+   Es un módulo: exporta CONFIG, PRODUCTS, CARDS, CATS, SUBS, PORTADA… y los demás archivos lo importan.
+   Importa: piezas.js (precios, generado), datos-tienda.js (productos sencillos de la tienda, generado)
+   y js/utiles.js (solo clone). No depende de nada del navegador: Node lo puede importar (herramientas/generar-tienda.js).
+   PRODUCTS = los personalizadores de abajo (PRODUCTS_BASE) + los de datos-tienda.js. CARDS, CATS y SUBS igual.
 
    PRECIOS = los de venta por pieza del CSV. Un producto armado cuesta la SUMA de sus piezas.
    TODAS las filas del CSV son piezas (tabla PIEZAS en piezas.js, generada). Una opción referencia sus piezas con
@@ -14,15 +14,16 @@
    CÓMO AGREGAR...
    - Un color: súmalo a la paleta (SKIN, HAIRC, CLOTH…) como ['#hex', 'Nombre'].
    - Una opción con precio: op('valor', 'Texto', 'SKU') dentro de options (el precio sale del CSV). Gratis: { v, label, price: 0 }.
-   - Un producto: copia uno de PRODUCTS, cambia id/name/base y su render (debe existir en RENDER de dibujos.js).
-   - Una tarjeta del catálogo: agrega { id: 'producto' } a CARDS (cfg y photo son opcionales).
+   - Un producto personalizable: copia uno de PRODUCTS_BASE, cambia id/name/base y su render (debe existir en RENDER de dibujos.js).
+   - Una tarjeta del catálogo: agrega { id: 'producto' } a CARDS_BASE (cfg y photo son opcionales).
    SI ALGO SE VE MAL: abre la consola del navegador (F12). revisarDatos() en js/arranque.js avisa con "[Pehn]"
    cuando una tarjeta apunta a un producto que no existe o a un dibujo que falta. */
 
-/* Pehn Design — catálogo + personalizador
-   Precios de ejemplo: ajustar en PRODUCTS. Envío del pedido: ver submitOrder(). */
+import { precioDe } from './piezas.js';
+import { CATS_TIENDA, SUBS_TIENDA, TIENDA } from './datos-tienda.js';
+import { clone } from './js/utiles.js';
 
-const CONFIG = {
+export const CONFIG = {
   currency: 'HNL',          // lempiras
   locale: 'es-HN',
   bulkMin: 5,               // descuento por volumen desde N piezas
@@ -38,11 +39,7 @@ const CONFIG = {
 };
 
 /* ---------- piezas ----------
-   PIEZAS (piezas.js, generado del CSV) = { sku: [nombre, precio de venta] }. El precio de una opción es la suma de sus piezas. */
-const precioDe = (...skus) => skus.reduce((s, k) => {
-  if (!PIEZAS[k]) { console.warn('[Pehn] SKU que no está en el CSV (piezas.js): ' + k); return s; }
-  return s + PIEZAS[k][1];
-}, 0);
+   precioDe(sku…) viene de piezas.js (generado del CSV): el precio de una opción es la suma de sus piezas. */
 // opción cuyo precio sale de sus piezas (una o varias): op('casco', 'Casco', 'ACC-CASCO')
 const op = (v, label, ...skus) => ({ v, label, skus, price: precioDe(...skus) });
 
@@ -54,7 +51,7 @@ const PANTS = [['#2E4A8C', 'Mezclilla'], ['#6FA8DC', 'Azul claro'], ['#1F1712', 
 const HEART = [['#F48FB1', 'Rosa'], ['#8EC5F2', 'Azul'], ['#D9363E', 'Rojo'], ['#7CC68A', 'Verde'], ['#B9A2F0', 'Lila'], ['#F6B07A', 'Durazno'], ['none', 'Sin corazón']];
 const BORDADO = [['#B3262E', 'Rojo'], ['#6FA8DC', 'Azul'], ['#2A1A0E', 'Negro'], ['#FFFDF9', 'Blanco'], ['#F48FB1', 'Rosa'], ['#2F8F5B', 'Verde']];
 // nombres de color del CSV -> color en pantalla (cada color tiene un tono distinto)
-const COLORES = { Amarillo: '#F6D64A', Azul: '#3E6E8E', Beige: '#E9D8B4', Blanco: '#FFFDF9', Celeste: '#8EC5F2', Dorado: '#D9B44A', 'Estándar': '#D8CFC4', Gris: '#9A9A9E', Lila: '#B9A2F0', Naranja: '#F08A1C', Negro: '#2A1A0E', Plata: '#C9CDD2', Plateado: '#A9AEB4', Rojo: '#D9363E', Rosa: '#F48FB1', Rosado: '#F7B6C8', Transparente: '#F4F1EC', Verde: '#2F8F5B', 'Verde aqua': '#7FD6C2', 'Verde oscuro': '#1F5A3A' };
+export const COLORES = { Amarillo: '#F6D64A', Azul: '#3E6E8E', Beige: '#E9D8B4', Blanco: '#FFFDF9', Celeste: '#8EC5F2', Dorado: '#D9B44A', 'Estándar': '#D8CFC4', Gris: '#9A9A9E', Lila: '#B9A2F0', Naranja: '#F08A1C', Negro: '#2A1A0E', Plata: '#C9CDD2', Plateado: '#A9AEB4', Rojo: '#D9363E', Rosa: '#F48FB1', Rosado: '#F7B6C8', Transparente: '#F4F1EC', Verde: '#2F8F5B', 'Verde aqua': '#7FD6C2', 'Verde oscuro': '#1F5A3A' };
 // [color, sku] -> opción de color cuyo precio es el de esa pieza
 const colSku = list => list.map(([n, sku]) => op(COLORES[n], n, sku));
 const colSw = names => names.map(n => ({ v: COLORES[n], label: n, price: 0 }));
@@ -63,10 +60,10 @@ const TALLAS = ['S', 'M', 'L', 'XL'].map(t => ({ v: t, label: t, price: 0 }));
 const sw = arr => arr.map(([v, label]) => ({ v, label, price: 0 }));
 
 // letras del personalizador (deben estar también en el <link> de Google Fonts de los .html)
-const FONTS = { groovy: "'Bagel Fat One'", clasica: "'Outfit'", script: "'Pacifico'", serif: "'Playfair Display'", college: "'Alfa Slab One'", firma: "'Great Vibes'" };
+export const FONTS = { groovy: "'Bagel Fat One'", clasica: "'Outfit'", script: "'Pacifico'", serif: "'Playfair Display'", college: "'Alfa Slab One'", firma: "'Great Vibes'" };
 
 /* ---------- opciones de cada figura ---------- */
-const FIG_GROUPS = [
+export const FIG_GROUPS = [
   { id: 'name', label: 'Nombre', type: 'text', max: 12, placeholder: 'Ej. Fer…' },
   { id: 'skin', label: 'Tono de piel', type: 'swatch', options: sw(SKIN) },
   { id: 'hair', label: 'Peinado', type: 'choice', options: [
@@ -108,7 +105,7 @@ const FIG_GROUPS = [
     ['vino', 'Copa de vino', 'ACC-COPA-DE-VINO'], ['trofeo', 'Trofeo', 'ACC-TROFEO'], ['mando', 'Mando Play', 'ACC-MANDO-PLAY'], ['guitarra', 'Guitarra', 'ACC-GUITARRA'],
   ].map(([v, label, sku]) => op(v, label, sku))) },
 ];
-const FIG_PRESETS = [
+export const FIG_PRESETS = [
   { name: 'Fer', skin: '#F6D3B3', hair: 'lado', hairColor: '#1F1712', face: 'feliz', outfit: 'sueter', torso: '#1F2A44', legs: '#B39B6E', printText: '' },
   { name: 'Clau', skin: '#E8B98F', hair: 'chongo', hairColor: '#1F1712', face: 'labios', outfit: 'blusa', torso: '#E9C88A', legs: '#1F2A44', printText: '' },
   { name: 'Alberto', skin: '#F6D3B3', hair: 'lado', hairColor: '#1F1712', face: 'lentes', outfit: 'traje', torso: '#2A1A0E', legs: '#1F1712', printText: '' },
@@ -120,18 +117,18 @@ const FIG_PRESETS = [
    p.variants = [{ o: { color: '#hex', size: 'M' }, sku: 'CAM-…', price: precioDe(sku) }]  (el orden de o es el orden de elección)
    p.varSets  = una o más piezas por pedido (ej. las dos sudaderas): { map: { color: 'color1', size: 'size1' }, showIf }
    Sin varSets se usa un solo juego con los mismos nombres. El precio sale de la variante elegida. */
-const varSets = p => p.varSets || [{ map: Object.fromEntries(Object.keys(p.variants[0].o).map(k => [k, k])) }];
-const varActivos = (p, cfg) => varSets(p).filter(s => !s.showIf || s.showIf(cfg));
+export const varSets = p => p.varSets || [{ map: Object.fromEntries(Object.keys(p.variants[0].o).map(k => [k, k])) }];
+export const varActivos = (p, cfg) => varSets(p).filter(s => !s.showIf || s.showIf(cfg));
 const varMatch = (r, s, cfg, n = Infinity) => Object.keys(s.map).slice(0, n).every(d => r.o[d] === cfg[s.map[d]]);
 const varFind = (p, s, cfg) => p.variants.find(r => varMatch(r, s, cfg));
 // ¿existe una variante con esa opción, dadas las elecciones anteriores?
-function varDisp(p, id, v, cfg) {
+export function varDisp(p, id, v, cfg) {
   const s = varSets(p).find(x => Object.values(x.map).includes(id)); if (!s) return true;
   const d = Object.keys(s.map).find(k => s.map[k] === id);
   return p.variants.some(r => varMatch(r, s, cfg, Object.keys(s.map).indexOf(d)) && r.o[d] === v);
 }
 // corrige una configuración: lo que no existe pasa a la primera opción que sí
-function varFix(p, cfg) {
+export function varFix(p, cfg) {
   varSets(p).forEach(s => Object.keys(s.map).forEach((d, i) => {
     const id = s.map[d];
     if (!varDisp(p, id, cfg[id], cfg)) cfg[id] = p.variants.find(r => varMatch(r, s, cfg, i)).o[d];
@@ -139,14 +136,14 @@ function varFix(p, cfg) {
   return cfg;
 }
 // arranca en la variante más barata (la tarjeta dice "desde")
-function varInicio(p, cfg) {
+export function varInicio(p, cfg) {
   const r = p.variants.reduce((m, x) => (x.price < m.price ? x : m));
   varSets(p).forEach(s => Object.keys(s.map).forEach(d => { cfg[s.map[d]] = r.o[d]; }));
 }
-const varLabel = (p, id, v) => p.groups.find(g => g.id === id)?.options.find(o => o.v === v)?.label ?? v;
+export const varLabel = (p, id, v) => p.groups.find(g => g.id === id)?.options.find(o => o.v === v)?.label ?? v;
 // clave de receta de la variante elegida: la usan bomOf (js/envio.js) y el generador de recetas
-const varKey = (p, s, cfg) => `${p.name} · ${Object.keys(s.map).map(d => varLabel(p, s.map[d], cfg[s.map[d]])).join(' · ') || 'Estándar'}`;
-function varLines(p, cfg) {
+export const varKey = (p, s, cfg) => `${p.name} · ${Object.keys(s.map).map(d => varLabel(p, s.map[d], cfg[s.map[d]])).join(' · ') || 'Estándar'}`;
+export function varLines(p, cfg) {
   const act = varActivos(p, cfg);
   return act.map((s, i) => {
     const r = varFind(p, s, cfg), det = Object.keys(s.map).map(d => varLabel(p, s.map[d], cfg[s.map[d]])).join(' · ');
@@ -155,7 +152,7 @@ function varLines(p, cfg) {
 }
 
 // formato viejo (cara única, sombrero en el peinado) -> capas nuevas; sirve también para pedidos guardados
-function normFig(f) {
+export function normFig(f) {
   if (!f || typeof f !== 'object') return f;
   if (!Array.isArray(f.extras)) f.extras = [];
   if (['labios', 'lentes', 'barba'].includes(f.face)) { if (!f.extras.includes(f.face)) f.extras.push(f.face); f.face = 'feliz'; }
@@ -166,12 +163,12 @@ function normFig(f) {
   if (!f.hand) f.hand = 'ninguno';
   return f;
 }
-const normCfg = (p, c) => { if (!c) return c; if (Array.isArray(c.figs)) c.figs.forEach(normFig); if (p && p.groups.some(g => g.id === 'extras')) normFig(c); if (p && p.variants) varFix(p, c); return c; };
+export const normCfg = (p, c) => { if (!c) return c; if (Array.isArray(c.figs)) c.figs.forEach(normFig); if (p && p.groups.some(g => g.id === 'extras')) normFig(c); if (p && p.variants) varFix(p, c); return c; };
 FIG_PRESETS.forEach(normFig);
-const figDefault = i => ({ ...clone(FIG_PRESETS[i % FIG_PRESETS.length]), name: '' });
+export const figDefault = i => ({ ...clone(FIG_PRESETS[i % FIG_PRESETS.length]), name: '' });
 
 // estilos rápidos: cambian la figura activa de un toque (se conserva el nombre)
-const LOOKS = [
+export const LOOKS = [
   { label: 'Casual él', f: { hair: 'corto', hat: 'ninguno', face: 'feliz', extras: [], outfit: 'playera', torso: '#3E6E8E', legs: '#2E4A8C' } },
   { label: 'Casual ella', f: { hair: 'largo', hat: 'ninguno', face: 'feliz', extras: ['labios', 'rubor'], outfit: 'blusa', torso: '#F48FB1', legs: '#1F1712' } },
   { label: 'Novio', f: { hair: 'lado', hat: 'ninguno', face: 'feliz', extras: ['barba'], outfit: 'traje', torso: '#2A1A0E', legs: '#1F1712' } },
@@ -205,7 +202,7 @@ const MARCOS_CUADRO = [
   op('gra', 'Grande', 'RETRATERA-3D-GRANDE'),
 ];
 
-const PRODUCTS = [
+export const PRODUCTS_BASE = [
   {
     // precio = suma de piezas: retratera 3D + figuras + mascotas + accesorios + extras (sin base)
     id: 'cuadro', name: 'Cuadro con minifiguras', cat: 'cuadros', base: 0, badge: 'Más pedido', bg: '#F48FB1',
@@ -370,7 +367,7 @@ const PRODUCTS = [
 ];
 
 /* tarjetas del catálogo. Cada cuadro con foto trae el diseño de ese pedido real ya armado */
-const CARDS = [
+export const CARDS_BASE = [
   { id: 'cuadro', title: 'Cuadro “Amor”', desc: 'La definición de amor con sus minifiguras sobre un corazón rosa en spray.', badge: 'Más pedido', bg: '#F48FB1', photo: 'fotos/cuadro-amor.jpg',
     cfg: { tpl: 'amor', word: 'Amor', body: TEXTS.amor, heart: '#F48FB1', figs: [{ ...FIG_PRESETS[0] }, { ...FIG_PRESETS[1] }] } },
   { id: 'cuadro', title: 'Happy Birthday azul', desc: 'Letras recortadas, corazón azul con brillitos, dedicatoria y fecha.', bg: '#8EC5F2', photo: 'fotos/cuadro-cumple.jpg',
@@ -395,19 +392,24 @@ const CARDS = [
   { id: 'termo' }, { id: 'llavero' }, { id: 'playera' }, { id: 'taza' },
 ];
 
-CARDS.forEach(c => c.cfg?.figs?.forEach(normFig));
+CARDS_BASE.forEach(c => c.cfg?.figs?.forEach(normFig));
 
-const CATS = [['todos', 'Todos'], ['cuadros', 'Cuadros'], ['figuras', 'Figuras y llaveros'], ['ropa', 'Ropa'], ['bolsas', 'Bolsas'], ['vasos', 'Vasos y tazas']];
-const catName = id => CATS.find(c => c[0] === id)?.[1] || '';
+// el catálogo completo: los personalizadores de arriba + los productos sencillos de datos-tienda.js
+export const PRODUCTS = [...PRODUCTS_BASE, ...TIENDA];
+export const CARDS = [...CARDS_BASE, ...TIENDA.map(p => ({ id: p.id }))];
+export const productoDe = id => PRODUCTS.find(p => p.id === id);
+
+export const CATS = [['todos', 'Todos'], ['cuadros', 'Cuadros'], ['figuras', 'Figuras y llaveros'], ['ropa', 'Ropa'], ['bolsas', 'Bolsas'], ['vasos', 'Vasos y tazas'], ...CATS_TIENDA];
+export const catName = id => CATS.find(c => c[0] === id)?.[1] || '';
 // subcategorías de cada categoría, en el orden en que salen en el filtro: [id, nombre]. Cada producto lleva su `sub`.
-// Aquí van las de los personalizadores; las de la tienda las suma datos-tienda.js (generado).
-const SUBS = {};
+// Primero las de los personalizadores; luego las de la tienda (SUBS_TIENDA, de datos-tienda.js).
+export const SUBS = {};
 const addSub = (cat, id, nombre) => { const l = SUBS[cat] || (SUBS[cat] = []); if (!l.some(s => s[0] === id)) l.push([id, nombre]); };
 [['figuras', 'minifiguras', 'Minifiguras'], ['figuras', 'llaveros', 'Llaveros'], ['ropa', 'camisas', 'Camisas'], ['ropa', 'abrigos', 'Abrigos'],
-  ['vasos', 'tazas', 'Tazas'], ['vasos', 'vasos', 'Vasos'], ['vasos', 'termos', 'Termos']].forEach(a => addSub(...a));
-const subName = (cat, id) => SUBS[cat]?.find(s => s[0] === id)?.[1] || '';
+  ['vasos', 'tazas', 'Tazas'], ['vasos', 'vasos', 'Vasos'], ['vasos', 'termos', 'Termos'], ...SUBS_TIENDA].forEach(a => addSub(...a));
+export const subName = (cat, id) => SUBS[cat]?.find(s => s[0] === id)?.[1] || '';
 // mosaicos de categorías en la landing
-const CAT_TILES = [
+export const CAT_TILES = [
   { cat: 'cuadros', photo: 'fotos/cuadro-amor.jpg', tint: 'var(--blush)', note: 'Con sus figuras, nombres y frase' },
   { cat: 'figuras', product: 'minifig', tint: 'var(--butter)', note: 'Minifiguras y llaveros' },
   { cat: 'ropa', product: 'sudadera', tint: 'var(--sage)', note: 'Sudaderas y playeras' },
@@ -417,7 +419,7 @@ const CAT_TILES = [
 
 // Tarjetas que salen en la landing, por su posición en CARDS (0 = la primera).
 // Si reordenas CARDS, ajusta estos números. Deben ser cuadros con cfg.
-const PORTADA = {
+export const PORTADA = {
   hero: [0, 1, 3, 2, 4],    // cuadros que van cambiando arriba
   destacados: [0, 1, 3, 2], // sección "Pedidos reales"
   blog: [0, 3, 1],          // dibujos de los artículos (data-mini="0..2")

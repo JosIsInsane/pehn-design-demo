@@ -1,23 +1,34 @@
 /* Pehn Design — TARJETAS de producto (inicio y catálogo): el HTML de cada tarjeta y sus fotos reales.
-   Depende de: base.js, producto.js, datos.js (CARDS, catName), dibujos.js (renderProduct). Lo usan: inicio.js, catalogo.js, personalizador.js.
-   Estado: App.fotos (qué fotos reales existen). */
+   Estado propio: qué fotos reales existen. */
+import { CARDS, productoDe, catName } from '../datos.js';
+import { renderProduct } from '../dibujos.js';
+import { esc } from './utiles.js';
+import { fmt } from './formato.js';
+import { cardCfg, priceOf } from './producto.js';
 
-const ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+export const ARROW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+
+// foto real -> true (existe) / false (no existe) / null (comprobando). Solo de este archivo.
+const fotos = {};
+// ¿se puede mostrar esta foto? (solo es "no" cuando ya se comprobó que el archivo no existe)
+export const fotoDisponible = src => fotos[src] !== false;
 
 // fotos reales: solo se ofrecen si el archivo existe
-CARDS.forEach(c => {
-  if (!c.photo || c.photo in App.fotos) return;
-  App.fotos[c.photo] = null;
-  const im = new Image();
-  im.onload = () => { App.fotos[c.photo] = true; };
-  im.onerror = () => { App.fotos[c.photo] = false; };
-  im.src = c.photo;
-});
-// foto real que no carga: la tarjeta se queda con el dibujo. Se escucha en captura porque "error" no burbujea.
-document.addEventListener('error', e => {
-  const img = e.target; if (!(img instanceof HTMLImageElement) || !img.matches('img[data-real]')) return;
-  img.closest('.card')?.classList.remove('has-photo'); img.nextElementSibling?.remove(); img.remove();
-}, true);
+export function iniciarTarjetas() {
+  CARDS.forEach(c => {
+    if (!c.photo || c.photo in fotos) return;
+    fotos[c.photo] = null;
+    const im = new Image();
+    im.onload = () => { fotos[c.photo] = true; };
+    im.onerror = () => { fotos[c.photo] = false; };
+    im.src = c.photo;
+  });
+  // foto real que no carga: la tarjeta se queda con el dibujo. Se escucha en captura porque "error" no burbujea.
+  document.addEventListener('error', e => {
+    const img = e.target; if (!(img instanceof HTMLImageElement) || !img.matches('img[data-real]')) return;
+    img.closest('.card')?.classList.remove('has-photo'); img.nextElementSibling?.remove(); img.remove();
+  }, true);
+}
 
 // puntitos con los primeros colores del producto
 function dotsHTML(p) {
@@ -25,11 +36,11 @@ function dotsHTML(p) {
   return sg ? `<span class="dots" aria-hidden="true">${sg.options.filter(o => o.v !== 'none').slice(0, 4).map(o => `<i style="background:${o.v}"></i>`).join('')}</span>` : '';
 }
 // con `href` la tarjeta es un enlace (inicio); sin él abre el personalizador (catálogo)
-function cardHTML(card, ci, href) {
+export function cardHTML(card, ci, href) {
   const p = productoDe(card.id), cfg = cardCfg(card);
   const title = card.title || p.name;
   const badge = card.badge ?? (card.cfg ? '' : p.badge);
-  const hasPhoto = card.photo && App.fotos[card.photo] !== false;
+  const hasPhoto = card.photo && fotoDisponible(card.photo);
   const tint = `color-mix(in srgb, ${card.bg || p.bg} 26%, #FBF7F2)`;
   const open = href ? `href="${href}"` : `data-card="${ci}" role="button" tabindex="0"`;
   const tag = href ? 'a' : 'article';

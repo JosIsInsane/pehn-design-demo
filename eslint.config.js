@@ -60,9 +60,8 @@ export default [
   // ---------- el sitio en el navegador: módulos de js/ y los de datos, dibujos y marco ----------
   {
     files: ['js/**/*.js', 'datos.js', 'piezas.js', 'datos-tienda.js', 'dibujos.js', 'marco.js'],
-    // TEMPORAL (paso 1): todavía son scripts clásicos que comparten globales; el paso 2 los pasa a módulos
-    languageOptions: { ecmaVersion: 2022, sourceType: 'script', globals: { ...globals.browser } },
-    rules: { ...reglas, 'no-undef': 'off', 'no-implicit-globals': 'off', 'no-redeclare': 'off', 'no-unused-vars': ['error', { vars: 'local', ignoreRestSiblings: true }] },
+    languageOptions: { ecmaVersion: 2022, sourceType: 'module', globals: { ...globals.browser } },
+    rules: reglas,
   },
 
   // ---------- Node: pruebas, herramientas y este mismo archivo ----------
@@ -73,8 +72,6 @@ export default [
   },
   // Los callbacks de page.evaluate(...) en las pruebas corren DENTRO del navegador (document, localStorage…)
   { files: ['pruebas/**/*.js'], languageOptions: { globals: { ...globals.browser } } },
-  // TEMPORAL (paso 1): las pruebas todavía llaman a funciones globales del sitio dentro de page.evaluate
-  { files: ['pruebas/**/*.js'], rules: { 'no-undef': 'off' } },
 
   ...bloquesGs,
 ];

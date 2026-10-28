@@ -1,9 +1,12 @@
 /* Pehn Design — PRODUCTO: configuración por defecto, precio y resumen de un producto ya configurado.
-   Funciones puras (no tocan la página). Depende de: base.js, datos.js (PRODUCTS, CONFIG, FIG_GROUPS, var*, figDefault).
-   Lo usan: tarjetas, carrito, personalizador, envío del pedido y WhatsApp. */
+   Funciones puras (no tocan la página). Las usan tarjetas, carrito, personalizador, envío del pedido y WhatsApp. */
+import { CONFIG, FIG_GROUPS, figDefault, varInicio, varFix, varLines } from '../datos.js';
+import { HEX, clone } from './utiles.js';
+import { fmtDate } from './formato.js';
+import { productoDe } from '../datos.js';
 
 // opciones iniciales de un producto (la primera de cada grupo; las variantes arrancan en la más barata)
-function defaults(p) {
+export function defaults(p) {
   const c = {};
   p.groups.forEach(g => {
     if (g.type === 'swatch' || g.type === 'choice') c[g.id] = g.options[0].v;
@@ -17,8 +20,8 @@ function defaults(p) {
   if (p.variants) varFix(p, c);
   return c;
 }
-const visible = (g, cfg) => !g.showIf || g.showIf(cfg);
-const cardCfg = card => { const p = productoDe(card.id); return { ...defaults(p), ...clone(card.cfg || {}) }; };
+export const visible = (g, cfg) => !g.showIf || g.showIf(cfg);
+export const cardCfg = card => { const p = productoDe(card.id); return { ...defaults(p), ...clone(card.cfg || {}) }; };
 
 // ---------- precio ----------
 // agrega a `lines` ({ label, price }) lo que cuesta cada opción elegida
@@ -40,13 +43,13 @@ function optPrices(groups, cfg, lines, prefix = '') {
     }
   });
 }
-function priceOf(p, cfg) {
+export function priceOf(p, cfg) {
   // variantes: el precio sale de la talla/color elegidos; si no, es la base + opciones
   const lines = p.variants ? varLines(p, cfg) : p.base ? [{ label: 'Base', price: p.base }] : [];
   optPrices(p.groups, cfg, lines);
   return { lines, unit: lines.reduce((s, l) => s + l.price, 0) };
 }
-function lineTotal(unit, qty) {
+export function lineTotal(unit, qty) {
   const gross = unit * qty;
   const disc = qty >= CONFIG.bulkMin ? Math.round(gross * CONFIG.bulkPct / 100) : 0;
   return { gross, disc, total: gross - disc };
@@ -59,7 +62,7 @@ function colorName(g, v) {
   if (!HEX.test(v)) return v;
   return g.options.filter(o => o.v.startsWith('#')).map(o => ({ o, d: rgb(o.v).reduce((s, c, i) => s + (c - rgb(v)[i]) ** 2, 0) })).sort((x, y) => x.d - y.d)[0]?.o.label || v;
 }
-const optLabel = (g, v) => g.options.find(o => o.v === v)?.label || (g.type === 'swatch' ? colorName(g, v) : v);
+export const optLabel = (g, v) => g.options.find(o => o.v === v)?.label || (g.type === 'swatch' ? colorName(g, v) : v);
 
 // pares [etiqueta, valor] de lo elegido (para el carrito, WhatsApp y el pedido)
 function summaryOf(groups, cfg) {
@@ -75,4 +78,4 @@ function summaryOf(groups, cfg) {
     return String(v || '').trim() ? [[g.label, v]] : [];
   });
 }
-const summary = (p, cfg) => summaryOf(p.groups, cfg);
+export const summary = (p, cfg) => summaryOf(p.groups, cfg);

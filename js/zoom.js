@@ -1,13 +1,21 @@
 /* Pehn Design — ZOOM de la vista previa del personalizador: rueda, pellizco, doble toque, arrastre, teclado y botones.
-   Solo se acerca el producto, nunca la página. Depende de: base.js. Estado: App.zoom = { s, x, y, min, max }.
-   Lo usan: personalizador.js y personalizador-movil.js (zReset, zApply). */
+   Solo se acerca el producto, nunca la página. El estado del zoom es privado de este archivo. */
+import { $ } from './utiles.js';
+import { sesion } from './almacen.js';
 
-const Z = App.zoom;
-const zArea = () => $('#cZoomArea'), zLayer = () => $('#cStage');
+// { s: escala, x e y: desplazamiento, min y max: límites de la escala }. Solo de este archivo.
+const Z = { s: 1, x: 0, y: 0, min: 1, max: 4 };
+// ¿hay zoom puesto?
+export const zoomActivo = () => Z.s > 1;
+// pone escala y desplazamiento (el desplazamiento se acomoda para no salirse del área)
+export function zFijar(s, x, y, anim = false) { Z.s = s; Z.x = x; Z.y = y; zApply(anim); }
+// tamaño del área donde se ve la vista previa
+export const zTamano = () => [zArea().clientWidth, zArea().clientHeight];
+export const zArea = () => $('#cZoomArea'), zLayer = () => $('#cStage');
 const zCenter = () => { const a = zArea(); return [a.clientWidth / 2, a.clientHeight / 2]; };
 
 // aplica la escala y el desplazamiento (sin salirse del área)
-function zApply(anim = false) {
+export function zApply(anim = false) {
   const area = zArea(), layer = zLayer(); if (!area) return;
   const W = area.clientWidth, H = area.clientHeight;
   Z.s = Math.min(Z.max, Math.max(Z.min, Z.s));
@@ -25,11 +33,11 @@ function zoomAt(cx, cy, ns, anim = false) {
   Z.x = cx - (cx - Z.x) * (ns / Z.s); Z.y = cy - (cy - Z.y) * (ns / Z.s); Z.s = ns;
   zApply(anim); hideTip();
 }
-function zReset(anim = true) { Z.s = 1; Z.x = 0; Z.y = 0; zApply(anim); }
+export function zReset(anim = true) { Z.s = 1; Z.x = 0; Z.y = 0; zApply(anim); }
 
 // ---------- pista "usa la rueda / pellizca" (una vez por visita) ----------
 let tipT;
-function showTip() {
+export function showTip() {
   const t = $('#zoomTip'); if (!t) return;
   if (sesion.leer('pehn_tip', 0)) { t.classList.add('hide'); return; }
   sesion.guardar('pehn_tip', 1);
@@ -87,11 +95,11 @@ function tecladoDeZoom(area) {
     e.preventDefault();
   });
 }
-(function initZoom() {
+export function iniciarZoom() {
   const area = zArea(); if (!area) return;
   gestosDeZoom(area); tecladoDeZoom(area);
   $('#zIn').addEventListener('click', () => zoomAt(...zCenter(), Z.s * 1.5, true));
   $('#zOut').addEventListener('click', () => zoomAt(...zCenter(), Z.s / 1.5, true));
   $('#zReset').addEventListener('click', () => zReset());
   addEventListener('resize', () => zApply());
-})();
+}

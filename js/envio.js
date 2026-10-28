@@ -1,6 +1,9 @@
 /* Pehn Design — ENVÍO a Google Sheets: consumo de piezas (receta), foto del diseño y la única puerta api().
    Apps Script (carpeta apps-script/) guarda el pedido, la foto y descuenta inventario según la hoja Recetas.
-   Depende de: base.js, producto.js, datos.js (FIG_GROUPS, normFig, var*), dibujos.js (renderProduct). Lo usa: checkout.js y pedidos.js. */
+   Lo usan: checkout.js y pedidos.js. */
+import { CONFIG, FIG_GROUPS, normFig, varSets, varActivos, varKey } from '../datos.js';
+import { renderProduct } from '../dibujos.js';
+import { optLabel, visible } from './producto.js';
 
 // ---------- consumo de piezas (la hoja Recetas dice qué pieza gasta cada clave) ----------
 const bomLimpia = s => String(s).replace(/ /g, ' ').trim(); // igual que clean() en herramientas/generar-tienda.js
@@ -35,7 +38,7 @@ function bomGrupo(add, p, g, v, combo) {
   else if (g.type === 'multi') (v || []).forEach(x => add(`${p.name} · ${g.label} · ${lab(x)}`));
   else if ((g.type === 'choice' || g.type === 'swatch') && !combo.has(g.id) && !g.noStock && !['font', 'tpl'].includes(g.id) && !bomSinStock(lab(v))) add(`${p.name} · ${g.label} · ${lab(v)}`);
 }
-function bomOf(p, cfg, qty) {
+export function bomOf(p, cfg, qty) {
   const out = [], add = (key, n = 1) => out.push({ key: bomLimpia(key), qty: n * qty });
   const figLike = p.groups.some(g => g.id === 'extras'); // el producto trae las opciones de la figura sueltas
   const figIds = new Set(FIG_GROUPS.map(g => g.id)), combo = bomCombos(p);
@@ -77,7 +80,7 @@ function svgParaFoto(p, cfg, fonts, size) {
   return { svg: svg.replace(/<svg /, `<svg width="${w}" height="${h}" `), w, h };
 }
 // foto JPG del diseño tal como lo ve el cliente
-async function previewImage(p, cfg, size = 900) {
+export async function previewImage(p, cfg, size = 900) {
   const { svg, w, h } = svgParaFoto(p, cfg, await embeddedFonts(), size);
   const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
   try {
@@ -96,7 +99,7 @@ async function previewImage(p, cfg, size = 900) {
 // ---------- la puerta ----------
 // Única puerta hacia Google Sheets (apps-script/Orders.gs › doPost). accion: 'pedido' | 'seguimiento' | 'comprobante' | 'misPedidos'.
 // Se manda como texto plano: así el navegador no hace la consulta previa (CORS) que Apps Script no contesta.
-async function api(accion, data) {
+export async function api(accion, data) {
   if (!CONFIG.sheetsUrl) {
     console.warn('[Pehn] Falta CONFIG.sheetsUrl en datos.js: no se envió nada.', accion);
     throw new Error('el sistema de pedidos no está conectado');

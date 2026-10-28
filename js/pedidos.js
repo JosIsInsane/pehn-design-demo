@@ -1,6 +1,11 @@
 /* Pehn Design — MIS PEDIDOS (pedido.html): pide número + WhatsApp, muestra estado y montos, y recibe el comprobante.
-   El servidor (apps-script/Pagos.gs) valida que el WhatsApp sea el del pedido y lee el monto del comprobante.
-   Depende de: base.js, envio.js (api), checkout.js (leerVoucher), modales.js (toast). */
+   El servidor (apps-script/Pagos.gs) valida que el WhatsApp sea el del pedido y lee el monto del comprobante. */
+import { $, esc, movimientoReducido } from './utiles.js';
+import { fmt, fmtDate } from './formato.js';
+import { leer, guardar, KEY_ORDERS, KEY_CONSENT } from './almacen.js';
+import { api } from './envio.js';
+import { leerVoucher, FLECHA_SUBIR } from './checkout.js';
+import { toast } from './modales.js';
 
 // mismo orden que ESTADOS en apps-script/Config.gs
 const PASOS = ['Nuevo', 'Diseño enviado', 'Aprobado', 'En producción', 'Listo', 'Enviado', 'Entregado'];
@@ -79,7 +84,7 @@ async function buscarPedido(f, estado) {
     // pedido encontrado a mano: se suma a "Mis pedidos" (si la persona no pidió "solo el carrito")
     if (!estado.mis.some(o => o.id === q.id) && leer(KEY_CONSENT, '') !== 'minimo') { estado.mis = [{ ...q, fecha: r.pedido.fecha }, ...estado.mis].slice(0, 20); guardar(KEY_ORDERS, estado.mis); pintarMis(estado.mis); }
     const u = new URL(location.href); u.searchParams.set('id', q.id); history.replaceState(null, '', u); // el WhatsApp nunca va en la dirección
-    $('#estadoPedido').scrollIntoView({ behavior: REDUCED ? 'auto' : 'smooth', block: 'start' });
+    $('#estadoPedido').scrollIntoView({ behavior: movimientoReducido() ? 'auto' : 'smooth', block: 'start' });
   } catch (x) { err.textContent = x.message; $('#estadoPedido').innerHTML = ''; }
   finally { $('#seguirBtn').disabled = false; $('#seguirBtn').textContent = 'Buscar pedido'; }
 }
@@ -104,7 +109,7 @@ async function enviarVoucher(btn, f) {
   } catch (x) { err.textContent = `No se pudo enviar: ${x.message}.`; btn.disabled = false; btn.textContent = 'Enviar comprobante'; }
 }
 
-function iniciarPedidos() {
+export function iniciarPedidos() {
   const f = $('#seguir'), q = new URLSearchParams(location.search);
   const estado = { mis: leer(KEY_ORDERS, []) };
   if (q.get('id')) f.elements.id.value = q.get('id');
@@ -120,4 +125,3 @@ function iniciarPedidos() {
   $('#estadoPedido').addEventListener('click', e => { if (e.target.id === 'sendVoucher' && voucherData && seguido) enviarVoucher(e.target, f); });
   if (f.elements.id.value && f.elements.phone.value) f.requestSubmit();
 }
-if ($('#seguir')) iniciarPedidos();

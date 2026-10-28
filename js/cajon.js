@@ -1,6 +1,19 @@
 /* Pehn Design — CAJÓN DEL PEDIDO: la lista del carrito y los botones que llevan a los pasos de checkout.js.
-   Depende de: base.js, producto.js, carrito.js, whatsapp.js, checkout.js, modales.js, dibujos.js (renderProduct, minifigSVG).
-   Opcional: personalizador*.js (solo existe en el catálogo) para editar un diseño. Estado: App.caja.vista = 'cart' | 'checkout' | 'anticipo'. */
+   El paso que se ve ('cart' | 'checkout' | 'anticipo') está en estado.js. Para editar un diseño pide el personalizador
+   a personalizador-carga.js (solo existe en el catálogo). */
+import { CONFIG, FIG_PRESETS } from '../datos.js';
+import { minifigSVG, renderProduct } from '../dibujos.js';
+import { $, esc } from './utiles.js';
+import { fmt } from './formato.js';
+import {
+  renglonDelCarrito, quitarDelCarrito, reinsertarEnCarrito, vistaDeCaja, irAVistaDeCaja, datosDeCaja, guardarDatosDeCaja,
+} from './estado.js';
+import { cartTotals, saveCart } from './carrito.js';
+import { summary } from './producto.js';
+import { HOLA, waURL, waCartText } from './whatsapp.js';
+import { renderCheckout, renderAnticipo, validarDatos, leerDatos, elegirComprobante, enviarPedido } from './checkout.js';
+import { openModal, closeModal, toast } from './modales.js';
+import { conPersonalizador } from './personalizador-carga.js';
 
 const SIN_PEDIDOS = '<div class="empty locked-box"><div class="lock-ico"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 1a5 5 0 0 0-5 5v3H5v14h14V9h-2V6a5 5 0 0 0-5-5Zm-3 5a3 3 0 0 1 6 0v3H9V6Z"/></svg></div><p><b>El carrito abre muy pronto.</b><br>Mientras tanto, personaliza tu diseño y mándalo por WhatsApp con un clic: te llega con todos los detalles y el precio.</p></div>';
 
@@ -11,7 +24,7 @@ function drawerBloqueado() {
   $('#dFoot').innerHTML = `<a class="btn btn-dark" href="${waURL(`${HOLA} Quiero hacer un pedido.`)}" target="_blank" rel="noopener">Escribir por WhatsApp</a><p class="note">Pagos y carrito en línea: próximamente.</p>`;
 }
 function drawerVacio() {
-  App.caja.vista = 'cart';
+  irAVistaDeCaja('cart');
   $('#dBody').innerHTML = `<div class="empty">${minifigSVG({ ...FIG_PRESETS[5], face: 'guino', name: '' })}<p><b>Tu pedido está vacío.</b><br>Elige un producto y hazlo tuyo.</p></div>`;
   $('#dFoot').innerHTML = `<a href="catalogo.html" class="btn btn-dark">Ver catálogo</a>`;
 }
@@ -36,52 +49,57 @@ function renderDrawer() {
   if (!CONFIG.ordersEnabled) return drawerBloqueado();
   const t = cartTotals();
   if (!t.rows.length) return drawerVacio();
-  if (App.caja.vista === 'checkout') return renderCheckout(t.total);
-  if (App.caja.vista === 'anticipo') return renderAnticipo(t.total);
+  if (vistaDeCaja() === 'checkout') return renderCheckout(t.total);
+  if (vistaDeCaja() === 'anticipo') return renderAnticipo(t.total);
   drawerLista(t);
 }
 function openDrawer() { renderDrawer(); openModal('#drawer'); }
 function closeDrawer() { closeModal('#drawer'); }
 
-// en la landing no hay personalizador: se edita en el catálogo
-function editItem(idx) {
-  const i = App.cart[idx]; if (!i) return;
+// edita un renglón del carrito en el personalizador (que se descarga en ese momento).
+// Fuera del catálogo no hay personalizador: se va al catálogo con ?edit=
+export function editarRenglon(idx) {
+  const i = renglonDelCarrito(idx); if (!i) return;
   if (!$('#custom')) { location.href = `catalogo.html?edit=${idx}`; return; }
-  closeDrawer(); openCustom(i.id, i.cfg, i.qty, idx);
+  closeDrawer();
+  conPersonalizador(p => p.openCustom(i.id, i.cfg, i.qty, idx));
 }
 
 // ---------- botones del cajón ----------
 function quitarItem(t) {
   const row = t.closest('.item'), idx = +t.dataset.del;
   const go = () => {
-    const [gone] = App.cart.splice(idx, 1); saveCart(); renderDrawer();
-    toast('Quitado de tu pedido', { label: 'Deshacer', run: () => { App.cart.splice(idx, 0, gone); saveCart(); renderDrawer(); } });
+    const quitado = quitarDelCarrito(idx); saveCart(); renderDrawer();
+    toast('Quitado de tu pedido', { label: 'Deshacer', run: () => { reinsertarEnCarrito(idx, quitado); saveCart(); renderDrawer(); } });
   };
   if (!row) go(); else row.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(40px)' }], { duration: 200, easing: 'ease-in' }).onfinish = go;
 }
 function irAPago() {
   const d = validarDatos(); if (!d) return;
-  App.caja.datos = d; App.caja.vista = 'anticipo'; renderDrawer(); $('#dBody').scrollTop = 0;
+  guardarDatosDeCaja(d); irAVistaDeCaja('anticipo'); renderDrawer(); $('#dBody').scrollTop = 0;
 }
 // cada botón del cajón: id o data-* -> qué hace
 const ACCIONES_CAJON = {
-  goCheckout: () => { App.caja.vista = 'checkout'; renderDrawer(); },
-  backCart: () => { App.caja.datos = leerDatos(); App.caja.vista = 'cart'; renderDrawer(); $('#dTitle').textContent = 'Tu pedido'; },
+  goCheckout: () => { irAVistaDeCaja('checkout'); renderDrawer(); },
+  backCart: () => { guardarDatosDeCaja(leerDatos()); irAVistaDeCaja('cart'); renderDrawer(); $('#dTitle').textContent = 'Tu pedido'; },
   goPago: irAPago,
-  backDatos: () => { App.caja.vista = 'checkout'; renderDrawer(); },
-  sendOrder: t => { const d = App.caja.vista === 'anticipo' ? App.caja.datos : validarDatos(); if (d) enviarPedido(t, d); },
+  backDatos: () => { irAVistaDeCaja('checkout'); renderDrawer(); },
+  sendOrder: t => { const d = vistaDeCaja() === 'anticipo' ? datosDeCaja() : validarDatos(); if (d) enviarPedido(t, d); },
 };
-$('#drawer')?.addEventListener('click', e => {
-  const t = e.target;
-  if (t.dataset.del !== undefined) quitarItem(t);
-  else if (t.dataset.edit !== undefined) editItem(+t.dataset.edit);
-  else ACCIONES_CAJON[t.id]?.(t);
-});
-$('#drawer')?.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && e.target.matches('#coForm input')) { e.preventDefault(); ($('#goPago') || $('#sendOrder'))?.click(); }
-});
-$('#drawer')?.addEventListener('change', e => { if (e.target.id === 'anticipoFile' && e.target.files[0]) elegirComprobante(e.target.files[0]); });
+// pone a escuchar los botones del cajón (marco.js ya lo puso en la página)
+export function iniciarCajon() {
+  $('#drawer')?.addEventListener('click', e => {
+    const t = e.target;
+    if (t.dataset.del !== undefined) quitarItem(t);
+    else if (t.dataset.edit !== undefined) editarRenglon(+t.dataset.edit);
+    else ACCIONES_CAJON[t.id]?.(t);
+  });
+  $('#drawer')?.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && e.target.matches('#coForm input')) { e.preventDefault(); ($('#goPago') || $('#sendOrder'))?.click(); }
+  });
+  $('#drawer')?.addEventListener('change', e => { if (e.target.id === 'anticipoFile' && e.target.files[0]) elegirComprobante(e.target.files[0]); });
 
-$('#cartBtn')?.addEventListener('click', openDrawer);
-document.addEventListener('click', e => { if (e.target.closest('[data-dclose]')) closeDrawer(); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#drawer')?.classList.contains('open')) closeDrawer(); });
+  $('#cartBtn')?.addEventListener('click', openDrawer);
+  document.addEventListener('click', e => { if (e.target.closest('[data-dclose]')) closeDrawer(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#drawer')?.classList.contains('open')) closeDrawer(); });
+}
