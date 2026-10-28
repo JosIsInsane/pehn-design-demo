@@ -705,5 +705,13 @@ prueba('Total bajado a mano (menos que sus piezas) se rechaza', () => {
   const r = s.post(pedido(s, { items, total: 10 })); ok(!r.ok && /precio del pedido/.test(r.error), JSON.stringify(r));
 });
 
+prueba('Apps Script: ningún .gs y .html comparten nombre (clasp push lo rechaza)', () => {
+  const dir = pathx.join(import.meta.dirname, '..', 'apps-script');
+  const base = f => f.replace(/\.(gs|html)$/, '').toLowerCase();
+  const nombres = fsx.readdirSync(dir).filter(f => /\.(gs|html)$/.test(f)).map(base);
+  const repetidos = nombres.filter((x, i) => nombres.indexOf(x) !== i);
+  ok(!repetidos.length, 'repetidos: ' + repetidos.join(', '));
+});
+
 console.log(`\n${n - fallas} de ${n} pruebas pasaron.`);
 process.exit(fallas ? 1 : 0);

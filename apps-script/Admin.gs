@@ -10,8 +10,8 @@
  *   3. Cambiaste el código y no se ve -> Implementar › Gestionar implementaciones › Nueva versión.
  *   4. URL_APP vieja -> cópiala de Implementar › Gestionar implementaciones y pégala abajo.
  * Para agregar una acción nueva: un case en crm() aquí, y en AdminJsServidor.html una entrada en LOCAL si debe verse al instante.
- * La pantalla está partida en archivos HTML: Admin.html (esqueleto con los datos), AdminEstilos, AdminVistas y AdminJs*.
- * Admin.html los pega con incluir_(); todos deben existir en el proyecto con el mismo nombre (sin .html).
+ * La pantalla está partida en archivos HTML: AdminPagina.html (esqueleto con los datos), AdminEstilos, AdminVistas y AdminJs*.
+ * AdminPagina.html los pega con incluir_(); todos deben existir en el proyecto con el mismo nombre (sin .html).
  */
 
 function clave_() {
@@ -56,7 +56,7 @@ function doGet(e) {
 function incluir_(nombre) { return HtmlService.createHtmlOutputFromFile(nombre).getContent(); }
 
 function crmHtml_(k) {
-  const t = HtmlService.createTemplateFromFile('Admin');
+  const t = HtmlService.createTemplateFromFile('AdminPagina');
   // solo se refleja la clave verdadera; cualquier otra cosa (un ?k= ajeno) queda vacía.
   // Un Admin por correo entra con K vacío: crm() lo autoriza por su correo.
   t.k = k && iguales_(k, clave_()) ? String(k) : '';
