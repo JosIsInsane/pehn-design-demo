@@ -3,10 +3,10 @@
    Revisa js/*.js, css/*.css, apps-script/*.gs y *.html y los *.html del sitio.
    Quedan fuera los archivos generados (piezas.js, datos-tienda.js, apps-script/Catalogo.gs) y pruebas/.
    Si uno se pasa: pártelo por responsabilidad (ver docs/CONTEXTO.md) en vez de subir el límite. */
-const fs = require('fs');
-const path = require('path');
+import fs from 'node:fs';
+import path from 'node:path';
 
-const RAIZ = path.join(__dirname, '..');
+const RAIZ = path.join(import.meta.dirname, '..');
 const MAX = 400;
 const GENERADOS = new Set(['piezas.js', 'datos-tienda.js', 'apps-script/Catalogo.gs']);
 

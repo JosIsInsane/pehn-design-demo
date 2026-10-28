@@ -1,13 +1,16 @@
 /* Prueba de punta a punta: el sitio real en Chromium, con Google Sheets simulado (pruebas/simulador.js).
    Correr:  node pruebas/sitio.test.js   (necesita Playwright instalado)
    Hace un pedido completo, lo rastrea, sube el comprobante y revisa que nada inyecte código. */
-const { chromium } = require('playwright');
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-const { cargar } = require('./simulador');
+import { createRequire } from 'node:module';
+import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
+import { cargar } from './simulador.js';
 
-const RAIZ = path.join(__dirname, '..');
+// Playwright se busca igual que con require: sirve el instalado en el proyecto o el global
+const { chromium } = createRequire(import.meta.url)('playwright');
+
+const RAIZ = path.join(import.meta.dirname, '..');
 const TIPOS = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg' };
 // mismas cabeceras de seguridad que Cloudflare (archivo _headers): si la política bloquea algo, la prueba lo ve
 const CABECERAS = Object.fromEntries(fs.readFileSync(path.join(RAIZ, '_headers'), 'utf8').split('\n').filter(l => /^\s+\S+:/.test(l)).map(l => { const i = l.indexOf(':'); return [l.slice(0, i).trim(), l.slice(i + 1).trim()]; }));
@@ -57,7 +60,7 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
   ok(await page.locator('footer a[href="privacidad.html"]').count() > 0, 'Pie con enlace a privacidad');
 
   // 2. pedido completo con datos maliciosos y anticipo antes de enviar
-  const jpg = path.join(__dirname, 'comprobante.jpg');
+  const jpg = path.join(import.meta.dirname, 'comprobante.jpg');
   const JPG_B64 = '/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==';
   fs.writeFileSync(jpg, Buffer.from(JPG_B64, 'base64'));
   await page.evaluate(() => openCard(0)); await page.waitForTimeout(300);

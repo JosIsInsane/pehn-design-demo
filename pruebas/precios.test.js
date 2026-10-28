@@ -4,13 +4,16 @@
    - Cada opción con precio sale de sus piezas (SKU) y coincide con el CSV.
    - Un producto de variantes cambia de precio con la talla/color y solo deja elegir combinaciones que existen.
    - Cada opción con precio y cada variante tiene receta que descuenta su SKU (mismas claves que bomOf). */
-const { chromium } = require('playwright');
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-const { cargar } = require('./simulador');
+import { createRequire } from 'node:module';
+import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
+import { cargar } from './simulador.js';
 
-const RAIZ = path.join(__dirname, '..');
+// Playwright se busca igual que con require: sirve el instalado en el proyecto o el global
+const { chromium } = createRequire(import.meta.url)('playwright');
+
+const RAIZ = path.join(import.meta.dirname, '..');
 const TIPOS = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg' };
 const server = http.createServer((req, res) => {
   const f = path.join(RAIZ, decodeURIComponent(new URL(req.url, 'http://x').pathname));
@@ -134,7 +137,7 @@ const CSV = Object.fromEntries(filas.map(r => [r[0], Number(r[5])]));
   ok(skusUsados.every(s => inv.has(s)), `${skusUsados.length} SKU de las recetas existen en Inventario`);
   // cada opción con precio descuenta justo las piezas que cobra
   const faltan = await page.evaluate(() => {
-    const mal = [], todos = [];
+    const todos = [];
     const rev = (gs, p) => gs.forEach(g => (g.options || []).forEach(o => { if (o.skus && o.skus.length) todos.push([`${p} · ${g.label} · ${o.label}`, o.skus]); }));
     PRODUCTS.forEach(p => rev(p.groups.filter(g => !(p.groups.some(x => x.id === 'extras') && FIG_GROUPS.some(f => f.id === g.id))), p.name));
     return todos.map(([k, s]) => [k.replace(/\u00a0/g, ' '), s]);

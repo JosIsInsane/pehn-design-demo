@@ -5,11 +5,11 @@
    Cada vez que cambie el CSV (precios, piezas nuevas) se vuelve a correr y se commitean los dos archivos.
    Los personalizadores (cuadro, taza, vaso, termo, tote, playera, sudadera, llavero) viven en datos.js:
    aquí solo se leen para armar sus recetas. */
-const fs = require('fs');
-const path = require('path');
-const vm = require('vm');
+import fs from 'node:fs';
+import path from 'node:path';
+import vm from 'node:vm';
 
-const RAIZ = path.join(__dirname, '..');
+const RAIZ = path.join(import.meta.dirname, '..');
 const leer = f => fs.readFileSync(path.join(RAIZ, f), 'utf8');
 
 // ---------- CSV ----------
@@ -103,7 +103,7 @@ grupos.forEach(rows => {
   if (c0.categoria === 'Cumple') name = c0.producto;
   let id = 't-' + slug(name); while (usados.has(id)) id += '-2'; usados.add(id);
   const tallas = [...new Set(rows.map(r => r.talla).filter(Boolean))].sort((a, b) => ORDEN_TALLA.indexOf(a) - ORDEN_TALLA.indexOf(b));
-  let colores = [...new Set(rows.map(r => r.color || (rows.some(x => x.color) ? 'Estándar' : '')).filter(Boolean))];
+  const colores = [...new Set(rows.map(r => r.color || (rows.some(x => x.color) ? 'Estándar' : '')).filter(Boolean))];
   colores.forEach(n => { if (!D.COLORES[n]) throw new Error(`Color sin tono en COLORES (datos.js): ${n}`); });
   const groups = [];
   if (colores.length > 1) groups.push({ id: 'color', label: 'Color', type: 'swatch', options: colores.map(n => ({ v: D.COLORES[n], label: n, price: 0 })) });
@@ -123,7 +123,7 @@ grupos.forEach(rows => {
 const q = s => "'" + String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'";
 const obj = o => '{ ' + Object.entries(o).map(([k, v]) => `${k}: ${q(v)}`).join(', ') + ' }';
 const grp = g => `{ id: ${q(g.id)}, label: ${q(g.label)}, type: ${q(g.type)}, options: [${g.options.map(o => `{ v: ${q(o.v)}, label: ${q(o.label)}, price: 0 }`).join(', ')}] }`;
-let js = `/* Pehn Design — PRODUCTOS DE LA TIENDA (generado)
+const js = `/* Pehn Design — PRODUCTOS DE LA TIENDA (generado)
    NO se edita a mano: lo escribe herramientas/generar-tienda.js desde docs/inventario/catalogo-base.csv.
    Para cambiar un precio o una pieza: edita el CSV y corre  node herramientas/generar-tienda.js
    Se carga después de datos.js. Cada producto tiene sus variantes (talla/color que existen) y el precio de cada una.

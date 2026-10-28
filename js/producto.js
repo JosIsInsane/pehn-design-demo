@@ -26,7 +26,7 @@ function optPrices(groups, cfg, lines, prefix = '') {
   groups.filter(g => visible(g, cfg)).forEach(g => {
     const v = cfg[g.id];
     if (g.type === 'swatch' || g.type === 'choice') {
-      const o = g.options.find(o => o.v === v);
+      const o = g.options.find(x => x.v === v);
       if (o && o.price) lines.push({ label: prefix + o.label, price: o.price });
     } else if (g.type === 'multi') {
       g.options.filter(o => (v || []).includes(o.v) && o.price).forEach(o => lines.push({ label: prefix + o.label, price: o.price }));

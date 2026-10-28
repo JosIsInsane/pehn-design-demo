@@ -1,7 +1,9 @@
 /* Pruebas de seguridad y de flujo del sistema de pedidos (apps-script/) en un simulador.
    Correr:  node pruebas/seguridad.test.js
    Cada prueba imprime ✓ o ✗. Termina con código 1 si alguna falla. */
-const { cargar } = require('./simulador');
+import fsx from 'node:fs';
+import pathx from 'node:path';
+import { cargar } from './simulador.js';
 
 let fallas = 0, n = 0;
 function prueba(nombre, fn) {
@@ -421,8 +423,7 @@ prueba('Revisión del sistema corre sin romperse', () => {
 });
 
 // ---------- CRM: XSS y clave (CN-001, CN-002, CN-003) ----------
-const fsx = require('fs'), pathx = require('path');
-const leerGs = f => fsx.readFileSync(pathx.join(__dirname, '..', 'apps-script', f), 'utf8');
+const leerGs = f => fsx.readFileSync(pathx.join(import.meta.dirname, '..', 'apps-script', f), 'utf8');
 const crmHtml = (s, k) => s.run(`crmHtml_(${JSON.stringify(k)})`).getContent();
 const lineaDe = (html, ini) => html.split('\n').find(l => l.startsWith(ini));
 
@@ -439,7 +440,7 @@ prueba('CRM: con la clave verdadera K la lleva; sin ella (Admin por correo) crm(
   ok(lineaDe(crmHtml(s, k), 'const K = ') === `const K = "${k}";`);
   ok(JSON.parse(s.run(`crm('', 'datos')`)).pedidos, 'Admin por correo con K vacío');
   const ext = nuevo({ usuario: '' }); // desconocido: sin clave no entra
-  let negado = false; try { ext.run(`crm('', 'datos')`); } catch (e) { negado = true; }
+  let negado = false; try { ext.run(`crm('', 'datos')`); } catch { negado = true; }
   ok(negado, 'sin clave ni correo debe negarse');
 });
 
@@ -524,7 +525,7 @@ prueba('Correo: regla estricta (nada de ?bcc=, saltos de línea ni sin punto)', 
 });
 
 prueba('Admin*.html: los mailto: codifican el correo (CN-012)', () => {
-  const crm = fsx.readdirSync(pathx.join(__dirname, '..', 'apps-script')).filter(f => /^Admin.*\.html$/.test(f)).map(leerGs).join('\n');
+  const crm = fsx.readdirSync(pathx.join(import.meta.dirname, '..', 'apps-script')).filter(f => /^Admin.*\.html$/.test(f)).map(leerGs).join('\n');
   ok(!/mailto:\$\{esc\(/.test(crm), 'mailto con esc()');
   ok((crm.match(/mailto:\$\{encodeURIComponent\(/g) || []).length === 2);
 });
@@ -564,7 +565,7 @@ prueba('Candado: Drive, OCR y correo corren fuera del candado; la carpeta se ren
   const ocr = s.ctx.Drive.Files.create; s.ctx.Drive.Files.create = (...a) => { if (sujeto) dentro.push('OCR'); return ocr(...a); };
   const mail = s.ctx.MailApp.sendEmail; s.ctx.MailApp.sendEmail = m => { if (sujeto) dentro.push('correo'); return mail(m); };
   const raiz = s.run('folder_()'), crear = raiz.createFolder;
-  raiz.createFolder = n => { const f = crear(n); const cf = f.createFile; f.createFile = b => { if (sujeto) dentro.push('Drive'); return cf(b); }; return f; };
+  raiz.createFolder = nombre => { const f = crear(nombre); const cf = f.createFile; f.createFile = b => { if (sujeto) dentro.push('Drive'); return cf(b); }; return f; };
   const r = s.post(pedido(s)); ok(r.ok, JSON.stringify(r));
   ok(!dentro.length, 'dentro del candado: ' + dentro.join(', '));
   const url = s.hoja('Pedidos')[0].Carpeta, carpeta = s.ctx.DriveApp.getFolderById(url.split('/').pop());
@@ -575,7 +576,7 @@ prueba('Candado: Drive, OCR y correo corren fuera del candado; la carpeta se ren
 prueba('Candado: si el pedido falla, la carpeta temporal va a la papelera y nada queda en la hoja', () => {
   const s = nuevo(); let carpeta;
   const raiz = s.run('folder_()'), crear = raiz.createFolder;
-  raiz.createFolder = n => { carpeta = crear(n); carpeta.setTrashed = () => { carpeta.papelera = true; }; return carpeta; };
+  raiz.createFolder = nombre => { carpeta = crear(nombre); carpeta.setTrashed = () => { carpeta.papelera = true; }; return carpeta; };
   s.run(`consumoDePedido_ = () => { throw new Error('fallo interno'); }`);
   ok(!s.post(pedido(s)).ok && s.hoja('Pedidos').length === 0);
   ok(carpeta && carpeta.papelera === true, 'la carpeta quedó huérfana');
@@ -627,11 +628,11 @@ prueba('Turnstile: con secreto y token bueno el pedido pasa', () => {
 });
 
 prueba('_headers: Turnstile permitido solo en script-src y frame-src; datos.js lo trae vacío', () => {
-  const h = fsx.readFileSync(pathx.join(__dirname, '..', '_headers'), 'utf8');
-  const dir = n => (h.match(new RegExp(n + ' ([^;]*)')) || [])[1] || '';
+  const h = fsx.readFileSync(pathx.join(import.meta.dirname, '..', '_headers'), 'utf8');
+  const dir = nombre => (h.match(new RegExp(nombre + ' ([^;]*)')) || [])[1] || '';
   ok(/challenges\.cloudflare\.com/.test(dir('script-src')) && /challenges\.cloudflare\.com/.test(dir('frame-src')));
   ok(!/challenges\.cloudflare\.com/.test(dir('default-src')) && !/unsafe-inline|unsafe-eval/.test(dir('script-src')));
-  ok(/turnstileSiteKey: ''/.test(fsx.readFileSync(pathx.join(__dirname, '..', 'datos.js'), 'utf8')), 'datos.js debe traer la llave vacía');
+  ok(/turnstileSiteKey: ''/.test(fsx.readFileSync(pathx.join(import.meta.dirname, '..', 'datos.js'), 'utf8')), 'datos.js debe traer la llave vacía');
 });
 
 console.log(`\n${n - fallas} de ${n} pruebas pasaron.`);

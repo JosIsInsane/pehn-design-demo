@@ -1,0 +1,20 @@
+{
+  "name": "pehn-design",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sitio estático de Pehn Design (Cloudflare Pages, sin paso de build) + Google Apps Script. Este package.json solo sirve para revisar y probar el código: NO construye nada.",
+  "type": "module",
+  "scripts": {
+    "lint": "eslint .",
+    "test": "node pruebas/seguridad.test.js && node pruebas/precios.test.js && node pruebas/tamanos.test.js && node pruebas/sitio.test.js",
+    "test:rapido": "node pruebas/seguridad.test.js && node pruebas/precios.test.js && node pruebas/tamanos.test.js"
+  },
+  "devDependencies": {
+    "eslint": "9.39.5",
+    "globals": "17.13.0",
+    "playwright": "1.63.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}
