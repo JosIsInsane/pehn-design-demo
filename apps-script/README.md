@@ -47,7 +47,7 @@ Aun así, el código se protege solo:
 
 1. Crea una hoja nueva en Google Sheets. Menú **Extensiones › Apps Script**.
 2. Copia los archivos de esta carpeta en el editor, con el mismo nombre:
-   `Config.gs`, `Setup.gs`, `Orders.gs`, `Inventory.gs`, `Pagos.gs`, `Sitio.gs`, `Admin.gs` y los archivos HTML del CRM: `Admin.html`, `AdminEstilos.html`, `AdminVistas.html` y los `AdminJs*.html` (Base, Servidor, Imagenes, Navegacion, Inicio, Pedidos, Ficha, Clientes, Inventario, Pagos, Sitio, Busqueda, Exportar, Eventos, Arranque). Cada uno se crea como archivo HTML con ese nombre (sin `.html`); `Admin.html` los pega con `incluir_()`.
+   `Config.gs`, `Setup.gs`, `Orders.gs`, `Inventory.gs`, `Pagos.gs`, `Sitio.gs`, `Admin.gs` y los archivos HTML del CRM: `AdminPagina.html`, `AdminEstilos.html`, `AdminVistas.html` y los `AdminJs*.html` (Base, Servidor, Imagenes, Navegacion, Inicio, Pedidos, Ficha, Clientes, Inventario, Pagos, Sitio, Busqueda, Exportar, Eventos, Arranque). Cada uno se crea como archivo HTML con ese nombre (sin `.html`); `AdminPagina.html` los pega con `incluir_()`.
    En **Configuración del proyecto** activa *Mostrar el archivo de manifiesto* y pega `appsscript.json`.
    En **Servicios (+)** agrega **Drive API** (para leer el monto de los comprobantes).
 3. Guarda, recarga la hoja y usa el menú **Pehn › Configurar hojas**. Acepta los permisos.
