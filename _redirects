@@ -1,10 +1,14 @@
-# Carpetas internas del repo que no son parte de la página: Cloudflare las manda al inicio.
-/apps-script/*  /  302
-/pruebas/*      /  302
-/docs/*         /  302
-/README.md      /  302
+# Carpetas y archivos internos del repo que no son parte de la página: Cloudflare los manda al inicio.
+# (Pages no permite responder 404 desde aquí; solo redirecciones.)
+/apps-script/*         /  302
+/pruebas/*             /  302
+/docs/*                /  302
 /herramientas/*        /  302
 /node_modules/*        /  302
+/.github/*             /  302
+/README.md             /  302
 /package.json          /  302
 /package-lock.json     /  302
 /eslint.config.js      /  302
+/.clasp.json.ejemplo   /  302
+/.editorconfig         /  302

@@ -64,6 +64,40 @@ Aun así, el código se protege solo:
 
 > Si cambias el código de Apps Script, vuelve a **Implementar › Gestionar implementaciones › Editar (lápiz) › Versión: Nueva versión › Implementar**. La URL no cambia. Sin este paso el sitio y el CRM siguen usando el código viejo.
 
+## Subir con un comando (clasp)
+
+`clasp` es la herramienta oficial de Google para subir los archivos de esta carpeta al editor de Apps Script de una vez (en vez de pegar ~27 a mano). Versión fijada: **3.4.1**. Necesita Node 22 o más nuevo.
+
+**Una sola vez:**
+
+1. Instala [Node.js](https://nodejs.org) (versión 22 o más nueva). Revisa con `node -v`.
+2. Activa la API de Apps Script en <https://script.google.com/home/usersettings> (interruptor *Google Apps Script API* en "Activado").
+3. En la carpeta del repo: `npx @google/clasp@3.4.1 login`. Se abre el navegador: entra con la cuenta de Google dueña de la hoja y acepta.
+4. Saca el **Script ID**: en el editor de Apps Script, *Configuración del proyecto* (engrane) › *IDs* › *ID de secuencia de comandos*.
+5. Copia la plantilla: `cp .clasp.json.ejemplo .clasp.json` y pega el ID en lugar de `PEGA_AQUI_EL_ID`. Ese archivo está en `.gitignore`: no se sube a GitHub.
+
+**Cada vez que cambie el backend:**
+
+```
+npx @google/clasp@3.4.1 status    # lista lo que se va a subir (revisa que no falte nada)
+npx @google/clasp@3.4.1 push      # sube todo (acepta el cambio de appsscript.json si pregunta)
+```
+
+> **Cuidado:** `push` **reemplaza todo el proyecto remoto** con lo que hay en tu carpeta. Cualquier cambio hecho directo en el editor de Google se pierde. Úsalo solo en el proyecto de Pehn, desde la rama correcta y con el repo al día.
+
+`push` solo actualiza el código en el editor. Para que la app web (sitio y CRM) use el código nuevo hay que sacar una **versión nueva de la implementación existente**, sin cambiar la URL:
+
+```
+npx @google/clasp@3.4.1 deployments    # lista las implementaciones: copia el ID de la app web (empieza con AKfycb…)
+npx @google/clasp@3.4.1 deploy --deploymentId EL_ID -d "qué cambió"
+```
+
+Usa siempre `--deploymentId`. Sin él, clasp crea una implementación **nueva con otra URL** y el sitio seguiría usando la vieja. El `@HEAD` que sale en la lista es la versión de pruebas: no lo uses para el sitio.
+
+Qué se sube: los `.gs`, los `.html` y `appsscript.json`. `README.md` y las pruebas no (ver `apps-script/.claspignore`). Los `.gs` quedan con su mismo nombre en el editor (Google quita la extensión).
+
+**Alternativa manual:** pegar los archivos en el editor y *Implementar › Gestionar implementaciones › Editar › Nueva versión* (pasos en *Instalación*). Sirve para un cambio de una línea.
+
 ## Actualizar una instalación que ya existe
 
 1. Pega todos los archivos otra vez (`Config.gs`, `Setup.gs`, `Orders.gs`, `Inventory.gs`, `Pagos.gs`) y publica una Nueva versión.
