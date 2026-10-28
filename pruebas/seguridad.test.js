@@ -672,6 +672,13 @@ prueba('Comprobante sin la cuenta del negocio se rechaza', () => {
   ok(/cuenta/.test(rechazo(s, RECIBO())));
   s.ctx.__ocr = RECIBO('375.00', 'Cuenta destino ****3499'); ok(s.post(pedido(s)).ok, 'con la cuenta sí pasa');
 });
+prueba('Varias cuentas (una por línea): pasa con cualquiera, no con otra', () => {
+  const s = nuevo(); s.run(`setConfig_('Datos bancarios', 'BAC · Leda Villela · 746710241\\nAtlántida · Leda Villela · 02-012-0232-853\\nFicohsa · Leda Villela · 200018735198')`);
+  s.ctx.__ocr = RECIBO('375.00', 'Cuenta destino: ****2853'); ok(s.post(pedido(s)).ok, 'Atlántida');
+  s.ctx.__ocr = RECIBO('375.00', 'Cuenta destino: 2000 1873 5198'); ok(s.post(pedido(s)).ok, 'Ficohsa');
+  s.ctx.__ocr = RECIBO('375.00', 'Cuenta destino: ****7777'); const r = s.post(pedido(s));
+  ok(!r.ok && /cuenta/.test(r.error) && s.hoja('Pedidos').length === 2, 'cuenta ajena');
+});
 prueba('Comprobante con fecha vieja se rechaza', () => {
   ok(/fecha/.test(rechazo(nuevo(), 'BAC Credomatic\nTransferencia exitosa\n03/01/2025\nMonto: L 375.00')));
 });

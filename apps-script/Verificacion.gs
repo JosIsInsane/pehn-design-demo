@@ -79,12 +79,15 @@ function montoQueCuadra_(montos, esperado, total) {
   return entre.length ? Math.max(...entre.map(m => m.n)) : null;
 }
 
-// Si Datos bancarios trae un número de cuenta (6+ dígitos), sus últimos 4 deben aparecer en el comprobante
+// Datos bancarios puede traer varias cuentas (una por línea, con guiones o espacios): basta que aparezcan los últimos 4 de UNA
 function muestraLaCuenta_(texto, datosBancarios) {
-  const cuenta = (String(datosBancarios || '').replace(/[\s-]/g, '').match(/\d{6,}/g) || []).sort((a, b) => b.length - a.length)[0];
-  if (!cuenta) return true; // sin cuenta configurada no se puede revisar
-  return String(texto).replace(/[\s-]/g, '').includes(cuenta.slice(-4));
+  const cuentas = cuentasDe_(datosBancarios);
+  if (!cuentas.length) return true; // sin cuenta configurada no se puede revisar
+  const plano = String(texto).replace(/[\s-]/g, '');
+  return cuentas.some(c => plano.includes(c.slice(-4)));
 }
+// números de cuenta (6+ dígitos) de cada línea de Datos bancarios: "02-012-0232-853" -> "020120232853"
+const cuentasDe_ = datos => String(datos || '').split('\n').flatMap(l => l.replace(/[\s-]/g, '').match(/\d{6,}/g) || []);
 
 // Si el texto trae fechas (dd/mm/aaaa, dd-mm-aa o "27 oct 2026"), al menos una debe ser de los últimos días
 function fechaReciente_(texto) {
