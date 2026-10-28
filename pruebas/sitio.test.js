@@ -1,13 +1,17 @@
+/* global D, K -- variables de la página del CRM (apps-script/Admin.html), que corre dentro del navegador */
 /* Prueba de punta a punta: el sitio real en Chromium, con Google Sheets simulado (pruebas/simulador.js).
    Correr:  node pruebas/sitio.test.js   (necesita Playwright instalado)
    Hace un pedido completo, lo rastrea, sube el comprobante y revisa que nada inyecte código. */
-const { chromium } = require('playwright');
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-const { cargar } = require('./simulador');
+import { createRequire } from 'node:module';
+import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
+import { cargar } from './simulador.js';
 
-const RAIZ = path.join(__dirname, '..');
+// Playwright se busca igual que con require: sirve el instalado en el proyecto o el global
+const { chromium } = createRequire(import.meta.url)('playwright');
+
+const RAIZ = path.join(import.meta.dirname, '..');
 const TIPOS = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg' };
 // mismas cabeceras de seguridad que Cloudflare (archivo _headers): si la política bloquea algo, la prueba lo ve
 const CABECERAS = Object.fromEntries(fs.readFileSync(path.join(RAIZ, '_headers'), 'utf8').split('\n').filter(l => /^\s+\S+:/.test(l)).map(l => { const i = l.indexOf(':'); return [l.slice(0, i).trim(), l.slice(i + 1).trim()]; }));
@@ -16,6 +20,10 @@ const server = http.createServer((req, res) => {
   if (!f.startsWith(RAIZ) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
   res.writeHead(200, { ...CABECERAS, 'Content-Type': TIPOS[path.extname(f)] || 'application/octet-stream' }); fs.createReadStream(f).pipe(res);
 });
+
+// Abre el diseño de la tarjeta n del catálogo como lo haría una persona: tocándola.
+// El personalizador se descarga en ese momento, por eso se espera a que el modal esté abierto.
+const abrirTarjeta = async (pg, n) => { await pg.click(`.card[data-card="${n}"]`); await pg.waitForSelector('#custom.open'); await pg.waitForTimeout(600); };
 
 let fallas = 0;
 const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
@@ -31,6 +39,7 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
   const page = await ctx.newPage();
   const errores = [];
   page.on('pageerror', e => errores.push(e.message));
+  const personalizadorBajado = []; page.on('request', r => { if (/\/(personalizador[\w-]*|zoom)\.(js|css)$/.test(new URL(r.url()).pathname) && !/personalizador-carga/.test(r.url())) personalizadorBajado.push(r.url()); });
   const turnstile = []; page.on('request', r => { if (/challenges\.cloudflare\.com/.test(r.url())) turnstile.push(r.url()); });
   page.on('console', m => { if (m.type() === 'error' && /Content Security Policy|Refused/.test(m.text())) errores.push('CSP: ' + m.text()); });
   page.on('dialog', d => { errores.push('dialog: ' + d.message()); d.dismiss(); });
@@ -57,10 +66,12 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
   ok(await page.locator('footer a[href="privacidad.html"]').count() > 0, 'Pie con enlace a privacidad');
 
   // 2. pedido completo con datos maliciosos y anticipo antes de enviar
-  const jpg = path.join(__dirname, 'comprobante.jpg');
+  const jpg = path.join(import.meta.dirname, 'comprobante.jpg');
   const JPG_B64 = '/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==';
   fs.writeFileSync(jpg, Buffer.from(JPG_B64, 'base64'));
-  await page.evaluate(() => openCard(0)); await page.waitForTimeout(300);
+  ok(!personalizadorBajado.length, 'Antes de abrir un producto NO se descargó el personalizador (js ni css)');
+  await abrirTarjeta(page, 0);
+  ok(personalizadorBajado.length > 0, 'Al abrir un producto se descarga el personalizador (' + personalizadorBajado.length + ' archivos)');
   for (let i = 0; i < 4; i++) { await page.click('#addBtn'); await page.waitForTimeout(150); }
   await page.waitForTimeout(900);
   await page.click('#cartBtn'); await page.click('#goCheckout');
@@ -137,7 +148,7 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
     await m.route(/fonts\.(googleapis|gstatic)\.com|script\.google\.com/, r => r.fulfill({ status: 200, body: '{}' }));
     await m.addInitScript(() => localStorage.setItem('pehn_aviso', '1'));
     await m.goto(base + 'catalogo.html');
-    await m.evaluate(() => { document.querySelector('[data-aviso="ok"]')?.click(); openCard(0); }); await m.waitForTimeout(600);
+    await abrirTarjeta(m, 0);
     ok(await m.evaluate(() => document.querySelector('#custom').classList.contains('pg')), 'Móvil: el cuadro abre como página');
     ok((await m.textContent('#cSub')).includes('Paso 1 de 4'), 'Móvil: barra superior con "Paso 1 de 4"');
     const pasos = await m.evaluate(() => { const r = document.querySelector('.steps-nav').getBoundingClientRect(); return r.right <= innerWidth && document.documentElement.scrollWidth <= innerWidth; });
@@ -146,13 +157,13 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
     ok((await m.textContent('#cScreen')) === 'Figura 1', 'Móvil: la figura 1 se edita en su sub-pantalla');
     ok(await m.evaluate(() => document.activeElement.id === 'cScreen'), 'Móvil: el foco va al título de la pantalla');
     await m.click('.fsec.open [data-g="hair"][data-v]:not([aria-pressed="true"])'); await m.waitForTimeout(200);
+    const elegido = '.fsec.open [data-g="hair"][aria-pressed="true"]';
+    const etiqueta = (await m.textContent(elegido)).trim(), peinado = await m.getAttribute(elegido, 'data-v');
     await m.click('.sec-h[data-sec="fcara"]'); // plegar
-    const etiqueta = await m.evaluate(() => figLab(App.cur.cfg.figs[0], 'hair'));
     ok((await m.textContent('[data-secsum="cara"]')).includes('Peinado: ' + etiqueta), 'Móvil: el encabezado plegado muestra la elección (Peinado: ' + etiqueta + ')');
-    const peinado = await m.evaluate(() => App.cur.cfg.figs[0].hair);
     await m.evaluate(() => history.back()); await m.waitForTimeout(500);
-    ok(await m.evaluate(() => !App.cur.sub && document.querySelectorAll('.figrow').length === 2), 'Móvil: Atrás del navegador vuelve a la lista de figuras');
-    ok(await m.evaluate(h => App.cur.cfg.figs[0].hair === h, peinado), 'Móvil: lo elegido se conserva');
+    ok(await m.evaluate(() => !document.querySelector('#custom .sheet').classList.contains('sub') && document.querySelectorAll('.figrow').length === 2), 'Móvil: Atrás del navegador vuelve a la lista de figuras');
+    ok((await m.textContent('.figrow')).includes(etiqueta) && peinado, 'Móvil: lo elegido se conserva (la lista de figuras muestra "' + etiqueta + '")');
     for (let i = 0; i < 3; i++) { await m.click('#addBtn'); await m.waitForTimeout(250); }
     ok((await m.textContent('#addLabel')) === 'Agregar al pedido', 'Móvil: último paso con "Agregar al pedido"');
     const tam = await m.evaluate(() => [...document.querySelectorAll('#cForm button, #addBtn, #backBtn, #brkBtn')].filter(e => e.offsetParent).every(e => { const r = e.getBoundingClientRect(); return r.height >= 43.5 && r.width >= 43.5; }));
@@ -160,11 +171,11 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
     await m.click('#addBtn'); await m.waitForTimeout(900);
     ok(await m.evaluate(() => !document.querySelector('#custom').classList.contains('open') && JSON.parse(localStorage.getItem('pehn_cart') || '[]').length === 1), 'Móvil: agregar al pedido cierra la página y queda en el carrito');
     // borrador: salir sin agregar ofrece seguir
-    await m.evaluate(() => openCard(0)); await m.waitForTimeout(500);
+    await abrirTarjeta(m, 0);
     await m.click('.figrow'); await m.waitForTimeout(300);
     await m.click('.sec-h[data-sec="fropa"]'); await m.click('.fsec.open [data-g="outfit"][data-v]:not([aria-pressed="true"])');
     await m.click('#cBack'); await m.waitForTimeout(300); await m.click('#cBack'); await m.waitForTimeout(900);
-    await m.evaluate(() => openCard(0)); await m.waitForTimeout(600);
+    await abrirTarjeta(m, 0);
     ok(await m.isVisible('[data-draft="si"]'), 'Móvil: al volver ofrece "Seguir con tu diseño"');
     await m.close();
     // 360 px: nada se sale de la pantalla en ningún paso
@@ -172,9 +183,9 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
     const q = await c360.newPage();
     await q.route(/fonts\.(googleapis|gstatic)\.com|script\.google\.com/, r => r.fulfill({ status: 200, body: '{}' }));
     await q.addInitScript(() => localStorage.setItem('pehn_aviso', '1'));
-    await q.goto(base + 'catalogo.html'); await q.evaluate(() => { document.querySelector('[data-aviso="ok"]')?.click(); openCard(0); }); await q.waitForTimeout(500);
+    await q.goto(base + 'catalogo.html'); await abrirTarjeta(q, 0);
     let sinScroll = true;
-    for (let i = 0; i < 4; i++) { sinScroll = sinScroll && await q.evaluate(() => document.documentElement.scrollWidth <= innerWidth && document.querySelector('#cForm').scrollWidth <= document.querySelector('#cForm').clientWidth + 1); if (i < 3) { await q.click('#addBtn'); await q.waitForTimeout(250); } }
+    for (let i = 0; i < 4; i++) { sinScroll = sinScroll && await q.evaluate(() => document.documentElement.scrollWidth <= innerWidth && document.querySelector('#cForm').scrollWidth <= document.querySelector('#cForm').clientWidth + 1); if (i < 3) { await q.click('#addBtn'); await q.waitForTimeout(400); } }
     ok(sinScroll, 'Móvil 360 px: sin scroll horizontal en los 4 pasos');
     await mctx.close(); await c360.close();
   }
@@ -290,7 +301,7 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
       await r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: false, error: 'Verificación fallida. Recarga la página e intenta de nuevo.' }) });
     });
     await t.goto(base + 'catalogo.html');
-    await t.evaluate(() => openCard(0)); await t.waitForTimeout(300);
+    await abrirTarjeta(t, 0);
     for (let i = 0; i < 4; i++) { await t.click('#addBtn'); await t.waitForTimeout(150); }
     await t.waitForTimeout(900);
     await t.click('#cartBtn'); await t.click('#goCheckout');

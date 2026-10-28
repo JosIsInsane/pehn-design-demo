@@ -1,5 +1,5 @@
 /* =====================================================================
-   Pehn Design — PERSONALIZADOR COMO PÁGINA (teléfono, ≤ 760 px). Se enlaza después de personalizador.css.
+   Pehn Design — PERSONALIZADOR COMO PÁGINA (teléfono, ≤ 760 px). Lo agrega js/personalizador-carga.js al abrir un producto (justo antes de movimiento.css).
    js/personalizador.js le pone la clase .pg al modal #custom cuando abre en pantalla chica: pantalla completa, sin fondo ni esquinas,
    barra superior propia, vista previa arriba (alto fijo; se achica al escribir: .kb), opciones al centro y barra de compra abajo.
    ===================================================================== */

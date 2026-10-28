@@ -1,7 +1,11 @@
 /* Pehn Design — CONTENIDO EDITABLE (CRM › Sitio web, hoja "Sitio"): colores, textos, fotos y contacto.
    Llega de Apps Script (?api=sitio) y se guarda en el navegador para la siguiente visita.
    Seguridad: los textos se ponen con textContent (nunca como HTML); colores y enlaces se validan aquí también.
-   Si no hay conexión o falla, se queda lo que trae el HTML. Depende de: base.js (shade, HEX, leer/guardar), whatsapp.js (pintarWa). */
+   Si no hay conexión o falla, se queda lo que trae el HTML. */
+import { CONFIG } from '../datos.js';
+import { shade, HEX } from './utiles.js';
+import { leer, guardar, KEY_SITIO, KEY_PAGO } from './almacen.js';
+import { pintarWa } from './whatsapp.js';
 
 const luz = h => { const c = [1, 3, 5].map(i => parseInt(h.substr(i, 2), 16) / 255).map(v => (v <= .03928 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4)); return .2126 * c[0] + .7152 * c[1] + .0722 * c[2]; };
 const contraste = (a, b) => { const [x, y] = [luz(a), luz(b)].sort((m, n) => n - m); return (x + .05) / (y + .05); };
@@ -32,7 +36,7 @@ function aplicarFotos(v) {
 }
 function aplicarContacto(v) {
   const wa = String(v['contacto.whatsapp'] || '').replace(/\D/g, '');
-  if (wa.length >= 8) { CONFIG.whatsapp = wa; pintarWa(); }
+  if (wa.length >= 8) { CONFIG.whatsapp = wa; pintarWa(); } // el número del CRM manda sobre el de datos.js
   if (/^https:\/\/(www\.)?instagram\.com\//.test(v['contacto.instagram'] || '')) document.querySelectorAll('.ig-link').forEach(a => { a.href = v['contacto.instagram']; });
 }
 function aplicarSitio(v) {
@@ -40,7 +44,9 @@ function aplicarSitio(v) {
   aplicarColores(v); aplicarTextos(v); aplicarFotos(v); aplicarContacto(v);
 }
 
-aplicarSitio(leer(KEY_SITIO, null)); // lo guardado: la página sale con el contenido nuevo sin esperar
-if (CONFIG.sheetsUrl) {
-  fetch(CONFIG.sheetsUrl + '?api=sitio').then(r => r.json()).then(r => { if (r && r.ok && r.sitio) { aplicarSitio(r.sitio); guardar(KEY_SITIO, r.sitio); if (r.pago) guardar(KEY_PAGO, r.pago); } }).catch(() => { /* sin conexión: queda el HTML */ });
+export function iniciarSitio() {
+  aplicarSitio(leer(KEY_SITIO, null)); // lo guardado: la página sale con el contenido nuevo sin esperar
+  if (CONFIG.sheetsUrl) {
+    fetch(CONFIG.sheetsUrl + '?api=sitio').then(r => r.json()).then(r => { if (r && r.ok && r.sitio) { aplicarSitio(r.sitio); guardar(KEY_SITIO, r.sitio); if (r.pago) guardar(KEY_PAGO, r.pago); } }).catch(() => { /* sin conexión: queda el HTML */ });
+  }
 }

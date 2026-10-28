@@ -1,6 +1,13 @@
 /* Pehn Design — CATÁLOGO: filtros por categoría, buscador, orden, lista de tarjetas y su dirección (?cat= ?sub= ?q= ?sort=).
-   Depende de: base.js, producto.js, tarjetas.js, movimiento.js (reveal), datos.js (CATS, SUBS, CARDS, catName, subName).
-   Arranque: iniciarCatalogo() la llama arranque.js al final (usa personalizador*.js para ?card= y ?edit=). Filtros del celular: catalogo-movil.js. */
+   También abre el personalizador (que se descarga en ese momento) desde una tarjeta, ?card= o ?edit=.
+   Filtros del celular: catalogo-movil.js. */
+import { CATS, SUBS, CARDS, catName, subName, productoDe } from '../datos.js';
+import { $, $$, esc, norm } from './utiles.js';
+import { priceOf, cardCfg } from './producto.js';
+import { cardHTML, iniciarTarjetas } from './tarjetas.js';
+import { reveal } from './movimiento.js';
+import { conPersonalizador } from './personalizador-carga.js';
+import { editarRenglon } from './cajon.js';
 
 const PAGE = 8; // tarjetas por tanda
 const filtro = { cat: 'todos', sub: '', q: '', sort: 'feat', shown: PAGE, open: '' };
@@ -78,7 +85,7 @@ function renderGrid(append = false) {
   pintarEstado(list);
   reveal(true);
 }
-function syncURL() {
+export function syncURL() {
   const u = new URL(location.href);
   [['cat', filtro.cat !== 'todos' && filtro.cat], ['sub', filtro.sub], ['q', filtro.q.trim()], ['sort', filtro.sort !== 'feat' && filtro.sort]].forEach(([k, v]) => v ? u.searchParams.set(k, v) : u.searchParams.delete(k));
   ['card', 'edit'].forEach(k => u.searchParams.delete(k));
@@ -117,20 +124,40 @@ function tecladoEnFiltros(e) {
   e.preventDefault();
   bs[e.key === 'Home' ? 0 : e.key === 'End' ? bs.length - 1 : Math.max(0, Math.min(bs.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1)))].focus();
 }
-$('#filters')?.addEventListener('click', clicEnFiltros);
-$('#filters')?.addEventListener('keydown', tecladoEnFiltros);
-$('#chip')?.addEventListener('click', () => { elegir('todos'); $('#fBtn').offsetParent ? $('#fBtn').focus() : $('#filters .acc-h')?.focus(); });
-$$('#q,#qs').forEach(i => i.addEventListener('input', e => { setQ(e.target.value, e.target); clearTimeout(qT); qT = setTimeout(refresh, 160); }));
-$$('[data-qclear]').forEach(b => b.addEventListener('click', () => { setQ(''); b.parentElement.querySelector('input').focus(); refresh(); }));
-$('#sort')?.addEventListener('change', e => { filtro.sort = e.target.value; refresh(); });
-$('#loadBtn')?.addEventListener('click', () => { filtro.shown += PAGE; renderGrid(true); });
-document.addEventListener('click', e => {
-  if (!e.target.closest('[data-reset]')) return;
-  setQ(''); filtro.cat = 'todos'; filtro.sub = ''; filtro.open = ''; syncFilters(); refresh();
-});
+function ponerEventos() {
+  $('#filters')?.addEventListener('click', clicEnFiltros);
+  $('#filters')?.addEventListener('keydown', tecladoEnFiltros);
+  $('#chip')?.addEventListener('click', () => { elegir('todos'); $('#fBtn').offsetParent ? $('#fBtn').focus() : $('#filters .acc-h')?.focus(); });
+  $$('#q,#qs').forEach(i => i.addEventListener('input', e => { setQ(e.target.value, e.target); clearTimeout(qT); qT = setTimeout(refresh, 160); }));
+  $$('[data-qclear]').forEach(b => b.addEventListener('click', () => { setQ(''); b.parentElement.querySelector('input').focus(); refresh(); }));
+  $('#sort')?.addEventListener('change', e => { filtro.sort = e.target.value; refresh(); });
+  $('#loadBtn')?.addEventListener('click', () => { filtro.shown += PAGE; renderGrid(true); });
+  document.addEventListener('click', e => {
+    if (!e.target.closest('[data-reset]')) return;
+    setQ(''); filtro.cat = 'todos'; filtro.sub = ''; filtro.open = ''; syncFilters(); refresh();
+  });
+  ponerEventosDeTarjetas();
+}
+
+// ---------- abrir el personalizador: se descarga solo la primera vez que hace falta (personalizador-carga.js) ----------
+// la tarjeta (clic, Enter o espacio) abre su diseño; mientras carga, la tarjeta avisa con aria-busy
+function abrirTarjeta(el) {
+  conPersonalizador(p => p.openCard(+el.dataset.card), el);
+}
+function ponerEventosDeTarjetas() {
+  document.addEventListener('click', e => {
+    const c = e.target.closest('[data-card]');
+    if (c) abrirTarjeta(c);
+  });
+  document.addEventListener('keydown', e => {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches?.('.card[data-card]')) { e.preventDefault(); abrirTarjeta(e.target); }
+  });
+}
 
 // ---------- arranque: lee la dirección y pinta ----------
-function iniciarCatalogo() {
+export function iniciarCatalogo() {
+  iniciarTarjetas();
+  ponerEventos();
   const q = new URLSearchParams(location.search);
   if (CATS.some(c => c[0] === q.get('cat'))) {
     filtro.cat = q.get('cat');
@@ -140,6 +167,6 @@ function iniciarCatalogo() {
   if (q.get('q')) setQ(q.get('q'));
   if (['asc', 'desc', 'name'].includes(q.get('sort'))) { filtro.sort = q.get('sort'); $('#sort').value = filtro.sort; }
   renderFilters(); renderGrid();
-  if (q.has('card')) openCard(+q.get('card'));
-  else if (q.has('edit')) editItem(+q.get('edit'));
+  if (q.has('card')) conPersonalizador(p => p.openCard(+q.get('card')));
+  else if (q.has('edit')) editarRenglon(+q.get('edit'));
 }

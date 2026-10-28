@@ -1,10 +1,13 @@
 /* Pehn Design — CATÁLOGO EN CELULAR Y TABLET (≤ 960 px): barra de búsqueda que se esconde y filtros en un cajón lateral.
    El mismo panel de la columna es un cajón desde la izquierda: entra al historial (Atrás lo cierra) y usa el sistema de
-   modales (inert, foco, animación). Depende de: base.js, modales.js, catalogo.js (syncURL). */
+   modales (inert, foco, animación). */
+import { $ } from './utiles.js';
+import { openModal, closeModal, syncInert } from './modales.js';
+import { syncURL } from './catalogo.js';
 
 // la barra de búsqueda se esconde al bajar y vuelve al subir (o si algo de ella tiene el foco)
-const toolbar = $('.toolbar');
-if (toolbar) {
+function esconderBarraAlBajar() {
+  const toolbar = $('.toolbar'); if (!toolbar) return;
   let lastY = scrollY;
   addEventListener('scroll', () => {
     const y = scrollY, movil = innerWidth <= 960, dentro = toolbar.contains(document.activeElement);
@@ -36,7 +39,10 @@ function cerrarFiltros() {
   if (!$('#side').classList.contains('open')) return;
   if (history.state?.pehnF) history.back(); else soltarFiltros();
 }
-if ($('#side')) {
+
+export function iniciarCatalogoMovil() {
+  esconderBarraAlBajar();
+  if (!$('#side')) return;
   ajustaSide(); mqSide.addEventListener('change', ajustaSide);
   $('#fBtn').addEventListener('click', abrirFiltros);
   document.addEventListener('click', e => { if (e.target.closest('[data-fclose]')) cerrarFiltros(); });

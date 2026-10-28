@@ -3,7 +3,9 @@
    Las conecta RENDER (al final). Un producto nuevo necesita su función aquí y su nombre en RENDER.
    SI UN DIBUJO SALE EN BLANCO: en la consola (F12) prueba renderProduct(PRODUCTS[0], defaults(PRODUCTS[0])).
    Un error ahí dice qué opción llega vacía.
-   Depende de: datos.js (CONFIG, PRODUCTS…) y js/base.js (esc, shade). */
+   Es un módulo: exporta renderProduct, RENDER y las funciones de dibujo que usan otros archivos. */
+import { CONFIG, FIG_GROUPS, FONTS, catName, normFig } from './datos.js';
+import { esc, shade } from './js/utiles.js';
 
 let UID = 0; // ids únicos para gradientes/filtros dentro de cada SVG
 
@@ -171,7 +173,7 @@ const stand = tint => `<path d="M46 268H154L151 314H49Z" fill="${tint}" fill-opa
   <path d="M46 268H154" stroke="#fff" stroke-width="4"/><path d="M57 276V306" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".85"/>
   <path d="M140 276V304" stroke="#000" stroke-opacity=".08" stroke-width="4" stroke-linecap="round"/>`;
 
-function minifigSVG(c) {
+export function minifigSVG(c) {
   const name = String(c.name || '').trim();
   const pack = String(c.pack).startsWith('acrilico') ? `<rect x="12" y="2" width="176" height="350" rx="10" fill="#fff" fill-opacity=".14" stroke="#fff" stroke-width="3" stroke-opacity=".8"/><path d="M26 18L40 18L26 60Z" fill="#fff" opacity=".45"/>`
     : c.pack === 'kraft' ? `<g transform="translate(150 236) rotate(8)"><rect width="44" height="40" rx="4" fill="#C69C6D" stroke="#2A1A0E" stroke-width="2"/><path d="M22 0V40M0 16H44" stroke="#D9363E" stroke-width="4"/></g>` : '';
@@ -250,8 +252,8 @@ function frameGeom(c) {
   const fw = 200 * sc, gap = 7 * (sc / 0.32), total = n * fw + (n - 1) * gap;
   return { sc, fw, gap, total, x0: 150 - total / 2, fy: base - 314 * sc };
 }
-function frameFigBox(c, i) { const g = frameGeom(c); return { x: g.x0 + i * (g.fw + g.gap), y: g.fy, w: g.fw, h: 314 * g.sc }; }
-function frameSVG(c) {
+export function frameFigBox(c, i) { const g = frameGeom(c); return { x: g.x0 + i * (g.fw + g.gap), y: g.fy, w: g.fw, h: 314 * g.sc }; }
+export function frameSVG(c) {
   const k = 'f' + (++UID);
   const figs = c.figs || [], n = figs.length;
   const fr = c.frame || '#FFFDF9', heart = c.heart || '#F48FB1';
@@ -492,10 +494,10 @@ function genericoSVG(c, p = {}) {
   </svg>`;
 }
 
-const RENDER = { minifig: minifigSVG, frame: frameSVG, keychain: keychainSVG, hoodie: hoodieSVG, shirt: shirtSVG, mug: mugSVG, cup: cupSVG, tumbler: tumblerSVG, tote: toteSVG, generico: genericoSVG };
-const renderProduct = (p, cfg) => RENDER[p.render](cfg, p);
+export const RENDER = { minifig: minifigSVG, frame: frameSVG, keychain: keychainSVG, hoodie: hoodieSVG, shirt: shirtSVG, mug: mugSVG, cup: cupSVG, tumbler: tumblerSVG, tote: toteSVG, generico: genericoSVG };
+export const renderProduct = (p, cfg) => RENDER[p.render](cfg, p);
 
 // cara chiquita para las pestañas de figuras
-function headSVG(f) {
+export function headSVG(f) {
   return `<svg viewBox="40 0 120 100" aria-hidden="true">${minifig(f, { half: true })}</svg>`;
 }

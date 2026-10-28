@@ -5,11 +5,11 @@
    Cada vez que cambie el CSV (precios, piezas nuevas) se vuelve a correr y se commitean los dos archivos.
    Los personalizadores (cuadro, taza, vaso, termo, tote, playera, sudadera, llavero) viven en datos.js:
    aquí solo se leen para armar sus recetas. */
-const fs = require('fs');
-const path = require('path');
-const vm = require('vm');
+import fs from 'node:fs';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
-const RAIZ = path.join(__dirname, '..');
+const RAIZ = path.join(import.meta.dirname, '..');
 const leer = f => fs.readFileSync(path.join(RAIZ, f), 'utf8');
 
 // ---------- CSV ----------
@@ -36,16 +36,21 @@ const qq = s => "'" + String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'
 fs.writeFileSync(path.join(RAIZ, 'piezas.js'), `/* Pehn Design — PIEZAS (generado)
    NO se edita a mano: lo escribe herramientas/generar-tienda.js desde docs/inventario/catalogo-base.csv.
    Cada fila del CSV es una pieza con su precio de venta. Los productos se arman sumando piezas (ver op() en datos.js).
-   Se carga ANTES de datos.js. */
-const PIEZAS = {
+   Lo importan datos.js y datos-tienda.js. */
+export const PIEZAS = {
 ${piezas.map(c => `  ${qq(c.sku)}: [${qq(nombrePieza(c))}, ${c.precio}],`).join('\n')}
 };
+
+// precio de venta de una o varias piezas (por SKU); avisa en la consola si un SKU no está en el CSV
+export const precioDe = (...skus) => skus.reduce((suma, sku) => {
+  if (!PIEZAS[sku]) { console.warn('[Pehn] SKU que no está en el CSV (piezas.js): ' + sku); return suma; }
+  return suma + PIEZAS[sku][1];
+}, 0);
 `);
 
-// ---------- datos.js en un contexto aislado ----------
-const ctx = vm.createContext({ console });
-vm.runInContext(leer('piezas.js') + '\n' + leer('datos.js') + '\n;this.__d = { PRODUCTS, FIG_GROUPS, COLORES, CATS, varSets, varActivos, varKey, varLabel };', ctx);
-const D = ctx.__d;
+// ---------- datos.js: se importa tal cual (solo se usan los personalizadores, PRODUCTS_BASE, no la tienda vieja) ----------
+// Ojo: datos.js importa datos-tienda.js; si ese archivo estuviera roto, restáuralo con el historial antes de generar.
+const D = await import(pathToFileURL(path.join(RAIZ, 'datos.js')).href);
 
 // ---------- qué se publica en la tienda ----------
 // Piezas que solo sirven para armar, o que ya tienen su personalizador: no salen como producto suelto.
@@ -96,14 +101,14 @@ piezas.filter(enTienda).forEach(c => {
 });
 
 const tienda = [];
-const usados = new Set(D.PRODUCTS.map(p => p.id));
+const usados = new Set(D.PRODUCTS_BASE.map(p => p.id));
 grupos.forEach(rows => {
   const c0 = rows[0], cat = catApp(c0.categoria);
   let name = NOMBRE[c0.producto] || (PREFIJO[c0.categoria] || '') + c0.producto;
   if (c0.categoria === 'Cumple') name = c0.producto;
   let id = 't-' + slug(name); while (usados.has(id)) id += '-2'; usados.add(id);
   const tallas = [...new Set(rows.map(r => r.talla).filter(Boolean))].sort((a, b) => ORDEN_TALLA.indexOf(a) - ORDEN_TALLA.indexOf(b));
-  let colores = [...new Set(rows.map(r => r.color || (rows.some(x => x.color) ? 'Estándar' : '')).filter(Boolean))];
+  const colores = [...new Set(rows.map(r => r.color || (rows.some(x => x.color) ? 'Estándar' : '')).filter(Boolean))];
   colores.forEach(n => { if (!D.COLORES[n]) throw new Error(`Color sin tono en COLORES (datos.js): ${n}`); });
   const groups = [];
   if (colores.length > 1) groups.push({ id: 'color', label: 'Color', type: 'swatch', options: colores.map(n => ({ v: D.COLORES[n], label: n, price: 0 })) });
@@ -123,32 +128,37 @@ grupos.forEach(rows => {
 const q = s => "'" + String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'") + "'";
 const obj = o => '{ ' + Object.entries(o).map(([k, v]) => `${k}: ${q(v)}`).join(', ') + ' }';
 const grp = g => `{ id: ${q(g.id)}, label: ${q(g.label)}, type: ${q(g.type)}, options: [${g.options.map(o => `{ v: ${q(o.v)}, label: ${q(o.label)}, price: 0 }`).join(', ')}] }`;
-let js = `/* Pehn Design — PRODUCTOS DE LA TIENDA (generado)
+const js = `/* Pehn Design — PRODUCTOS DE LA TIENDA (generado)
    NO se edita a mano: lo escribe herramientas/generar-tienda.js desde docs/inventario/catalogo-base.csv.
    Para cambiar un precio o una pieza: edita el CSV y corre  node herramientas/generar-tienda.js
-   Se carga después de datos.js. Cada producto tiene sus variantes (talla/color que existen) y el precio de cada una.
+   Lo importa datos.js. Cada producto tiene sus variantes (talla/color que existen) y el precio de cada una.
    Sin dibujo propio: usa render 'generico' (foto en fotos/tienda/<id>.jpg si existe, o tarjeta de color con el nombre). */
 
-${CATS_NUEVAS.map(c => `CATS.push([${q(c[0])}, ${q(c[1])}]);`).join('\n')}
+import { precioDe } from './piezas.js';
 
-// subcategorías (en orden de aparición, tras las de los personalizadores)
-${[...new Map(tienda.filter(p => p.sub).map(p => [p.cat + '|' + p.sub[0], [p.cat, ...p.sub]])).values()].sort((a, b) => ORDEN_SUB.indexOf(a[1]) - ORDEN_SUB.indexOf(b[1])).map(a => `addSub(${a.map(q).join(', ')});`).join('\n')}
+// categorías nuevas de la tienda
+export const CATS_TIENDA = [
+${CATS_NUEVAS.map(c => `  [${q(c[0])}, ${q(c[1])}],`).join('\n')}
+];
+
+// subcategorías [categoría, id, nombre] (en orden de aparición, tras las de los personalizadores)
+export const SUBS_TIENDA = [
+${[...new Map(tienda.filter(p => p.sub).map(p => [p.cat + '|' + p.sub[0], [p.cat, ...p.sub]])).values()].sort((a, b) => ORDEN_SUB.indexOf(a[1]) - ORDEN_SUB.indexOf(b[1])).map(a => `  [${a.map(q).join(', ')}],`).join('\n')}
+];
 
 // tv: variante con el precio de su pieza (PIEZAS)
 const tv = (o, sku) => ({ o, sku, price: precioDe(sku) });
-const TIENDA = [
+export const TIENDA = [
 ${tienda.map(p => `  { id: ${q(p.id)}, name: ${q(p.name)}, cat: ${q(p.cat)},${p.sub ? ` sub: ${q(p.sub[0])},` : ''} base: 0, bg: ${q(p.bg)}, desc: ${q(p.desc)}, render: 'generico',${p.photo ? ` photo: ${q(p.photo)},` : ''}
     groups: [${p.groups.map(grp).join(', ')}],
     variants: [
 ${p.variants.map(v => `      tv(${obj(v.o)}, ${q(v.sku)}),`).join('\n')}
     ] },`).join('\n')}
 ];
-TIENDA.forEach(p => { PRODUCTS.push(p); CARDS.push({ id: p.id }); });
 `;
 fs.writeFileSync(path.join(RAIZ, 'datos-tienda.js'), js);
 
 // ---------- recetas (mismas claves que bomOf en js/envio.js) ----------
-vm.runInContext(js, ctx); // suma los productos de la tienda a PRODUCTS del contexto
 const rec = new Map();
 // una clave puede gastar varias piezas (skus); sin piezas = no gasta inventario
 const addRec = (key, skus = [], qty = 1) => {
@@ -161,7 +171,7 @@ const addRec = (key, skus = [], qty = 1) => {
 };
 const SKIP = /^(Ninguno|Ninguna|Sin corazón)$/i;
 const figIds = new Set(D.FIG_GROUPS.map(g => g.id));
-const hayFig = D.PRODUCTS.some(p => p.groups.some(g => g.id === 'extras'));
+const hayFig = D.PRODUCTS_BASE.some(p => p.groups.some(g => g.id === 'extras'));
 if (hayFig) {
   addRec('Figura · Cuerpo', ['LEG-MUNECOS-LEGO']);
   ['Cabeza', 'Cabello', 'Torso', 'Piernas', 'Vestido', 'Detalle'].forEach(t => addRec(`Figura · ${t} · *`));
@@ -172,7 +182,7 @@ if (hayFig) {
     addRec(`Figura · ${t} · *`);
   });
 }
-D.PRODUCTS.forEach(p => {
+[...D.PRODUCTS_BASE, ...tienda].forEach(p => { // los personalizadores y los productos sencillos que se acaban de armar
   const figLike = p.groups.some(g => g.id === 'extras');
   const ids = new Set();
   if (p.variants) D.varSets(p).forEach(s => Object.values(s.map).forEach(i => ids.add(i)));

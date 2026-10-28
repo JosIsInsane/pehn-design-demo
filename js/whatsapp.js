@@ -1,18 +1,22 @@
-/* Pehn Design — WHATSAPP: enlaces y mensajes con el diseño o el pedido completo.
-   Depende de: base.js, producto.js, carrito.js (cartTotals). Lo usan: cajón, checkout, personalizador y contenido editable. */
+/* Pehn Design — WHATSAPP: enlaces y mensajes con el diseño o el pedido completo. */
+import { CONFIG } from '../datos.js';
+import { fmt } from './formato.js';
+import { cartTotals } from './carrito.js';
+import { summary, lineTotal, priceOf } from './producto.js';
 
-const waURL = text => `https://wa.me/${CONFIG.whatsapp}${text ? '?text=' + encodeURIComponent(text) : ''}`;
-const lineasDe = (p, cfg) => summary(p, cfg).map(([k, v]) => `• ${k}: ${v}`);
+export const HOLA = '¡Hola Pehn Design! ✦';
+export const waURL = text => `https://wa.me/${CONFIG.whatsapp}${text ? '?text=' + encodeURIComponent(text) : ''}`;
+export const lineasDe = (p, cfg) => summary(p, cfg).map(([k, v]) => `• ${k}: ${v}`);
 
 // mensaje con todo el carrito
-function waCartText() {
+export function waCartText() {
   const { rows, total } = cartTotals();
   return [`${HOLA} Quiero hacer este pedido:`, '',
     ...rows.flatMap((r, n) => [`*${n + 1}. ${r.p.name}* ×${r.i.qty} — ${fmt(r.total)}`, ...lineasDe(r.p, r.i.cfg), '']),
     `Total estimado: *${fmt(total)}*`].join('\n');
 }
 // mensaje con un solo diseño (cuando los pedidos en línea están apagados)
-function waText(p, cfg, qty) {
+export function waText(p, cfg, qty) {
   const t = lineTotal(priceOf(p, cfg).unit, qty);
   const hasImg = p.groups.some(g => g.type === 'file' && cfg[g.id]);
   return [
@@ -24,5 +28,4 @@ function waText(p, cfg, qty) {
   ].join('\n').trim();
 }
 // los botones "WhatsApp" de la página llevan el número de CONFIG
-const pintarWa = () => document.querySelectorAll('.wa-link').forEach(el => { el.href = waURL(`${HOLA} Quiero cotizar un diseño.`); });
-pintarWa();
+export const pintarWa = () => document.querySelectorAll('.wa-link').forEach(el => { el.href = waURL(`${HOLA} Quiero cotizar un diseño.`); });

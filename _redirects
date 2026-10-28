@@ -3,3 +3,8 @@
 /pruebas/*      /  302
 /docs/*         /  302
 /README.md      /  302
+/herramientas/*        /  302
+/node_modules/*        /  302
+/package.json          /  302
+/package-lock.json     /  302
+/eslint.config.js      /  302

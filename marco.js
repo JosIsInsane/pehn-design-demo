@@ -5,8 +5,9 @@
      <header data-marco="menu"></header> ... <footer data-marco="pie"></footer> <div data-marco="flotantes"></div>
    y en <body data-page="..."> dice cuál es (home, catalog, pedido, privacidad) para marcar el menú.
 
-   SI EL MENÚ NO APARECE: este archivo debe cargarse ANTES de js/base.js y DESPUÉS de los huecos (al final del body). */
-(function marco() {
+   SI EL MENÚ NO APARECE: montarMarco() debe correr ANTES que los demás módulos (lo llama iniciarBase() en js/arranque.js)
+   y la página debe cargar su <script type="module"> al final del body, después de los huecos. */
+export function montarMarco() {
   const pagina = document.body.dataset.page || '';
   // en la página de inicio los enlaces a sus secciones no recargan la página
   const a = href => (pagina === 'home' && href.startsWith('index.html#') ? href.slice(10) : href);
@@ -75,4 +76,4 @@
 </section>`,
   };
   document.querySelectorAll('[data-marco]').forEach(el => { el.outerHTML = html[el.dataset.marco] || ''; });
-})();
+}

@@ -1,39 +1,46 @@
 /* Pehn Design — PRODUCTOS DE LA TIENDA (generado)
    NO se edita a mano: lo escribe herramientas/generar-tienda.js desde docs/inventario/catalogo-base.csv.
    Para cambiar un precio o una pieza: edita el CSV y corre  node herramientas/generar-tienda.js
-   Se carga después de datos.js. Cada producto tiene sus variantes (talla/color que existen) y el precio de cada una.
+   Lo importa datos.js. Cada producto tiene sus variantes (talla/color que existen) y el precio de cada una.
    Sin dibujo propio: usa render 'generico' (foto en fotos/tienda/<id>.jpg si existe, o tarjeta de color con el nombre). */
 
-CATS.push(['joyeria', 'Joyería']);
-CATS.push(['peluches', 'Peluches']);
-CATS.push(['regalos', 'Regalos']);
-CATS.push(['lego', 'Lego y sets']);
+import { precioDe } from './piezas.js';
 
-// subcategorías (en orden de aparición, tras las de los personalizadores)
-addSub('ropa', 'pijamas', 'Pijamas');
-addSub('ropa', 'boxer', 'Boxer');
-addSub('ropa', 'mamelucos', 'Mamelucos');
-addSub('ropa', 'abrigos', 'Abrigos');
-addSub('vasos', 'vasos', 'Vasos');
-addSub('vasos', 'tazas', 'Tazas');
-addSub('figuras', 'llaveros', 'Llaveros');
-addSub('joyeria', 'collares', 'Collares');
-addSub('joyeria', 'pulseras', 'Pulseras');
-addSub('joyeria', 'dijes', 'Dijes');
-addSub('joyeria', 'relicarios', 'Relicarios');
-addSub('joyeria', 'joyeros', 'Joyeros');
-addSub('lego', 'armables', 'Sets armables');
-addSub('lego', 'cumple', 'Cumpleaños');
-addSub('lego', 'estadios', 'Estadios');
-addSub('lego', 'cajas-lego', 'Cajas Lego');
-addSub('lego', 'sets', 'Sets Lego');
-addSub('regalos', 'flores', 'Flores');
-addSub('regalos', 'coleccion', 'Coleccionables');
-addSub('regalos', 'otros', 'Otros detalles');
+// categorías nuevas de la tienda
+export const CATS_TIENDA = [
+  ['joyeria', 'Joyería'],
+  ['peluches', 'Peluches'],
+  ['regalos', 'Regalos'],
+  ['lego', 'Lego y sets'],
+];
+
+// subcategorías [categoría, id, nombre] (en orden de aparición, tras las de los personalizadores)
+export const SUBS_TIENDA = [
+  ['ropa', 'pijamas', 'Pijamas'],
+  ['ropa', 'boxer', 'Boxer'],
+  ['ropa', 'mamelucos', 'Mamelucos'],
+  ['ropa', 'abrigos', 'Abrigos'],
+  ['vasos', 'vasos', 'Vasos'],
+  ['vasos', 'tazas', 'Tazas'],
+  ['figuras', 'llaveros', 'Llaveros'],
+  ['joyeria', 'collares', 'Collares'],
+  ['joyeria', 'pulseras', 'Pulseras'],
+  ['joyeria', 'dijes', 'Dijes'],
+  ['joyeria', 'relicarios', 'Relicarios'],
+  ['joyeria', 'joyeros', 'Joyeros'],
+  ['lego', 'armables', 'Sets armables'],
+  ['lego', 'cumple', 'Cumpleaños'],
+  ['lego', 'estadios', 'Estadios'],
+  ['lego', 'cajas-lego', 'Cajas Lego'],
+  ['lego', 'sets', 'Sets Lego'],
+  ['regalos', 'flores', 'Flores'],
+  ['regalos', 'coleccion', 'Coleccionables'],
+  ['regalos', 'otros', 'Otros detalles'],
+];
 
 // tv: variante con el precio de su pieza (PIEZAS)
 const tv = (o, sku) => ({ o, sku, price: precioDe(sku) });
-const TIENDA = [
+export const TIENDA = [
   { id: 't-boxer', name: 'Boxer', cat: 'ropa', sub: 'boxer', base: 0, bg: '#BDE7C9', desc: 'Pídela en la talla y el color que quieras.', render: 'generico',
     groups: [{ id: 'color', label: 'Color', type: 'swatch', options: [{ v: '#FFFDF9', label: 'Blanco', price: 0 }, { v: '#2A1A0E', label: 'Negro', price: 0 }] }, { id: 'size', label: 'Talla', type: 'choice', options: [{ v: 'S', label: 'S', price: 0 }, { v: 'M', label: 'M', price: 0 }, { v: 'L', label: 'L', price: 0 }, { v: 'XL', label: 'XL', price: 0 }] }],
     variants: [
@@ -507,4 +514,3 @@ const TIENDA = [
       tv({  }, 'VASO-SUBLIMADO-NAVIDAD'),
     ] },
 ];
-TIENDA.forEach(p => { PRODUCTS.push(p); CARDS.push({ id: p.id }); });

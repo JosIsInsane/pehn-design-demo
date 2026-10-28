@@ -1,16 +1,29 @@
 /* Pehn Design — DATOS Y ANTICIPO (pasos del cajón) y envío del pedido.
    Paso 1: datos de contacto. Paso 2: paga el % y sube el comprobante; el pedido y el comprobante viajan juntos.
    Si en Config "Anticipo antes de enviar" = No, se salta el paso 2. El % y los datos bancarios llegan con ?api=sitio.
-   Depende de: base.js, producto.js, carrito.js, whatsapp.js, envio.js, turnstile.js, modales.js. Lo usa: cajon.js.
-   Estado: App.caja = { vista, datos, comprobante, desde }. */
+   Lo usa: cajon.js (y pedidos.js para leerVoucher). El estado del cajón está en estado.js. */
+import { CONFIG } from '../datos.js';
+import { $, esc, shrinkImage } from './utiles.js';
+import { fmt } from './formato.js';
+import { leer, guardar, borrar, KEY_PAGO, KEY_CONSENT, KEY_CONTACT, KEY_ORDERS } from './almacen.js';
+import {
+  datosDeCaja, comprobanteDeCaja, guardarComprobanteDeCaja, marcarInicioDeFormulario, msDesdeElFormulario,
+  reiniciarCaja, vaciarCarrito,
+} from './estado.js';
+import { cartTotals, saveCart } from './carrito.js';
+import { summary } from './producto.js';
+import { HOLA, waURL, waCartText } from './whatsapp.js';
+import { api, bomOf, previewImage } from './envio.js';
+import { tsBox, montarTurnstile, reiniciarTurnstile, tokenTurnstile } from './turnstile.js';
+import { openModal, closeModal } from './modales.js';
 
 const pagoInfo = () => ({ pct: 50, banco: '', antes: true, ...leer(KEY_PAGO, {}) });
-const leerDatos = () => { const f = $('#coForm'); return f ? Object.fromEntries(new FormData(f)) : App.caja.datos; };
+export const leerDatos = () => { const f = $('#coForm'); return f ? Object.fromEntries(new FormData(f)) : datosDeCaja(); };
 
 // ---------- paso 1: datos ----------
 const checkbox = (nombre, marcado, html, req = '') => `<label class="chk"><input type="checkbox" name="${nombre}" ${req}${marcado ? ' checked' : ''}> ${html}</label>`;
 function datosFormHTML(d, antes) {
-  const { datos } = App.caja;
+  const datos = datosDeCaja();
   return `<form class="co" id="coForm" novalidate>
       <label>Nombre completo<input name="name" autocomplete="name" required value="${esc(d.name)}"></label>
       <div class="row2">
@@ -29,9 +42,9 @@ function datosFormHTML(d, antes) {
       <div class="err" id="coErr" role="alert"></div>
     </form>`;
 }
-function renderCheckout(total) {
-  const d = App.caja.datos || leer(KEY_CONTACT, {}), antes = pagoInfo().antes;
-  if (!App.caja.desde) App.caja.desde = performance.now(); // el servidor rechaza envíos "instantáneos" de bots
+export function renderCheckout(total) {
+  const d = datosDeCaja() || leer(KEY_CONTACT, {}), antes = pagoInfo().antes;
+  marcarInicioDeFormulario(); // el servidor rechaza envíos "instantáneos" de bots
   $('#dTitle').textContent = 'Tus datos';
   $('#dBody').innerHTML = `${antes ? '<ol class="co-pasos" aria-label="Pasos"><li aria-current="step">1. Tus datos</li><li>2. Anticipo</li></ol>' : ''}<button class="back" id="backCart">← Volver al pedido</button>
     ${datosFormHTML(d, antes)}`;
@@ -56,7 +69,7 @@ function marcarCampo(el, k, msg) {
   if (!m) { m = document.createElement('span'); m.id = id; m.className = 'f-err'; (el.type === 'checkbox' ? el.parentElement : el).after(m); el.setAttribute('aria-describedby', id); }
   m.textContent = msg; el.setAttribute('aria-invalid', !!msg);
 }
-function validarDatos() {
+export function validarDatos() {
   const f = $('#coForm'), err = $('#coErr');
   const data = Object.fromEntries(new FormData(f));
   let first = null;
@@ -73,9 +86,9 @@ function validarDatos() {
 }
 
 // ---------- paso 2: anticipo ----------
-const FLECHA_SUBIR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg>';
-function renderAnticipo(total) {
-  const { pct, banco } = pagoInfo(), monto = Math.round(total * pct / 100), listo = App.caja.comprobante;
+export const FLECHA_SUBIR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg>';
+export function renderAnticipo(total) {
+  const { pct, banco } = pagoInfo(), monto = Math.round(total * pct / 100), listo = comprobanteDeCaja();
   $('#dTitle').textContent = 'Paga tu anticipo';
   $('#dBody').innerHTML = `<ol class="co-pasos" aria-label="Pasos"><li>1. Tus datos</li><li aria-current="step">2. Anticipo</li></ol>
     <button class="back" id="backDatos">← Mis datos</button>
@@ -94,19 +107,19 @@ function renderAnticipo(total) {
 }
 
 // foto (se reduce) o PDF del comprobante, como texto para enviarlo
-async function leerVoucher(file) {
+export async function leerVoucher(file) {
   if (file.size > 5 * 1024 * 1024) throw new Error('El archivo pesa más de 5 MB.');
   if (file.type === 'application/pdf') return new Promise((ok, ko) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = ko; r.readAsDataURL(file); });
   if (!/^image\/(jpeg|png|webp)$/.test(file.type)) throw new Error('Sube una foto (JPG o PNG) o un PDF.');
   return shrinkImage(file, 1800); // legible para leer el monto, liviana para enviar
 }
 // el cliente eligió un archivo en el paso 2
-async function elegirComprobante(file) {
+export async function elegirComprobante(file) {
   try {
-    App.caja.comprobante = await leerVoucher(file); $('#coErr').textContent = '';
+    guardarComprobanteDeCaja(await leerVoucher(file)); $('#coErr').textContent = '';
     $('#anticipoTxt').innerHTML = `<b>${esc(file.name)}</b><small>Listo · toca para cambiarlo</small>`;
     $('#anticipoDrop').classList.add('lleno'); $('#sendOrder').disabled = false;
-  } catch (x) { App.caja.comprobante = ''; $('#coErr').textContent = x.message; $('#sendOrder').disabled = true; }
+  } catch (x) { guardarComprobanteDeCaja(''); $('#coErr').textContent = x.message; $('#sendOrder').disabled = true; }
 }
 
 // ---------- envío ----------
@@ -114,7 +127,7 @@ async function elegirComprobante(file) {
 function armarPedido(data, totales, previews) {
   const { rows, gross, disc, total } = totales, { website, remember, consent, ...customer } = data;
   return {
-    customer, website: website || '', turnstile: Ts.token, fillMs: Math.round(performance.now() - App.caja.desde),
+    customer, website: website || '', turnstile: tokenTurnstile(), fillMs: msDesdeElFormulario(),
     currency: CONFIG.currency,
     items: rows.map((r, i) => ({
       product: r.p.name, qty: r.i.qty, unitPrice: r.unit, discount: r.disc, total: r.total,
@@ -124,13 +137,13 @@ function armarPedido(data, totales, previews) {
       bom: bomOf(r.p, r.i.cfg, r.i.qty),
     })),
     subtotal: gross, discount: disc, total,
-    comprobante: App.caja.comprobante,
+    comprobante: comprobanteDeCaja(),
   };
 }
 // recuerda el número de pedido en este dispositivo (si la persona lo permitió) y vacía el carrito
 function cerrarPedido(id, data) {
   if (id && data.remember) guardar(KEY_ORDERS, [{ id, phone: data.phone, fecha: new Date().toISOString().slice(0, 10) }, ...leer(KEY_ORDERS, []).filter(o => o.id !== id)].slice(0, 20));
-  App.cart = []; saveCart(); Object.assign(App.caja, { vista: 'cart', datos: null, comprobante: '', desde: 0 }); closeModal('#drawer');
+  vaciarCarrito(); saveCart(); reiniciarCaja(); closeModal('#drawer');
 }
 function mostrarGracias(res, data, total) {
   const id = res.id || '';
@@ -138,8 +151,8 @@ function mostrarGracias(res, data, total) {
   $('#doneTxt').innerHTML = `${id ? `Tu número de pedido es <b>${esc(id)}</b>.<br>` : ''}Total <b>${fmt(total)}</b>.${pago}<br>Te escribimos a <b>${esc(data.phone)}</b> con tu diseño para aprobar.${id ? `<br><a href="pedido.html?id=${encodeURIComponent(id)}">Ver mis pedidos →</a>` : ''}`;
   openModal('#done');
 }
-async function enviarPedido(btn, data) {
-  if (CONFIG.turnstileSiteKey && !Ts.token) { $('#coErr').textContent = 'Espera un momento: estamos verificando que eres una persona.'; return; }
+export async function enviarPedido(btn, data) {
+  if (CONFIG.turnstileSiteKey && !tokenTurnstile()) { $('#coErr').textContent = 'Espera un momento: estamos verificando que eres una persona.'; return; }
   const totales = cartTotals(), label = btn.textContent;
   btn.disabled = true; btn.textContent = 'Preparando tu diseño…';
   const previews = await Promise.all(totales.rows.map(r => previewImage(r.p, r.i.cfg).catch(() => '')));

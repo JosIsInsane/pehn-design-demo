@@ -1,10 +1,12 @@
 /* Pehn Design — TURNSTILE (opcional): verificación anti-bots de Cloudflare en el último paso del pedido.
-   Solo actúa si datos.js trae CONFIG.turnstileSiteKey. Depende de: base.js. Lo usa: checkout.js.
-   El widget va en el paso donde está el botón de enviar; cada token sirve una sola vez. */
+   Solo actúa si datos.js trae CONFIG.turnstileSiteKey. El widget va en el paso donde está el botón de enviar;
+   cada token sirve una sola vez. */
+import { CONFIG } from '../datos.js';
+import { $ } from './utiles.js';
 
 const Ts = { token: '', widget: null, script: null };
 
-const tsBox = () => CONFIG.turnstileSiteKey ? '<div id="tsBox" class="ts-box"></div>' : '';
+export const tsBox = () => CONFIG.turnstileSiteKey ? '<div id="tsBox" class="ts-box"></div>' : '';
 function cargarScriptTurnstile() {
   Ts.script = Ts.script || new Promise((ok, ko) => {
     const s = document.createElement('script');
@@ -14,7 +16,7 @@ function cargarScriptTurnstile() {
   });
   return Ts.script;
 }
-function montarTurnstile() {
+export function montarTurnstile() {
   Ts.token = ''; Ts.widget = null;
   if (!CONFIG.turnstileSiteKey || !$('#tsBox')) return;
   cargarScriptTurnstile().then(t => {
@@ -26,4 +28,5 @@ function montarTurnstile() {
   }).catch(() => { const e = $('#coErr'); if (e) e.textContent = 'No se pudo cargar la verificación. Recarga la página o pídelo por WhatsApp.'; });
 }
 // cada token sirve una sola vez: tras un intento se pide otro
-const reiniciarTurnstile = () => { Ts.token = ''; try { if (Ts.widget !== null) window.turnstile.reset(Ts.widget); } catch { /* sin widget */ } };
+export const tokenTurnstile = () => Ts.token;
+export const reiniciarTurnstile = () => { Ts.token = ''; try { if (Ts.widget !== null) window.turnstile.reset(Ts.widget); } catch { /* sin widget */ } };

@@ -1,8 +1,8 @@
 /* Pehn Design — PIEZAS (generado)
    NO se edita a mano: lo escribe herramientas/generar-tienda.js desde docs/inventario/catalogo-base.csv.
    Cada fila del CSV es una pieza con su precio de venta. Los productos se arman sumando piezas (ver op() en datos.js).
-   Se carga ANTES de datos.js. */
-const PIEZAS = {
+   Lo importan datos.js y datos-tienda.js. */
+export const PIEZAS = {
   'ACC-BEBE': ['Bebé', 90],
   'ACC-CAMARA': ['Cámara', 60],
   'ACC-GYM': ['Gym', 60],
@@ -236,3 +236,9 @@ const PIEZAS = {
   'VASO-DE-VIDRIO-TRA': ['Vaso de vidrio Transparente', 350],
   'VASO-SUBLIMADO-NAVIDAD': ['Vaso sublimado Navidad', 350],
 };
+
+// precio de venta de una o varias piezas (por SKU); avisa en la consola si un SKU no está en el CSV
+export const precioDe = (...skus) => skus.reduce((suma, sku) => {
+  if (!PIEZAS[sku]) { console.warn('[Pehn] SKU que no está en el CSV (piezas.js): ' + sku); return suma; }
+  return suma + PIEZAS[sku][1];
+}, 0);

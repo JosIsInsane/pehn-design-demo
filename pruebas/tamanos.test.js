@@ -3,10 +3,10 @@
    Revisa js/*.js, css/*.css, apps-script/*.gs y *.html y los *.html del sitio.
    Quedan fuera los archivos generados (piezas.js, datos-tienda.js, apps-script/Catalogo.gs) y pruebas/.
    Si uno se pasa: pártelo por responsabilidad (ver docs/CONTEXTO.md) en vez de subir el límite. */
-const fs = require('fs');
-const path = require('path');
+import fs from 'node:fs';
+import path from 'node:path';
 
-const RAIZ = path.join(__dirname, '..');
+const RAIZ = path.join(import.meta.dirname, '..');
 const MAX = 400;
 const GENERADOS = new Set(['piezas.js', 'datos-tienda.js', 'apps-script/Catalogo.gs']);
 
@@ -14,7 +14,7 @@ const lista = (dir, ext) => fs.existsSync(path.join(RAIZ, dir))
   ? fs.readdirSync(path.join(RAIZ, dir)).filter(f => ext.test(f)).map(f => (dir ? dir + '/' : '') + f)
   : [];
 const archivos = [
-  ...lista('js', /\.js$/), ...lista('css', /\.css$/),
+  ...lista('js', /\.js$/), ...lista('js/paginas', /\.js$/), ...lista('css', /\.css$/),
   ...lista('apps-script', /\.(gs|html)$/), ...lista('', /\.html$/),
 ].filter(f => !GENERADOS.has(f));
 

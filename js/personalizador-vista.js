@@ -1,10 +1,15 @@
 /* Pehn Design — PERSONALIZADOR · VISTA: lo que se repinta cuando cambia el diseño (dibujo, precio animado, desglose)
-   y el vuelo de la vista previa hacia el carrito. Depende de: base.js, producto.js, dibujos.js (renderProduct).
-   Lo usan: personalizador.js y personalizador-eventos.js. */
+   y el vuelo de la vista previa hacia el carrito. */
+import { CONFIG } from '../datos.js';
+import { renderProduct } from '../dibujos.js';
+import { $, esc, movimientoReducido } from './utiles.js';
+import { fmt } from './formato.js';
+import { disenoActual } from './estado.js';
+import { priceOf, lineTotal } from './producto.js';
 
 // ---------- precio animado ----------
 let lastPrice = null, priceRAF = 0, liveT;
-const olvidarPrecio = () => { lastPrice = null; }; // al abrir otro diseño el total no "cuenta" desde el anterior
+export const olvidarPrecio = () => { lastPrice = null; }; // al abrir otro diseño el total no "cuenta" desde el anterior
 function animatePrice(to) {
   const el = $('#cTotal');
   if (lastPrice === null || lastPrice === to) { el.textContent = fmt(to); lastPrice = to; return; }
@@ -25,7 +30,7 @@ let stageRAF = 0;
 function pintarEscenario(first, quiet) {
   cancelAnimationFrame(stageRAF);
   stageRAF = requestAnimationFrame(() => {
-    const { p, cfg, photo, photoPos, showPhoto } = App.cur, stage = $('#cStage');
+    const { p, cfg, photo, photoPos, showPhoto } = disenoActual(), stage = $('#cStage');
     stage.innerHTML = showPhoto ? `<img class="stage-photo" src="${photo}" alt="Foto real del pedido" width="480" height="600" style="object-position:${photoPos || '50% 50%'}">` : renderProduct(p, cfg);
     if (!first && !quiet) stage.firstElementChild?.animate([{ transform: 'scale(.985)', opacity: .7 }, { transform: 'none', opacity: 1 }], { duration: 240, easing: 'cubic-bezier(.22,1,.36,1)' });
   });
@@ -35,8 +40,8 @@ function pintarDesglose(lines, t, qty) {
     ${qty > 1 ? `<li><span>Cantidad</span><b>× ${qty}</b></li>` : ''}${t.disc ? `<li class="disc"><span>Descuento ${CONFIG.bulkPct}%</span><b>−${fmt(t.disc)}</b></li>` : ''}</ul>`;
 }
 // después de cada cambio: dibujo, total (animado, y anunciado a lectores de pantalla) y desglose
-function update(first = false, quiet = false) {
-  const { p, cfg, qty } = App.cur;
+export function update(first = false, quiet = false) {
+  const { p, cfg, qty } = disenoActual();
   pintarEscenario(first, quiet);
   const { lines, unit } = priceOf(p, cfg);
   const t = lineTotal(unit, qty);
@@ -46,13 +51,13 @@ function update(first = false, quiet = false) {
 }
 
 // ---------- la vista previa "vuela" al carrito flotante ----------
-function flyToCart() {
+export function flyToCart() {
   const from = $('#cStage')?.getBoundingClientRect(), fab = $('#cartBtn');
-  if (!from || !fab || REDUCED) { bumpCart(); return; }
+  if (!from || !fab || movimientoReducido()) { bumpCart(); return; }
   const to = fab.getBoundingClientRect();
   const ghost = document.createElement('div');
   ghost.className = 'fly';
-  ghost.innerHTML = renderProduct(App.cur.p, App.cur.cfg);
+  ghost.innerHTML = renderProduct(disenoActual().p, disenoActual().cfg);
   const size = Math.min(from.width, from.height) * .8;
   Object.assign(ghost.style, { width: size + 'px', height: size + 'px', left: (from.left + from.width / 2 - size / 2) + 'px', top: (from.top + from.height / 2 - size / 2) + 'px' });
   document.body.appendChild(ghost);

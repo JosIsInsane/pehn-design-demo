@@ -1,6 +1,17 @@
-/* Pehn Design — PERSONALIZADOR · APERTURA: arma el diseño actual (App.cur) y abre el modal o la página del teléfono.
-   Depende de: base.js, producto.js, tarjetas.js (App.fotos), zoom.js, modales.js, personalizador-form/-movil/-vista.js, datos.js (normCfg, catName).
-   Lo usan: cajon.js (editItem), catalogo.js (?card= y ?edit=) y personalizador-eventos.js. */
+/* Pehn Design — PERSONALIZADOR · APERTURA: arma el diseño abierto (estado.js) y abre el modal o la página del teléfono.
+   Es la puerta de entrada del personalizador: personalizador-carga.js lo descarga solo cuando se abre un producto
+   y llama a iniciarPersonalizador() una vez. */
+import { CARDS, productoDe, catName, normCfg } from '../datos.js';
+import { $, clone } from './utiles.js';
+import { abrirDiseno, setBorrador } from './estado.js';
+import { defaults, cardCfg } from './producto.js';
+import { fotoDisponible } from './tarjetas.js';
+import { openModal } from './modales.js';
+import { showTip, zReset, iniciarZoom } from './zoom.js';
+import { MOV, cargarBorrador, buildForm, vvAjusta, iniciarPaginaMovil } from './personalizador-movil.js';
+import { update, olvidarPrecio } from './personalizador-vista.js';
+import { iniciarEventos } from './personalizador-eventos.js';
+import { iniciarCierre } from './personalizador-cierre.js';
 
 // qué hay abierto: { p, cfg, qty, editIdx, fig (figura activa), step, photo, photoPos, showPhoto, mov (¿teléfono?), sub (¿pantalla de figura?), stack, open, start, draft, done }
 function nuevoDiseno(p, cfg, qty, editIdx, photo, photoPos) {
@@ -24,12 +35,12 @@ function pintarEncabezado(cur) {
   $('#cBreak').hidden = true; $('#brkBtn').setAttribute('aria-expanded', 'false');
 }
 
-function openCustom(id, cfg, qty = 1, editIdx = null, photo = null, photoPos = null) {
+export function openCustom(id, cfg, qty = 1, editIdx = null, photo = null, photoPos = null) {
   const p = productoDe(id); if (!p) return;
-  const cur = App.cur = nuevoDiseno(p, cfg, qty, editIdx, photo, photoPos);
+  const cur = abrirDiseno(nuevoDiseno(p, cfg, qty, editIdx, photo, photoPos));
   $('#custom').classList.toggle('pg', cur.mov);
   $('#custom .sheet').classList.remove('mini', 'kb');
-  if (cur.mov) { history.pushState({ pehn: 0 }, ''); cur.draft = editIdx === null ? cargarBorrador(p.id) : null; }
+  if (cur.mov) { history.pushState({ pehn: 0 }, ''); setBorrador(editIdx === null ? cargarBorrador(p.id) : null); }
   pintarEncabezado(cur);
   olvidarPrecio();
   buildForm(); update(true);
@@ -39,7 +50,15 @@ function openCustom(id, cfg, qty = 1, editIdx = null, photo = null, photoPos = n
   if (cur.mov) { vvAjusta(); setTimeout(() => $('#cScreen').focus({ preventScroll: true }), 80); }
 }
 // abre una tarjeta del catálogo (con su foto real, si existe)
-function openCard(ci) {
+export function openCard(ci) {
   const card = CARDS[ci]; if (!card) return;
-  openCustom(card.id, cardCfg(card), 1, null, card.photo && App.fotos[card.photo] !== false ? card.photo : null, card.photoPos);
+  openCustom(card.id, cardCfg(card), 1, null, card.photo && fotoDisponible(card.photo) ? card.photo : null, card.photoPos);
+}
+
+// pone a escuchar zoom, teléfono, formulario y cierre (una sola vez, al descargar el personalizador)
+export function iniciarPersonalizador() {
+  iniciarZoom();
+  iniciarPaginaMovil();
+  iniciarEventos();
+  iniciarCierre();
 }

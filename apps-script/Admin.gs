@@ -169,7 +169,6 @@ function crmInventario_({ txt, iso }) {
     row: i._row, sku: txt(i.SKU), pieza: txt(i.Pieza), cat: txt(i['Categoría']), stock: Number(i.Stock) || 0, min: Number(i['Mínimo']) || 0,
     unidad: txt(i.Unidad), costo: Number(i['Costo unitario']) || 0, proveedor: txt(i.Proveedor), actualizado: iso(i.Actualizado), apartado: res[txt(i.SKU)] || 0,
   }));
-  const recetas = rows_('recetas').map(r => ({ row: r._row, clave: txt(r.Clave), sku: txt(r.SKU), qty: Number(r.Cantidad) || 1, notas: txt(r.Notas) }));
 }
 
 // pagos: si la hoja no existe todavía (instalación vieja) el CRM sigue funcionando sin ellos
