@@ -66,7 +66,7 @@ function revisarComprobante_(lectura, esperado, total, cfg) {
   const monto = esperado > 0 ? montoQueCuadra_(montosEn_(texto), esperado, total) : 0; // sin monto a pagar no hay nada que cuadrar
   if (monto == null) return falla('monto', elegirMonto_(montosEn_(texto), esperado));
   if (!muestraLaCuenta_(texto, cfg['Datos bancarios'])) return falla('cuenta', monto);
-  if (!fechaReciente_(texto)) return falla('fecha', monto);
+  if (!fechaReciente_(texto, diasDeComprobante_(cfg))) return falla('fecha', monto);
   if (yaUsado_(lectura)) return falla('usado', monto);
   return { ok: true, monto, motivo: '', nota: 'verificado' };
 }
@@ -90,12 +90,14 @@ function muestraLaCuenta_(texto, datosBancarios) {
 const cuentasDe_ = datos => String(datos || '').split('\n').flatMap(l => l.replace(/[\s-]/g, '').match(/\d{6,}/g) || []);
 
 // Si el texto trae fechas (dd/mm/aaaa, dd-mm-aa o "27 oct 2026"), al menos una debe ser de los últimos días
-function fechaReciente_(texto) {
+function fechaReciente_(texto, dias) {
   const fechas = fechasEn_(texto);
   if (!fechas.length) return true;
   const hoy = now_().getTime(), dia = 864e5;
-  return fechas.some(f => f.getTime() <= hoy + dia && hoy - f.getTime() <= VERIF.diasFecha * dia);
+  return fechas.some(f => f.getTime() <= hoy + dia && hoy - f.getTime() <= (dias + 1) * dia);
 }
+// Config › Días que vale un comprobante (por defecto 7)
+const diasDeComprobante_ = cfg => { const n = Number(cfg['Días que vale un comprobante']); return n > 0 ? n : VERIF.diasFecha; };
 const MESES = { ene: 0, feb: 1, mar: 2, abr: 3, may: 4, jun: 5, jul: 6, ago: 7, sep: 8, set: 8, oct: 9, nov: 10, dic: 11 };
 function fechasEn_(texto) {
   const out = [], t = String(texto || ''), anio = a => (a < 100 ? 2000 + a : a);

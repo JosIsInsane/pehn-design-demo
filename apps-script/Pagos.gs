@@ -6,9 +6,7 @@
  * - El comprobante se verifica en el momento (Verificacion.gs): si no pasa, se rechaza o queda en revisión
  *   según Config. "Coincide" = pasó todas las reglas; el CRM › Pagos permite confirmar a mano.
  *
- * SI NO LEE EL MONTO ("Sin lectura"):
- *   Editor › Servicios (+) › Drive API › Agregar. Sin ese servicio el comprobante se guarda igual,
- *   pero el monto se revisa a mano. Pehn › Revisar que todo funcione lo avisa.
+ * SI NO LEE EL MONTO ("Sin lectura" / "No pudimos leer"): Pehn › Probar lectura de comprobantes (Ocr.gs) dice por qué.
  */
 
 const PAGO_OK = ['Coincide', 'Confirmado']; // estos cuentan como pagado
@@ -91,24 +89,6 @@ function carpetaDePedido_(p) {
   const id = String(p.Carpeta || '').match(/[-\w]{25,}/);
   if (id) { try { return DriveApp.getFolderById(id[0]); } catch (e) { /* carpeta borrada: va a la general */ } }
   return folder_();
-}
-
-// OCR con Google Drive: convierte la imagen en un documento temporal, lee el texto y lo borra.
-// Devuelve null si el servicio Drive no está activado o falla.
-function leerTexto_(blob) {
-  if (typeof Drive === 'undefined' || !Drive.Files) return null;
-  let docId = null;
-  try {
-    const meta = { name: 'ocr-temporal', mimeType: 'application/vnd.google-apps.document' };
-    docId = Drive.Files.create ? Drive.Files.create(meta, blob, { ocrLanguage: 'es' }).id
-      : Drive.Files.insert({ title: meta.name, mimeType: meta.mimeType }, blob, { ocr: true, ocrLanguage: 'es' }).id;
-    return DocumentApp.openById(docId).getBody().getText();
-  } catch (err) {
-    console.error('OCR falló:', err);
-    return null;
-  } finally {
-    if (docId) { try { DriveApp.getFileById(docId).setTrashed(true); } catch (e) { /* ya no está */ } }
-  }
 }
 
 // Todos los montos que parecen dinero en un texto: "L 1,250.00", "Lps. 1250", "HNL 1.250,00", "Monto: 625"

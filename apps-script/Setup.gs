@@ -13,6 +13,7 @@ function onOpen() {
     .addItem('Respaldar la hoja ahora', 'respaldarAhora')
     .addSeparator()
     .addItem('Revisar que todo funcione', 'revisarSistema')
+    .addItem('Probar lectura de comprobantes', 'probarLecturaComprobantes')
     .addItem('Configurar hojas', 'configurar')
     .addItem('Ver URL y token para el sitio', 'mostrarConexion')
     .addToUi();

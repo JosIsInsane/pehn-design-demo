@@ -713,5 +713,23 @@ prueba('Apps Script: ningún .gs y .html comparten nombre (clasp push lo rechaza
   ok(!repetidos.length, 'repetidos: ' + repetidos.join(', '));
 });
 
+prueba('OCR: usa la API REST de Drive pidiendo OCR en español', () => {
+  const s = nuevo(); const llamadas = [];
+  const f = s.ctx.UrlFetchApp.fetch; s.ctx.UrlFetchApp.fetch = (u, o) => { llamadas.push(u); return f(u, o); };
+  ok(verificar(s, jpgNuevo()).verificacion.ok);
+  ok(llamadas.some(u => /upload\/drive\/v3\/files\?uploadType=multipart&ocrLanguage=es/.test(u)) && llamadas.some(u => /export\?mimeType=text\/plain/.test(u)), llamadas.join(' '));
+});
+prueba('OCR: si la API REST falla, lee con el servicio avanzado y guarda el motivo', () => {
+  const s = nuevo({ rest: false }); ok(verificar(s, jpgNuevo()).verificacion.ok, 'respaldo');
+  const t = nuevo({ ocr: false }); verificar(t, jpgNuevo());
+  ok(/Drive respondió 403/.test(t.run(`CacheService.getScriptCache().get('ocr_error')`)), 'motivo guardado');
+});
+prueba('Comprobante BAC real (formato de notificación) pasa', () => {
+  const s = nuevo(); s.run(`setConfig_('Datos bancarios', 'BAC · Leda Villela · 746710241')`);
+  const d = new Date(), mes = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'][d.getMonth()];
+  s.ctx.__ocr = `BAC\nNotificación de transferencia\nHola,\nLe informamos que EMMA LUZ GARCIA MEJIA realizó una transferencia a la cuenta bancaria Nº 746710241 a nombre de LEDA DAMARIS VILLELA PORTILLO.\nFecha\n${d.getDate()} ${mes} ${d.getFullYear()}\nHora\n9:40 AM\nMonto\nL345.00\nDetalle\nAnticipo 50%\nReferencia\n412441383`;
+  const v = verificar(s, jpgNuevo(), 690).verificacion; ok(v.ok && v.monto === 345, JSON.stringify(v));
+});
+
 console.log(`\n${n - fallas} de ${n} pruebas pasaron.`);
 process.exit(fallas ? 1 : 0);
