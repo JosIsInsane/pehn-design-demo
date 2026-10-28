@@ -1,6 +1,6 @@
 /* =====================================================================
    Pehn Design — PERSONALIZADOR (escritorio y tablet): hoja con vista previa y zoom, opciones, desglose y barra de compra.
-   Solo catalogo.html enlaza este archivo (después de base.css). La versión de teléfono (≤ 760 px) está en personalizador-movil.css.
+   NO está en el HTML: js/personalizador-carga.js lo agrega al abrir un producto (justo antes de carrito.css). La versión de teléfono (≤ 760 px) está en personalizador-movil.css.
    Celular y tablet: reglas dentro de los @media al final de este archivo.
    ===================================================================== */
 
