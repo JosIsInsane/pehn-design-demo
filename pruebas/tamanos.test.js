@@ -24,6 +24,10 @@ archivos.forEach(f => {
   const n = lineas(f), bien = n <= MAX;
   if (!bien) { console.log(`✗ ${f}: ${n} líneas (máximo ${MAX})`); fallas++; }
 });
+// Apps Script quita la extensión: un .gs y un .html con el mismo nombre chocan al subir
+const nombres = lista('apps-script', /\.(gs|html)$/).map(f => path.basename(f).replace(/\.(gs|html)$/, ''));
+const repetidos = nombres.filter((n, i) => nombres.indexOf(n) !== i);
+if (repetidos.length) { console.log(`✗ apps-script: nombres repetidos sin extensión (${repetidos.join(', ')})`); fallas++; }
 if (!archivos.length) { console.log('✗ no se encontró ningún archivo que revisar'); fallas++; }
 else if (!fallas) console.log(`✓ ${archivos.length} archivos, ninguno pasa de ${MAX} líneas`);
 if (fallas) { console.log(`\n${fallas} archivo(s) muy largos. Pártelos por responsabilidad.`); process.exit(1); }
