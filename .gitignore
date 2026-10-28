@@ -1,2 +1,8 @@
+# Vistas previas locales
 preview-*.html
+# Sistema
 .DS_Store
+# Dependencias (se instalan con npm ci)
+node_modules/
+# Contiene el ID del proyecto de Apps Script del dueño: no se sube (copia .clasp.json.ejemplo)
+.clasp.json
