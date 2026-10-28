@@ -3,3 +3,8 @@
 /pruebas/*      /  302
 /docs/*         /  302
 /README.md      /  302
+
+# Plantilla de clasp y archivos de configuracion (no son parte de la pagina)
+/.clasp.json.ejemplo  /  302
+/.editorconfig        /  302
+/.github/*            /  302
