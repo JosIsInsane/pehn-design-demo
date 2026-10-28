@@ -1,0 +1,51 @@
+# Corre lint y pruebas en cada push y pull request. No publica nada.
+name: Pruebas
+
+on:
+  push:
+    branches: [main, plan-produccion]
+  pull_request:
+    branches: [main, plan-produccion]
+
+# Solo lectura: el flujo no puede escribir en el repo.
+permissions:
+  contents: read
+
+# Si llega un push nuevo a la misma rama, cancela la corrida vieja.
+concurrency:
+  group: pruebas-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Instalar Node 22
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Revisar el código (lint)
+        run: npm run lint
+
+      # pruebas/sitio.test.js hace require('playwright'). Si package.json ya lo trae
+      # como devDependency, npm ci lo instaló; si no, se instala aquí con versión fija
+      # (sin tocar package.json ni el lock).
+      - name: Asegurar Playwright
+        run: node -e "require.resolve('playwright')" 2>/dev/null || npm install --no-save --no-package-lock playwright@1.64.1
+
+      - name: Instalar Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Correr las pruebas
+        run: npm test
