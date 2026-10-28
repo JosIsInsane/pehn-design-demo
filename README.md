@@ -9,17 +9,17 @@ Landing + catálogo con personalizador para [@pehn.designn](https://www.instagra
 - `marco.js` — menú, pie, carrito y aviso de privacidad comunes a todas las páginas
 - `datos.js` — **lo que se edita seguido**: número de WhatsApp, precios, opciones, colores, productos, tarjetas y portada
 - `dibujos.js` — vistas previas en SVG de cada producto
-- `app.js` — catálogo, personalizador, carrito, WhatsApp y envío a Google Sheets
-- `styles.css` — estilos (colores y medidas en `:root`)
+- `js/` — el código de la página: módulos ES (`import`/`export`), uno por tarea; cada página carga un solo punto de entrada (`js/paginas/*.js`) y el personalizador se descarga solo al abrir un producto. Mapa y reglas en `docs/ARQUITECTURA.md`
+- `css/` — estilos por sección (`base.css` trae colores y medidas en `:root`); cada página enlaza solo los suyos
 - `apps-script/` — pedidos, inventario, pagos y contenido en Google Sheets + CRM (ver `apps-script/README.md`)
-- `pruebas/` — pruebas de seguridad y de punta a punta (`node pruebas/seguridad.test.js`, `node pruebas/sitio.test.js`)
+- `pruebas/` — pruebas de seguridad, precios, tamaño de archivos, módulos y de punta a punta. Primero `npm install`; luego `npm run lint` y `npm test` (ver `docs/ARQUITECTURA.md`)
 - `docs/` — `SEGURIDAD.md` (revisión y riesgos), `PLAN-CRM-Y-MENSAJES.md` (siguientes pasos)
 - `_headers`, `_redirects` — seguridad y carpetas ocultas en Cloudflare Pages
 - `fotos/` — fotos reales de pedidos; cada cuadro del catálogo abre el diseño de su foto ya armado
 
-Sitio estático: abrir `index.html` o servir la carpeta (`python3 -m http.server`).
+Sitio estático: hay que servir la carpeta (`python3 -m http.server`) y abrir `http://localhost:8000`; con doble clic en `index.html` (`file://`) los módulos ES no cargan.
 
-Precios en lempiras (HNL). Para guardar pedidos, sigue `apps-script/README.md` y pega `sheetsUrl` y `sheetsToken` en `app.js`.
+Precios en lempiras (HNL). Para guardar pedidos, sigue `apps-script/README.md` y pega `sheetsUrl` y `sheetsToken` en `datos.js`.
 
 Pendiente: precios reales (en `datos.js`), fotos de sudaderas y taller. El WhatsApp, textos, colores y fotos de portada se cambian en CRM › Sitio web.
 

@@ -1,0 +1,68 @@
+<script>
+/* Admin — SERVIDOR
+   Habla con crm() de Admin.gs, aplica cambios al instante (LOCAL), avisos y diálogos. Depende de: Base. */
+// ---------- servidor ----------
+let enVuelo = 0;
+const ocupado = n => { enVuelo += n; $('#busy').hidden = enVuelo <= 0; };
+function call(accion, args) {
+  ocupado(1);
+  return new Promise((ok, ko) => google.script.run
+    .withSuccessHandler(s => { ocupado(-1); try { ok(JSON.parse(s)); } catch (e) { ko(new Error('Respuesta vacía del servidor.')); } })
+    .withFailureHandler(e => { ocupado(-1); ko(e); })
+    .crm(K, accion, args || {}));
+}
+
+// Cambio al instante en pantalla; la hoja se actualiza por detrás.
+const LOCAL = {
+  estado: a => { const p = D.pedidos.find(x => x.row === a.row); if (p) { p.estado = a.estado; p.actualizado = new Date().toISOString(); } },
+  nota: a => { const p = D.pedidos.find(x => x.row === a.row); if (p) p.notas = a.texto; },
+  cliente: a => { const c = D.clientes.find(x => x.tel === a.tel && x.nombre === a.nombre); if (c) { c.etiquetas = a.etiquetas; c.notas = a.notas; } },
+  ajuste: a => { const i = D.inventario.find(x => x.sku === a.sku); if (i) i.stock += a.delta; },
+  pieza: a => {
+    const sku = String(a.sku || '').trim().toUpperCase(), i = D.inventario.find(x => x.sku === sku);
+    const v = { sku, pieza: a.pieza, cat: a.cat || '', stock: +a.stock || 0, min: +a.min || 0, costo: +a.costo || 0, proveedor: a.proveedor || '' };
+    if (i) Object.assign(i, v); else D.inventario.push({ ...v, row: 0, unidad: 'pza', actualizado: '', apartado: 0 });
+  },
+  pago: a => { const x = (D.pagos || []).find(y => y.row === a.row); if (x) { x.resultado = a.resultado; if (a.monto !== '' && a.monto !== undefined) x.monto = +a.monto; x.revisado = 'tú'; } },
+  sitio: a => a.cambios.forEach(c => { const f = (D.sitio || []).find(x => x.clave === c.clave); if (f) f.valor = c.valor; }),
+  receta: a => { const r = D.recetas.find(x => x.row === a.row); if (r) { r.sku = String(a.sku || '').trim().toUpperCase(); r.qty = +a.qty || 1; r.notas = r.sku ? '' : 'Sin inventario'; } },
+};
+// pendientes: los datos del servidor solo se aplican cuando ya no queda ninguno en camino
+let pend = 0, tanda = 0;
+async function act(accion, args, msg) {
+  const local = LOCAL[accion];
+  if (local) { local(args); render(); if (msg) toast(msg); }
+  pend++; tanda++;
+  try {
+    const res = await call(accion, args);
+    if (--pend === 0) {
+      // si hubo varios cambios seguidos, una lectura final asegura que todo quedó igual que en la hoja
+      if (tanda > 1) { tanda = 0; pend++; try { D = await call('datos'); } finally { pend--; } }
+      else D = res;
+      tanda = 0; render();
+    }
+    if (!local && msg) toast(msg);
+    return true;
+  } catch (e) {
+    pend--;
+    toast('No se pudo guardar: ' + (e.message || e) + '. Volviendo a leer la hoja…');
+    if (pend === 0) { tanda = 0; try { D = await call('datos'); render(); } catch (e2) { } }
+    return false;
+  }
+}
+function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('show'); clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove('show'), 3000); }
+
+function ask({ title, text = '', input = null, ok = 'Aceptar', danger = false }) {
+  return new Promise(res => {
+    const d = $('#dlg'), i = $('#dlgI');
+    $('#dlgT').textContent = title; $('#dlgP').textContent = text;
+    i.hidden = input === null; i.value = input ?? ''; i.type = typeof input === 'number' ? 'number' : 'text';
+    $('#dlgOk').textContent = ok; $('#dlgOk').className = 'btn ' + (danger ? 'brand' : 'dark');
+    d.hidden = false; (input === null ? $('#dlgOk') : i).focus();
+    const done = v => { d.hidden = true; $('#dlgOk').onclick = $('#dlgNo').onclick = null; i.onkeydown = null; res(v); };
+    $('#dlgOk').onclick = () => done(input === null ? true : i.value);
+    $('#dlgNo').onclick = () => done(null);
+    i.onkeydown = e => { if (e.key === 'Enter') done(i.value); };
+  });
+}
+</script>

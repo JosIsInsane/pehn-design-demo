@@ -52,23 +52,27 @@ function recibirComprobante_(d, cfg) {
   const pago = resumenPago_(p, cfg);
   const esperado = pago.porPagarAnticipo || pago.saldo;
 
-  return conCandado_(() => procesarComprobante_(p, d.file, esperado, carpetaDePedido_(p), cfg));
+  const leido = prepararComprobante_(carpetaDePedido_(p), d.file); // Drive y OCR sin candado
+  return conCandado_(() => anotarPago_(p, leido, esperado));
 }
 
-// ¿el archivo parece un comprobante válido? (se revisa antes de crear nada)
-const comprobanteValido_ = s => { const m = /^data:([\w/+.-]+);base64,([A-Za-z0-9+/=]+)$/.exec(String(s || '')); return !!m && !!TIPOS_OK[m[1]] && m[2].length <= LIMITS.imageChars; };
+// ¿el archivo parece un comprobante válido? (tipo, tamaño y firma de bytes; se revisa antes de crear nada)
+const comprobanteValido_ = s => !!dataUrlValido_(s);
 
-// Guarda el comprobante, lee el monto y lo anota en Pagos. Quien llama ya tiene el candado.
-// p: { ID, Cliente, Moneda } del pedido
-function procesarComprobante_(p, dataUrl, esperado, carpeta, cfg) {
+// Lo lento, FUERA del candado: guarda el archivo en Drive y lee el monto con OCR. Si luego el pedido falla,
+// el archivo queda suelto en Drive (sin daño).
+function prepararComprobante_(carpeta, dataUrl) {
   const archivo = guardarImagen_(carpeta, dataUrl, `Comprobante ${Utilities.formatDate(now_(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH.mm')}`);
   if (!archivo) throw new Error('El comprobante debe ser foto (JPG, PNG) o PDF de menos de 5 MB.');
-  const lectura = leerTexto_(archivo.blob);
+  return { archivo, lectura: leerTexto_(archivo.blob) };
+}
+
+// Solo la fila en Pagos: esto sí va dentro del candado. p: { ID }
+function anotarPago_(p, { archivo, lectura }, esperado) {
   const monto = lectura === null ? null : elegirMonto_(montosEn_(lectura), esperado);
   const resultado = lectura === null ? 'Sin lectura' : monto == null ? 'Revisar: sin monto' : Math.abs(monto - esperado) <= 1 ? 'Coincide' : 'Revisar: no coincide';
   sheet_('pagos').appendRow(fila_([now_(), p.ID, monto == null ? '' : monto, esperado, resultado, archivo.url,
     texto_(lectura || '', 2000), '', '']));
-  avisarComprobante_(p, monto, esperado, resultado, archivo.url, cfg);
   return { resultado: resultado === 'Coincide' ? 'Coincide' : 'Revisión', monto, esperado };
 }
 
@@ -130,17 +134,4 @@ function elegirMonto_(montos, esperado) {
   if (igual) return igual.n;
   const conMoneda = montos.filter(m => m.moneda);
   return Math.max(...(conMoneda.length ? conMoneda : montos).map(m => m.n));
-}
-
-function avisarComprobante_(p, monto, esperado, resultado, url, cfg) {
-  const to = cfg['Correo del negocio'];
-  if (!to) return;
-  try {
-    MailApp.sendEmail({
-      to, subject: `Comprobante ${p.ID} · ${resultado}`,
-      htmlBody: `<div style="font-family:system-ui,sans-serif"><p><b>${esc_(p.ID)}</b> · ${esc_(p.Cliente)}</p>
-        <p>Monto leído: <b>${monto == null ? '—' : money_(monto, p.Moneda)}</b> · Esperado: <b>${money_(esperado, p.Moneda)}</b></p>
-        <p>Resultado: <b>${esc_(resultado)}</b>. Confírmalo en el CRM › Pagos.</p><p><a href="${url}">Ver comprobante</a></p></div>`,
-    });
-  } catch (err) { console.error('Aviso de comprobante no enviado:', err); }
 }

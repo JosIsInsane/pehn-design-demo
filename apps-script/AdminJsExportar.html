@@ -1,0 +1,23 @@
+<script>
+/* Admin — EXPORTAR a CSV
+   Pedidos (con el filtro actual) y clientes. Depende de: Base, Pedidos (filtraPedidos), Servidor (toast). */
+// ---------- exportar ----------
+const celdaCsv = v => { let s = String(v == null ? '' : v).replace(/\r?\n/g, ' | '); if (/^[=+\-@]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; };
+function bajarCsv(que) {
+  let cab, filas;
+  if (que === 'clientes') {
+    cab = ['Nombre', 'WhatsApp', 'Correo', 'Ciudad', 'Etiquetas', 'Notas', 'Pedidos', 'Total HNL', 'Primer pedido', 'Último pedido'];
+    filas = D.clientes.map(c => [c.nombre, c.wa, c.correo, c.ciudad, c.etiquetas, c.notas, c.pedidos.length, c.total, c.primero, c.ultimo]);
+  } else {
+    cab = ['ID', 'Fecha', 'Estado', 'Cliente', 'WhatsApp', 'Correo', 'Ciudad', 'Para cuándo', 'Productos', 'Total', 'Moneda', 'Inventario', 'Notas del cliente', 'Notas internas'];
+    filas = filtraPedidos().map(p => [p.id, p.fecha, p.estado, p.cliente, p.wa, p.correo, p.ciudad, p.paraDia || p.para, p.productos, p.total, p.moneda, p.stock, p.notasCliente, p.notas]);
+  }
+  const csv = '\ufeff' + [cab, ...filas].map(r => r.map(celdaCsv).join(',')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = `pehn-${que}-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  toast(`${filas.length} filas exportadas`);
+}
+CLICS.push([d => d.csv, d => bajarCsv(d.csv)]);
+</script>

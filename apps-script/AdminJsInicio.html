@@ -1,0 +1,77 @@
+<script>
+/* Admin — vista INICIO
+   Resumen: cifras, saludo, "Para hoy" y últimos pedidos. Cada bloque es una función con nombre; rInicio() solo las junta.
+   Depende de: AdminJsBase (D, kpi, pill, money, esc, ICON…). */
+
+const DIA = 864e5;
+const hoy0 = () => { const h = new Date(); h.setHours(0, 0, 0, 0); return h; };
+const sumaTotal = L => L.reduce((s, p) => s + p.total, 0);
+// días que faltan para la entrega (negativo = vencida; null = sin fecha)
+const diasPara = p => p.paraDia ? Math.round((new Date(p.paraDia + 'T00:00:00') - hoy0()) / DIA) : null;
+const bajoMinimo = () => D.inventario.filter(i => i.stock <= i.min || i.apartado > i.stock);
+
+// ---------- cifras ----------
+// pedidos de este mes y del mismo tramo del mes pasado (del 1 al día de hoy) para comparar
+function ventasDelMes(P) {
+  const mes = new Date(); mes.setDate(1); mes.setHours(0, 0, 0, 0);
+  const delMes = P.filter(p => p.fecha && new Date(p.fecha) >= mes && p.estado !== 'Cancelado');
+  const ant = new Date(mes); ant.setMonth(ant.getMonth() - 1);
+  const antFin = new Date(ant); antFin.setDate(new Date().getDate() + 1);
+  const delAnt = P.filter(p => p.fecha && new Date(p.fecha) >= ant && new Date(p.fecha) < Math.min(antFin, mes) && p.estado !== 'Cancelado');
+  return { delMes, venta: sumaTotal(delMes), ventaAnt: sumaTotal(delAnt) };
+}
+function kpisInicio(P) {
+  const { delMes, venta, ventaAnt } = ventasDelMes(P);
+  const listos = P.filter(p => p.estado === 'Listo');
+  const semana = P.filter(p => p.fecha && Date.now() - new Date(p.fecha) < 7 * DIA);
+  const nuevos = P.filter(p => p.estado === 'Nuevo');
+  const proceso = P.filter(p => activo(p) && !['Nuevo', 'Listo'].includes(p.estado));
+  $('#kpiHome').innerHTML = [
+    kpi('Por confirmar', nuevos.length, { sub: `+${semana.length} pedidos esta semana`, nav: 'data-go="pedidos" data-f="Nuevo"', tone: 'brand', icon: 'bag' }),
+    kpi('En proceso', proceso.length, { sub: 'Diseño, aprobado, producción', nav: 'data-go="pedidos" data-f="Activos"', tone: 'lav', icon: 'clock' }),
+    kpi('Listos para entregar', listos.length, { sub: 'Coordina la entrega', nav: 'data-go="pedidos" data-f="Listo"', tone: 'mint', icon: 'check' }),
+    kpi('Ventas del mes', money(venta), { sub: `${plural(delMes.length, 'pedido', 'pedidos')}${ventaAnt ? ' · vs. mes pasado' : ''}`, tone: 'sky', icon: 'cash', pill: ventaAnt ? pill((venta - ventaAnt) / ventaAnt * 100) : '' }),
+  ].join('');
+}
+function saludoInicio(P) {
+  const hr = new Date().getHours(), nuevos = P.filter(p => p.estado === 'Nuevo');
+  $('#hola').textContent = `${hr < 12 ? 'Buenos días' : hr < 19 ? 'Buenas tardes' : 'Buenas noches'}, ${D.negocio}`;
+  const prox = P.filter(p => activo(p) && p.paraDia && (new Date(p.paraDia + 'T00:00:00') - hoy0()) / DIA <= 7);
+  $('#holaSub').textContent = `Tienes ${plural(nuevos.length, 'pedido', 'pedidos')} por confirmar, ${plural(prox.length, 'entrega', 'entregas')} en los próximos 7 días y ${plural(bajoMinimo().length, 'pieza', 'piezas')} por reponer.`;
+  $('#holaAct').innerHTML = `<button class="btn gold" data-go="pedidos" data-f="Nuevo">${ICON.bag} Ver pedidos nuevos</button><button class="btn" data-go="inventario" data-fi="Reponer">${ICON.plus} Entrada de mercancía</button><a class="btn" href="${esc(D.hoja)}" target="_blank" rel="noopener noreferrer">Abrir Google Sheets ↗</a>`;
+}
+
+// ---------- "Para hoy": cada función regresa las filas de su tipo, en el orden en que se muestran ----------
+function todoEntregas(P) {
+  const urgentes = P.filter(p => activo(p) && p.estado !== 'Listo' && diasPara(p) !== null && diasPara(p) <= 7).sort((a, b) => diasPara(a) - diasPara(b));
+  return urgentes.slice(0, 5).map(p => { const n = diasPara(p); return `<button class="li" data-ped="${p.row}"><span class="ic warn">${ICON.alert}</span><div><b>${n < 0 ? 'Entrega vencida' : n === 0 ? 'Entrega hoy' : n === 1 ? 'Entrega mañana' : 'Entrega en ' + n + ' días'}: ${esc(p.cliente)}</b><small>${esc(p.id)} · ${esc(p.estado)}</small></div></button>`; });
+}
+function todoSinAtender(P) {
+  const frios = P.filter(p => p.estado === 'Nuevo' && p.fecha && (Date.now() - new Date(p.fecha)) > 2 * DIA);
+  return frios.length ? [`<button class="li" data-go="pedidos" data-f="Nuevo"><span class="ic bad">${ICON.alert}</span><div><b>${frios.length} pedido${frios.length > 1 ? 's' : ''} sin atender hace más de 2 días</b><small>${esc(frios.slice(0, 3).map(p => p.cliente).join(', '))}${frios.length > 3 ? '…' : ''}</small></div></button>`] : [];
+}
+const todoConfirmar = P => P.filter(p => p.estado === 'Nuevo').slice(0, 6).map(p => `<button class="li" data-ped="${p.row}"><span class="ic brand">${ICON.bag}</span><div><b>Confirmar a ${esc(p.cliente)}</b><small>${esc(p.id)} · ${esc(p.productos.split('\n')[0])}</small></div><span class="money">${money(p.total, p.moneda)}</span></button>`);
+function todoFaltaInventario(P) {
+  const faltan = P.filter(p => activo(p) && /^Falta/.test(p.stock));
+  if (faltan.length > 2) return [`<button class="li" data-go="pedidos" data-f="Activos"><span class="ic bad">${ICON.alert}</span><div><b>Falta inventario en ${faltan.length} pedidos</b><small>${esc(faltan.slice(0, 3).map(p => p.id).join(', '))}…</small></div></button>`];
+  return faltan.map(p => `<button class="li" data-ped="${p.row}"><span class="ic bad">${ICON.alert}</span><div><b>Falta inventario para ${esc(p.id)}</b><small>${esc(p.stock)}</small></div></button>`);
+}
+function todoReponer() {
+  const bajos = bajoMinimo();
+  return bajos.length ? [`<button class="li" data-go="inventario" data-fi="Reponer"><span class="ic warn">${ICON.box}</span><div><b>Reponer ${bajos.length} pieza${bajos.length > 1 ? 's' : ''}</b><small>${esc(bajos.slice(0, 4).map(i => i.pieza).join(', '))}${bajos.length > 4 ? '…' : ''}</small></div></button>`] : [];
+}
+function todoRecetas() {
+  const rec = D.recetas.filter(r => /^Nueva/.test(r.notas)).length;
+  return rec ? [`<button class="li" data-go="recetas"><span class="ic">${ICON.link}</span><div><b>Asignar ${rec} opción${rec > 1 ? 'es' : ''} nueva${rec > 1 ? 's' : ''} al inventario</b><small>Llegaron del sitio y aún no gastan piezas</small></div></button>`] : [];
+}
+function pendientesHoy(P) {
+  const todo = [...todoEntregas(P), ...todoSinAtender(P), ...todoConfirmar(P), ...todoFaltaInventario(P), ...todoReponer(), ...todoRecetas()];
+  $('#todo').innerHTML = todo.join('') || '<div class="empty">Todo al día. 🎉</div>';
+}
+const ultimosPedidos = P => { $('#recent').innerHTML = P.slice(0, 7).map(p => `<button class="li" data-ped="${p.row}">${p.previews[0] ? `<span class="thumb"><img data-img="${p.previews[0]}" alt=""></span>` : avatar(p.cliente)}<div><b>${esc(p.cliente)}</b><small>${esc(p.id)} · ${fdate(p.fecha)}</small></div><span class="money">${money(p.total, p.moneda)}</span><span class="tag ${stClass(p.estado)}">${esc(p.estado)}</span></button>`).join('') || '<div class="empty">Aún no hay pedidos. Llegarán aquí desde el sitio.</div>'; };
+
+function rInicio() {
+  const P = D.pedidos;
+  kpisInicio(P); saludoInicio(P); pendientesHoy(P); ultimosPedidos(P);
+}
+</script>

@@ -1,0 +1,48 @@
+<script>
+/* Admin — NAVEGACIÓN y render
+   Cambiar de vista y repintar. render() llama a la función rX de cada vista. Depende de: Base, Imagenes, vistas. */
+// ---------- navegación ----------
+const TITLES = { sitio: 'Sitio web', inicio: 'Inicio', pedidos: 'Pedidos', clientes: 'Clientes', pagos: 'Pagos', inventario: 'Inventario', recetas: 'Recetas', movimientos: 'Movimientos' };
+function go(v, opts = {}) {
+  UI.view = v;
+  document.querySelectorAll('#nav button').forEach(b => { if (b.dataset.v === v) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+  document.querySelectorAll('.view').forEach(s => { s.hidden = s.id !== 'v-' + v; });
+  $('#title').textContent = TITLES[v];
+  $('#crumbI').innerHTML = document.querySelector(`#nav button[data-v="${v}"] svg`).outerHTML;
+  $('#pTitle').textContent = TITLES[v];
+  $('#phead').hidden = v === 'inicio';
+  if (opts.fP) UI.fP = opts.fP;
+  if (opts.fI) UI.fI = opts.fI;
+  if (opts.fR) UI.fR = opts.fR;
+  render();
+  try { google.script.history && google.script.history.replace(null, null, v); } catch (e) { }
+  window.scrollTo(0, 0);
+}
+
+// ---------- render ----------
+function render() {
+  if (!D) return;
+  $('#biz').innerHTML = esc(D.negocio) + '<small>CRM</small>';
+  $('#hoja').href = D.hoja;
+  $('#upd').textContent = 'Actualizado ' + fdate(D.generado);
+  $('#biz2').textContent = D.negocio;
+  $('#hoy').textContent = 'Hoy, ' + fdate(new Date().toISOString(), dshort);
+  const nuevos = D.pedidos.filter(p => p.estado === 'Nuevo').length;
+  const inv = D.inventario.filter(i => i.stock <= i.min || i.apartado > i.stock).length;
+  const rec = D.recetas.filter(r => /^Nueva/.test(r.notas)).length;
+  [['#cPed', nuevos], ['#cInv', inv], ['#cRec', rec], ['#cPag', (D.pagos || []).filter(porRevisar).length], ['#cSit', SIT.size]].forEach(([s, n]) => { $(s).hidden = !n; $(s).textContent = n; });
+  $('#skus').innerHTML = D.inventario.map(i => `<option value="${esc(i.sku)}">${esc(i.pieza)}</option>`).join('');
+  $('#cats').innerHTML = [...new Set(D.inventario.map(i => i.cat).filter(Boolean))].map(c => `<option value="${esc(c)}">`).join('');
+  ({ inicio: rInicio, pedidos: rPedidos, clientes: rClientes, pagos: rPagos, inventario: rInv, recetas: rRec, movimientos: rMovs, sitio: rSitio })[UI.view]();
+  const escribiendo = document.activeElement && document.activeElement.closest('#dBody') && document.activeElement.matches('input,textarea');
+  if (UI.open && !escribiendo) { const fn = UI.open.type === 'pedido' ? openPedido : openCliente; const it = UI.open.type === 'pedido' ? D.pedidos.find(p => p.row === UI.open.key) : D.clientes.find(c => (c.tel || c.nombre) === UI.open.key); if (it) fn(it, true); }
+  watchImgs();
+}
+
+CLICS.push(
+  [d => d.v, d => go(d.v)],
+  [d => d.go, d => { if (d.iq) $('#qI').value = d.iq; $('#gsRes').hidden = true; go(d.go, { fP: d.f, fI: d.fi }); }],
+  [d => d.fi && !d.go, d => { UI.fI = d.fi; if (UI.view !== 'inventario') go('inventario'); else rInv(); }],
+  [(d, t) => t.id === 'reload', () => act('datos', {}, 'Datos al día')],
+);
+</script>

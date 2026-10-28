@@ -1,0 +1,8 @@
+# Lo que NO se sube a Apps Script (rutas relativas a apps-script/).
+# clasp ya solo sube .gs, .js, .html y appsscript.json; esto excluye lo demás por seguridad.
+README.md
+**/*.md
+**/*.test.js
+**/pruebas/**
+**/node_modules/**
+**/.git/**

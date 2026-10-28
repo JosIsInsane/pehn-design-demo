@@ -1,0 +1,25 @@
+<script>
+/* Admin — vista CLIENTES
+   Una ficha por WhatsApp, con etiquetas y notas. Depende de: Base. */
+function rClientes() {
+  const C = D.clientes, q = $('#qC').value.trim().toLowerCase();
+  const recurrentes = C.filter(c => c.pedidos.length > 1);
+  const nuevosMes = C.filter(c => c.primero && Date.now() - new Date(c.primero) < 30 * 864e5).length;
+  $('#kpiCli').innerHTML = [
+    kpi('Clientes', C.length, { sub: `+${nuevosMes} en los últimos 30 días`, tone: 'brand', icon: 'users' }),
+    kpi('Repiten', recurrentes.length, { sub: C.length ? Math.round(recurrentes.length / C.length * 100) + '% del total' : '', tone: 'mint', icon: 'repeat' }),
+    kpi('Ticket promedio', money(C.length ? C.reduce((s, c) => s + c.total, 0) / Math.max(1, C.reduce((s, c) => s + c.pedidos.length, 0)) : 0), { tone: 'sky', icon: 'ticket' }),
+    kpi('Mejor cliente', C.length ? money(Math.max(...C.map(c => c.total))) : '—', { sub: C.length ? esc(C.slice().sort((a, b) => b.total - a.total)[0].nombre) : '', tone: 'lav', icon: 'star' }),
+  ].join('');
+  $('#pSub').textContent = 'Una ficha por número de WhatsApp, con su historial, etiquetas y notas.';
+  const tags = [...new Set(C.flatMap(c => String(c.etiquetas).split(',').map(t => t.trim()).filter(Boolean)))];
+  $('#fC').innerHTML = ['Todos', 'Repiten', ...tags].map(t => `<button aria-pressed="${t === UI.fC}" data-fc="${esc(t)}">${esc(t)}</button>`).join('');
+  const list = C.filter(c => UI.fC === 'Todos' || (UI.fC === 'Repiten' ? c.pedidos.length > 1 : String(c.etiquetas).split(',').map(t => t.trim()).includes(UI.fC)))
+    .filter(c => !q || [c.nombre, c.wa, c.ciudad, c.correo, c.etiquetas].join(' ').toLowerCase().includes(q));
+  $('#nC').textContent = list.length;
+  $('#cli').innerHTML = list.map(c => `<tr class="click" data-cli="${esc(c.tel || c.nombre)}" tabindex="0"><td><span class="who">${avatar(c.nombre)}<span><b>${esc(c.nombre)}</b>${c.correo ? `<br><small class="muted">${esc(c.correo)}</small>` : ''}</span></span></td><td>${esc(c.wa)}</td><td>${esc(c.ciudad)}</td><td><span class="tags">${String(c.etiquetas).split(',').map(t => t.trim()).filter(Boolean).map(t => `<span class="tag">${esc(t)}</span>`).join('')}</span></td><td class="num">${c.pedidos.length}</td><td class="num money">${money(c.total)}</td><td class="muted">${fdate(c.ultimo, dshort)}</td></tr>`).join('') || '<tr><td colspan="7" class="empty">Sin clientes todavía.</td></tr>';
+}
+
+$('#qC').addEventListener('input', rClientes);
+CLICS.push([d => d.fc, d => { UI.fC = d.fc; rClientes(); }]);
+</script>

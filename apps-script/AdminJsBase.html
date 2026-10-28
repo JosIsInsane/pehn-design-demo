@@ -1,0 +1,49 @@
+<script>
+/* Admin — BASE del CRM
+   Utilidades, íconos, formato y estado de pantalla (UI). Va primero; lo usan todos los AdminJs*.html. */
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const money = (n, c) => { try { return new Intl.NumberFormat('es-HN', { style: 'currency', currency: c || 'HNL', maximumFractionDigits: 0 }).format(n || 0); } catch { return 'L ' + Math.round(n || 0); } };
+const dfmt = new Intl.DateTimeFormat('es-HN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+const dshort = new Intl.DateTimeFormat('es-HN', { day: 'numeric', month: 'short', year: 'numeric' });
+const fdate = (s, f = dfmt) => s ? f.format(new Date(s)) : '—';
+const ICON = {
+  bag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l-1 13H7Z"/><path d="M9 7a3 3 0 0 1 6 0"/></svg>',
+  alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20Z"/><path d="M12 10v4M12 17h.01"/></svg>',
+  box: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8v8l9 5 9-5Z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>',
+  link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>',
+  user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg>',
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>',
+  cash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 9.5v.01M18 14.5v.01"/></svg>',
+  users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><circle cx="17" cy="9" r="2.5"/><path d="M16.5 14.6c2.5.2 4.3 2 5 4.9"/></svg>',
+  repeat: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4"/><path d="M21 13v2a3 3 0 0 1-3 3H3"/></svg>',
+  ticket: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v8a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2Z"/><path d="M13 6v12" stroke-dasharray="2 2"/></svg>',
+  star: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9Z"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  wa: '<svg viewBox="0 0 32 32" fill="currentColor"><path d="M16 3a13 13 0 0 0-11.2 19.6L3 29l6.6-1.7A13 13 0 1 0 16 3Zm5.8 15.7c-.3-.2-1.9-.9-2.2-1s-.5-.2-.7.2-.8 1-1 1.2-.4.2-.7 0a8.7 8.7 0 0 1-4.3-3.8c-.3-.6.3-.5 1-1.7.1-.2 0-.4 0-.5l-1-2.4c-.3-.6-.5-.5-.7-.5h-.6a1.2 1.2 0 0 0-.9.4 3.7 3.7 0 0 0-1.1 2.7 6.5 6.5 0 0 0 1.3 3.4 14.8 14.8 0 0 0 5.7 5c2.1.9 2.9 1 4 .8a3.4 3.4 0 0 0 2.2-1.6 2.8 2.8 0 0 0 .2-1.6c-.1-.2-.3-.3-.6-.4Z"/></svg>',
+};
+const stClass = s => 'st-' + String(s).split(' ')[0];
+const AV = [['#FDE7CC', '#8A4A06'], ['#E4F1E8', '#1F6A40'], ['#ECE6FA', '#4B2FA8'], ['#E3ECF9', '#1F4AA8'], ['#F9E3DE', '#8A2A1A'], ['#FBF0CF', '#6E5200'], ['#E0F1EE', '#0F5F55']];
+const avatar = n => { const s = String(n || '?').trim(), ini = s.split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?'; let h = 0; for (const ch of s) h = (h * 31 + ch.charCodeAt(0)) >>> 0; const [bg, fg] = AV[h % AV.length]; return `<span class="av" style="background:${bg};color:${fg}" aria-hidden="true">${esc(ini)}</span>`; };
+const avance = p => { const E = D.estados, fin = E.indexOf('Entregado'); if (p.estado === 'Cancelado') return '<span class="prog x"><span class="tr"><span style="width:100%"></span></span><small>—</small></span>'; const n = Math.round(Math.max(0, E.indexOf(p.estado)) / fin * 100); return `<span class="prog"><span class="tr"><span style="width:${n}%"></span></span><small>${n}%</small></span>`; };
+const plural = (n, a, b) => `${n} ${n === 1 ? a : b}`;
+const activo = p => !['Entregado', 'Cancelado'].includes(p.estado);
+const nextOf = s => { const E = D.estados, i = E.indexOf(s); return i >= 0 && i < E.indexOf('Entregado') ? E[i + 1] : null; };
+const stockTag = s => { s = String(s || ''); const k = /^Falta|faltantes/.test(s) ? 'bad' : /Descontado|Alcanza|Regresado/.test(s) ? 'ok' : 'warn'; return `<span class="tag ${k}">${esc(s || '—')}</span>`; };
+// l: título · v: cifra · o: { sub, bad, nav, tone, icon, pill }
+const kpi = (l, v, o = {}) => { const tag = o.nav ? 'button' : 'div'; return `<${tag} class="kpi ${o.tone ? 't-' + o.tone : ''} ${o.bad && v ? 'bad' : ''}" ${o.nav || ''}>${o.icon ? `<span class="ki" aria-hidden="true">${ICON[o.icon]}</span>` : ''}<small>${l}</small><b>${v}${o.pill || ''}</b>${o.sub ? `<span>${o.sub}</span>` : ''}</${tag}>`; };
+const pill = (pct) => isFinite(pct) ? `<span class="pill ${pct >= 0 ? 'up' : 'down'}">${pct >= 0 ? '+' : ''}${Math.round(pct)}%</span>` : '';
+
+// ---------- estado de pantalla compartido (solo cambia con clics; los datos del servidor están en D) ----------
+const UI = {
+  view: 'inicio',                    // vista abierta
+  fP: 'Activos', sortP: 'fecha', dirP: -1, pagP: 0, // pedidos: filtro, orden y página
+  fC: 'Todos',                       // clientes: etiqueta
+  fI: 'Todos', fR: 'Por asignar',    // inventario y recetas: filtro
+  fPg: 'Por revisar',                // pagos: filtro
+  open: null,                        // ficha abierta: { type: 'pedido' | 'cliente', key }
+};
+// Cada vista agrega aquí sus reglas de clic: [qué botón es, qué hace]. AdminJsEventos.html las recorre en orden.
+const CLICS = [];
+</script>
