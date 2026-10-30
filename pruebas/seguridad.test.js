@@ -744,5 +744,12 @@ prueba('Nombre del que paga: pedido con ordenante distinto se rechaza; sin nombr
   ok(/Pagó: PEDRO PICAPIEDRA/.test(s.hoja('Pagos').at(-1).Notas), 'queda anotado quién pagó');
 });
 
+prueba('Correo al cliente lleva adjunto el comprobante del anticipo', () => {
+  const s = nuevo(); const { id } = s.post(pedido(s)); const m = s.mails[0];
+  ok(m.attachments && m.attachments.length === 1 && m.attachments[0].name === `Comprobante anticipo ${id}.jpg` && m.attachments[0].type === 'image/jpeg', JSON.stringify(m.attachments && m.attachments.map(a => a.name)));
+  const t = nuevo(); t.run(`setConfig_('Anticipo antes de enviar', 'No')`); t.post(pedido(t, { comprobante: '' }));
+  ok(t.mails[0].attachments.length === 0, 'sin comprobante no adjunta nada');
+});
+
 console.log(`\n${n - fallas} de ${n} pruebas pasaron.`);
 process.exit(fallas ? 1 : 0);

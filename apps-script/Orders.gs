@@ -374,7 +374,13 @@ function correoCliente_(id, d, partidas, cfg, pago, subioComprobante, anticipo) 
       <p style="background:#F4EDE4;padding:12px 14px;border-radius:10px">${estadoPago}</p>
       ${rastrear}${wa}<p style="color:#8B7B6F;font-size:12px">${esc_(negocio)} · Guarda tu número de pedido para darle seguimiento.</p></div>`,
     inlineImages: inline,
+    attachments: adjuntoComprobante_(d.comprobante, id),
     name: negocio,
   });
   return 'Enviado';
+}
+// el comprobante del anticipo va adjunto en el mismo correo (si lo subió)
+function adjuntoComprobante_(dataUrl, id) {
+  const m = dataUrl && dataUrlValido_(dataUrl);
+  return m ? [Utilities.newBlob(Utilities.base64Decode(m[2]), m[1], `Comprobante anticipo ${id}.${TIPOS_OK[m[1]]}`)] : [];
 }
