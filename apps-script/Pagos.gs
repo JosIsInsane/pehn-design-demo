@@ -3,12 +3,10 @@
  * - Para ver un pedido se pide el número de pedido Y el WhatsApp con el que se hizo. Si no coinciden
  *   se responde lo mismo que si no existiera (así nadie puede adivinar pedidos ajenos).
  * - Nunca se devuelve nombre, correo, ciudad ni notas: solo estado, productos y montos.
- * - El comprobante se guarda en la carpeta del pedido y se lee el monto con OCR de Google Drive.
- *   El resultado ("Coincide" o "Revisar") es una ayuda: el pago se confirma a mano en el CRM › Pagos.
+ * - El comprobante se verifica en el momento (Verificacion.gs): si no pasa, se rechaza o queda en revisión
+ *   según Config. "Coincide" = pasó todas las reglas; el CRM › Pagos permite confirmar a mano.
  *
- * SI NO LEE EL MONTO ("Sin lectura"):
- *   Editor › Servicios (+) › Drive API › Agregar. Sin ese servicio el comprobante se guarda igual,
- *   pero el monto se revisa a mano. Pehn › Revisar que todo funcione lo avisa.
+ * SI NO LEE EL MONTO ("Sin lectura" / "No pudimos leer"): Pehn › Probar lectura de comprobantes (Ocr.gs) dice por qué.
  */
 
 const PAGO_OK = ['Coincide', 'Confirmado']; // estos cuentan como pagado
@@ -26,6 +24,20 @@ function pedidoDeCliente_(d) {
 }
 
 function pagosDe_(id) { return rows_('pagos').filter(x => String(x.Pedido) === String(id)); }
+
+// ---------- candado de producción ----------
+// Solo cuenta lo que confirmó una persona en CRM › Pagos (después de verlo en la app del banco).
+// "Coincide" (lectura automática) NO alcanza: una captura editada podría pasar la lectura.
+const confirmadoDe_ = id => pagosDe_(id).filter(x => x.Resultado === 'Confirmado').reduce((s, x) => s + (Number(x['Monto leído']) || 0), 0);
+// '' si el pedido puede pasar a "nuevo"; si no, el motivo
+function candadoDeEstado_(p, nuevo, cfg) {
+  if (!yes_(cfg['Candado de producción'] ?? 'Sí') || nuevo === 'Cancelado') return '';
+  const i = ESTADOS.indexOf(nuevo), total = Number(p.Total) || 0, pagado = confirmadoDe_(p.ID);
+  const anticipo = Math.round(total * (Number(cfg['Anticipo (%)']) || 50) / 100);
+  if (i >= ESTADOS.indexOf('Enviado') && pagado + 1 < total) return `Falta confirmar el saldo: confirmado ${money_(pagado, p.Moneda)} de ${money_(total, p.Moneda)} (CRM › Pagos).`;
+  if (i >= ESTADOS.indexOf('En producción') && pagado + 1 < anticipo) return `No se puede producir sin el anticipo confirmado: confirmado ${money_(pagado, p.Moneda)} de ${money_(anticipo, p.Moneda)} (CRM › Pagos).`;
+  return '';
+}
 
 function resumenPago_(p, cfg) {
   const total = Number(p.Total) || 0, pct = Number(cfg['Anticipo (%)']) || 50;
@@ -51,29 +63,32 @@ function recibirComprobante_(d, cfg) {
   if (p.Estado === 'Cancelado') throw new Error('Este pedido está cancelado. Escríbenos por WhatsApp.');
   const pago = resumenPago_(p, cfg);
   const esperado = pago.porPagarAnticipo || pago.saldo;
+  if (!comprobanteValido_(d.file)) throw new Error('El comprobante debe ser foto (JPG, PNG) o PDF de menos de 5 MB.');
 
-  const leido = prepararComprobante_(carpetaDePedido_(p), d.file); // Drive y OCR sin candado
-  return conCandado_(() => anotarPago_(p, leido, esperado));
+  // lo lento (OCR y Drive) va FUERA del candado; si no pasa y Config dice Rechazar, no se guarda nada
+  const lectura = leerComprobante_(d.file);
+  const revision = revisarComprobante_(lectura, esperado, pago.saldo || esperado, cfg, [p.Cliente, linea_(d.pagador, 80)]);
+  if (!revision.ok && rechazarSinVerificar_(cfg)) throw new Error(revision.motivo);
+  const archivo = guardarComprobante_(carpetaDePedido_(p), d.file);
+  return conCandado_(() => anotarPago_(p, { archivo, lectura, revision }, esperado));
 }
 
 // ¿el archivo parece un comprobante válido? (tipo, tamaño y firma de bytes; se revisa antes de crear nada)
 const comprobanteValido_ = s => !!dataUrlValido_(s);
 
-// Lo lento, FUERA del candado: guarda el archivo en Drive y lee el monto con OCR. Si luego el pedido falla,
-// el archivo queda suelto en Drive (sin daño).
-function prepararComprobante_(carpeta, dataUrl) {
+function guardarComprobante_(carpeta, dataUrl) {
   const archivo = guardarImagen_(carpeta, dataUrl, `Comprobante ${Utilities.formatDate(now_(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH.mm')}`);
   if (!archivo) throw new Error('El comprobante debe ser foto (JPG, PNG) o PDF de menos de 5 MB.');
-  return { archivo, lectura: leerTexto_(archivo.blob) };
+  return archivo;
 }
 
-// Solo la fila en Pagos: esto sí va dentro del candado. p: { ID }
-function anotarPago_(p, { archivo, lectura }, esperado) {
-  const monto = lectura === null ? null : elegirMonto_(montosEn_(lectura), esperado);
-  const resultado = lectura === null ? 'Sin lectura' : monto == null ? 'Revisar: sin monto' : Math.abs(monto - esperado) <= 1 ? 'Coincide' : 'Revisar: no coincide';
+// Solo la fila en Pagos: esto sí va dentro del candado. p: { ID }; revision viene de Verificacion.gs
+function anotarPago_(p, { archivo, lectura, revision }, esperado) {
+  const monto = revision.monto;
+  const resultado = revision.ok ? 'Coincide' : lectura.texto == null ? 'Sin lectura' : 'Revisar: ' + revision.nota;
   sheet_('pagos').appendRow(fila_([now_(), p.ID, monto == null ? '' : monto, esperado, resultado, archivo.url,
-    texto_(lectura || '', 2000), '', '']));
-  return { resultado: resultado === 'Coincide' ? 'Coincide' : 'Revisión', monto, esperado };
+    texto_(lectura.texto || '', 2000), '', revision.ok ? (revision.pagador ? 'Pagó: ' + revision.pagador : '') : revision.motivo, marcaDe_(lectura)]));
+  return { resultado: revision.ok ? 'Coincide' : 'Revisión', monto, esperado };
 }
 
 // "Mis pedidos": varios pedidos de este dispositivo a la vez (cada uno con su WhatsApp)
@@ -88,24 +103,6 @@ function carpetaDePedido_(p) {
   const id = String(p.Carpeta || '').match(/[-\w]{25,}/);
   if (id) { try { return DriveApp.getFolderById(id[0]); } catch (e) { /* carpeta borrada: va a la general */ } }
   return folder_();
-}
-
-// OCR con Google Drive: convierte la imagen en un documento temporal, lee el texto y lo borra.
-// Devuelve null si el servicio Drive no está activado o falla.
-function leerTexto_(blob) {
-  if (typeof Drive === 'undefined' || !Drive.Files) return null;
-  let docId = null;
-  try {
-    const meta = { name: 'ocr-temporal', mimeType: 'application/vnd.google-apps.document' };
-    docId = Drive.Files.create ? Drive.Files.create(meta, blob, { ocrLanguage: 'es' }).id
-      : Drive.Files.insert({ title: meta.name, mimeType: meta.mimeType }, blob, { ocr: true, ocrLanguage: 'es' }).id;
-    return DocumentApp.openById(docId).getBody().getText();
-  } catch (err) {
-    console.error('OCR falló:', err);
-    return null;
-  } finally {
-    if (docId) { try { DriveApp.getFileById(docId).setTrashed(true); } catch (e) { /* ya no está */ } }
-  }
 }
 
 // Todos los montos que parecen dinero en un texto: "L 1,250.00", "Lps. 1250", "HNL 1.250,00", "Monto: 625"

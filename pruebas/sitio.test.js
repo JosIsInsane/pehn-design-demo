@@ -1,4 +1,4 @@
-/* global D, K -- variables de la página del CRM (apps-script/Admin.html), que corre dentro del navegador */
+/* global D, K -- variables de la página del CRM (apps-script/AdminPagina.html), que corre dentro del navegador */
 /* Prueba de punta a punta: el sitio real en Chromium, con Google Sheets simulado (pruebas/simulador.js).
    Correr:  node pruebas/sitio.test.js   (necesita Playwright instalado)
    Hace un pedido completo, lo rastrea, sube el comprobante y revisa que nada inyecte código. */
@@ -50,8 +50,10 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(sim.get(q)) });
     }
     const body = JSON.parse(route.request().postData() || '{}');
-    if (body.accion === 'pedido') sim.ctx.__ocr = `Transferencia BAC\nMonto L ${Math.round(body.total * 0.5)}.00\nRef 8812`;
-    if (body.accion === 'comprobante') sim.ctx.__ocr = `Transferencia BAC\nMonto L ${global.saldo}.00\nRef 8813`;
+    // texto que "lee" el OCR simulado; global.falso = la siguiente verificación recibe una foto que no es comprobante
+    const recibo = (monto, ref) => `BAC Credomatic\nTransferencia exitosa\n${new Date().toLocaleDateString('es-HN')}\nCuenta destino ****9831\nMonto L ${monto}.00\nReferencia: ${ref}`;
+    if (body.accion === 'verificar') sim.ctx.__ocr = global.falso ? 'Selfie en la playa con mis amigos del colegio' : recibo(Math.round(body.total * 0.5), 'RF8812');
+    if (body.accion === 'comprobante') sim.ctx.__ocr = recibo(global.saldo, 'RF8813');
     const out = sim.post({ ...body, token });
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(out) });
   });
@@ -88,14 +90,19 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
   ok((await page.textContent('.banco')).includes('BAC'), 'Muestra los datos bancarios');
   await page.click('#backDatos'); ok((await page.inputValue('[name=phone]')) === '9876 5432', 'Regresar conserva los datos');
   await page.click('#goPago');
-  await page.setInputFiles('#anticipoFile', jpg); await page.waitForTimeout(300);
+  global.falso = true;
+  await page.setInputFiles('#anticipoFile', { name: 'falso.jpg', mimeType: 'image/jpeg', buffer: fs.readFileSync(jpg) }); await page.waitForSelector('#anticipoDrop.malo', { timeout: 10000 });
+  ok(await page.isDisabled('#sendOrder') && /no parece un comprobante/.test(await page.textContent('#coErr')), 'Comprobante falso: se rechaza al instante y no deja enviar');
+  global.falso = false;
+  await page.setInputFiles('#anticipoFile', jpg); await page.waitForSelector('#anticipoDrop.lleno', { timeout: 10000 }).catch(() => {});
+  ok(/verificado/.test(await page.textContent('#anticipoTxt')) && !(await page.isDisabled('#sendOrder')), 'Comprobante bueno: verificado y deja enviar');
   await page.waitForTimeout(2300); // un humano tarda: el servidor rechaza envíos instantáneos
   await page.click('#sendOrder');
   await page.waitForSelector('#done.open', { timeout: 15000 }).catch(() => {});
   const done = await page.textContent('#doneTxt');
   const id = (done.match(/PEHN-\d{6}-\d{3}/) || [])[0];
   ok(!!id, 'Pedido enviado, número: ' + id);
-  ok(/Recibimos tu anticipo/.test(done), 'Anticipo leído al enviar');
+  ok(/Anticipo verificado/.test(done), 'Anticipo verificado al enviar');
   const fila = sim.hoja('Pedidos')[0] || {};
   ok(fila.Ciudad && fila.Ciudad.texto, 'La ciudad con fórmula quedó como texto en la hoja');
   ok(sim.hoja('Partidas').length === 1 && String(sim.hoja('Partidas')[0]['Archivo vista previa']).includes('drive'), 'Foto del diseño guardada en Drive');
@@ -113,7 +120,8 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
 
   // 4. comprobante del saldo desde Mis pedidos
   global.saldo = Math.round(Number(fila.Total)) - Math.round(Number(fila.Total) * 0.5);
-  await page.setInputFiles('#voucher', jpg);
+  // otra imagen: el mismo comprobante dos veces se rechaza como "ya usado" (el sitio la vuelve a codificar, así que debe ser otra foto)
+  await page.setInputFiles('#voucher', path.join(import.meta.dirname, '..', 'fotos', 'cuadro-amor.jpg'));
   await page.waitForTimeout(400);
   await page.click('#sendVoucher');
   await page.waitForFunction(() => !document.querySelector('#sendVoucher'), null, { timeout: 8000 }).catch(() => {});
@@ -271,6 +279,7 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
   {
     const adm = cargar({ silencio: true, usuario: 'duenos@pehn.test' });
     const malo = '<!--<script>window.__xss=1</script> </script><script>window.__xss=1</script>';
+    adm.run(`setConfig_('Comprobante que no pasa la verificación', 'Revisar')`); // aquí no se prueba el comprobante
     adm.post({ token: adm.config('Token del sitio'), fillMs: 9000, website: '', customer: { name: malo, phone: '9876 5432', email: '', city: malo, date: '', notes: malo },
       items: [{ product: 'Cuadro', qty: 1, total: 750, options: [], bom: [] }], total: 750, currency: 'HNL', comprobante: 'data:image/jpeg;base64,/9j/4AAQ' });
     const html = adm.run(`crmHtml_('"</script><script>window.__xss=1</script>')`).getContent();
@@ -297,7 +306,9 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
     let enviado = null;
     await t.route(/script\.google\.com/, async r => {
       if (r.request().method() === 'GET') return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(sim.get(Object.fromEntries(new URL(r.request().url()).searchParams))) });
-      enviado = JSON.parse(r.request().postData() || '{}');
+      const cuerpo = JSON.parse(r.request().postData() || '{}');
+      if (cuerpo.accion === 'verificar') return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, verificacion: { ok: true, monto: 100, ficha: 'f-prueba', motivo: '' } }) });
+      enviado = cuerpo;
       await r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: false, error: 'Verificación fallida. Recarga la página e intenta de nuevo.' }) });
     });
     await t.goto(base + 'catalogo.html');

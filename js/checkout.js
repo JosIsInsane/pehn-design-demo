@@ -7,7 +7,7 @@ import { $, esc, shrinkImage } from './utiles.js';
 import { fmt } from './formato.js';
 import { leer, guardar, borrar, KEY_PAGO, KEY_CONSENT, KEY_CONTACT, KEY_ORDERS } from './almacen.js';
 import {
-  datosDeCaja, comprobanteDeCaja, guardarComprobanteDeCaja, marcarInicioDeFormulario, msDesdeElFormulario,
+  datosDeCaja, comprobanteDeCaja, fichaDeCaja, guardarComprobanteDeCaja, pagadorDeCaja, guardarPagadorDeCaja, marcarInicioDeFormulario, msDesdeElFormulario,
   reiniciarCaja, vaciarCarrito,
 } from './estado.js';
 import { cartTotals, saveCart } from './carrito.js';
@@ -95,14 +95,16 @@ export function renderAnticipo(total) {
     <div class="pago">
       <h3>Transfiere ${fmt(monto)} (${pct}% de ${fmt(total)})</h3>
       ${banco ? `<p class="banco">${esc(banco)}</p>` : `<p class="note" style="text-align:left">Pídenos la cuenta por <a class="wa-link" href="${waURL(`${HOLA} Quiero pagar el anticipo de mi pedido.`)}" target="_blank" rel="noopener">WhatsApp</a>.</p>`}
-      <label class="drop${listo ? ' lleno' : ''}" id="anticipoDrop"><input type="file" id="anticipoFile" accept="image/jpeg,image/png,image/webp,application/pdf"><span class="drop-ico" aria-hidden="true">${FLECHA_SUBIR}</span><span id="anticipoTxt">${listo ? '<b>Comprobante listo</b><small>Toca para cambiarlo</small>' : '<b>Sube la foto o PDF de tu comprobante</b><small>JPG, PNG o PDF · máx. 5&nbsp;MB</small>'}</span></label>
+      <label class="pagador">¿Lo paga otra persona? <small>(opcional) nombre del titular de la cuenta que transfiere</small>
+        <input id="pagador" name="pagador" maxlength="80" autocomplete="off" placeholder="Ej. Emma García" value="${esc(pagadorDeCaja())}"></label>
+      <label class="drop${listo ? ' lleno' : ''}" id="anticipoDrop"><input type="file" id="anticipoFile" accept="image/jpeg,image/png,image/webp,application/pdf"><span class="drop-ico" aria-hidden="true">${FLECHA_SUBIR}</span><span id="anticipoTxt" aria-live="polite">${listo ? '<b>Comprobante verificado ✓</b><small>Toca para cambiarlo</small>' : '<b>Sube la captura de tu comprobante</b><small>Lo verificamos al instante · JPG, PNG o PDF · máx. 5&nbsp;MB</small>'}</span></label>
       <p class="note" style="text-align:left;margin:0">El saldo (${fmt(total - monto)}) se paga al entregar. Te mandamos tu diseño para aprobar antes de producir.</p>
     </div>
     ${tsBox()}
     <div class="err" id="coErr" role="alert"></div>`;
   $('#dFoot').innerHTML = `<div class="tot big"><span>Anticipo</span><span>${fmt(monto)}</span></div>
     <button class="btn btn-dark" id="sendOrder" ${listo ? '' : 'disabled'}>Enviar pedido y comprobante ✦</button>
-    <p class="note">Leemos el monto de tu comprobante y te confirmamos por WhatsApp.</p>`;
+    <p class="note">Solo se puede enviar con un comprobante verificado.</p>`;
   montarTurnstile();
 }
 
@@ -113,13 +115,32 @@ export async function leerVoucher(file) {
   if (!/^image\/(jpeg|png|webp)$/.test(file.type)) throw new Error('Sube una foto (JPG o PNG) o un PDF.');
   return shrinkImage(file, 1800); // legible para leer el monto, liviana para enviar
 }
-// el cliente eligió un archivo en el paso 2
+// cambió quién paga: lo verificado ya no vale (el nombre es parte de la verificación)
+export function cambiarPagador(nombre) {
+  guardarPagadorDeCaja(nombre);
+  if (!comprobanteDeCaja()) return;
+  guardarComprobanteDeCaja(''); $('#sendOrder').disabled = true;
+  $('#anticipoDrop').classList.remove('lleno');
+  $('#anticipoTxt').innerHTML = '<b>Vuelve a subir tu comprobante</b><small>Cambiaste quién paga: hay que verificarlo de nuevo</small>';
+}
+// el cliente eligió un archivo en el paso 2: se verifica en el servidor al instante (monto, cuenta, fecha, repetido)
 export async function elegirComprobante(file) {
+  guardarComprobanteDeCaja(''); $('#sendOrder').disabled = true; $('#coErr').textContent = '';
+  const drop = $('#anticipoDrop'), txt = $('#anticipoTxt');
+  drop.classList.remove('lleno', 'malo'); drop.classList.add('revisando');
+  txt.innerHTML = `<b>Verificando tu comprobante…</b><small>Toma unos segundos</small>`;
   try {
-    guardarComprobanteDeCaja(await leerVoucher(file)); $('#coErr').textContent = '';
-    $('#anticipoTxt').innerHTML = `<b>${esc(file.name)}</b><small>Listo · toca para cambiarlo</small>`;
-    $('#anticipoDrop').classList.add('lleno'); $('#sendOrder').disabled = false;
-  } catch (x) { guardarComprobanteDeCaja(''); $('#coErr').textContent = x.message; $('#sendOrder').disabled = true; }
+    const archivo = await leerVoucher(file);
+    const { verificacion: v } = await api('verificar', { comprobante: archivo, total: cartTotals().total, nombre: (datosDeCaja() || {}).name || '', pagador: pagadorDeCaja() });
+    if (!v.ok) throw new Error(v.motivo);
+    guardarComprobanteDeCaja(archivo, v.ficha);
+    txt.innerHTML = `<b>Comprobante verificado ✓</b><small>Leímos ${fmt(v.monto)} · toca para cambiarlo</small>`;
+    drop.classList.add('lleno'); $('#sendOrder').disabled = false;
+  } catch (x) {
+    txt.innerHTML = `<b>${esc(file.name)}</b><small>No pasó la verificación · toca para subir otro</small>`;
+    drop.classList.add('malo');
+    $('#coErr').innerHTML = `${esc(x.message)} Si tu transferencia es correcta, <a class="wa-link" href="${waURL(`${HOLA} Mi comprobante no pasó la verificación del sitio.`)}" target="_blank" rel="noopener">escríbenos por WhatsApp</a>.`;
+  } finally { drop.classList.remove('revisando'); }
 }
 
 // ---------- envío ----------
@@ -137,7 +158,7 @@ function armarPedido(data, totales, previews) {
       bom: bomOf(r.p, r.i.cfg, r.i.qty),
     })),
     subtotal: gross, discount: disc, total,
-    comprobante: comprobanteDeCaja(),
+    comprobante: comprobanteDeCaja(), ficha: fichaDeCaja(), pagador: pagadorDeCaja(),
   };
 }
 // recuerda el número de pedido en este dispositivo (si la persona lo permitió) y vacía el carrito
@@ -147,7 +168,7 @@ function cerrarPedido(id, data) {
 }
 function mostrarGracias(res, data, total) {
   const id = res.id || '';
-  const pago = res.pago ? (res.pago.resultado === 'Coincide' ? `<br>Recibimos tu anticipo de <b>${fmt(res.pago.monto)}</b>. ✓` : '<br>Recibimos tu comprobante; lo revisamos y te confirmamos.') : '';
+  const pago = res.pago ? (res.pago.resultado === 'Coincide' ? `<br>Anticipo verificado: <b>${fmt(res.pago.monto)}</b>. ✓` : '<br>Recibimos tu comprobante; lo revisamos y te confirmamos.') : '';
   $('#doneTxt').innerHTML = `${id ? `Tu número de pedido es <b>${esc(id)}</b>.<br>` : ''}Total <b>${fmt(total)}</b>.${pago}<br>Te escribimos a <b>${esc(data.phone)}</b> con tu diseño para aprobar.${id ? `<br><a href="pedido.html?id=${encodeURIComponent(id)}">Ver mis pedidos →</a>` : ''}`;
   openModal('#done');
 }

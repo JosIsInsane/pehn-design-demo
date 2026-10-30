@@ -11,7 +11,7 @@ import {
 import { cartTotals, saveCart } from './carrito.js';
 import { summary } from './producto.js';
 import { HOLA, waURL, waCartText } from './whatsapp.js';
-import { renderCheckout, renderAnticipo, validarDatos, leerDatos, elegirComprobante, enviarPedido } from './checkout.js';
+import { renderCheckout, renderAnticipo, validarDatos, leerDatos, elegirComprobante, cambiarPagador, enviarPedido } from './checkout.js';
 import { openModal, closeModal, toast } from './modales.js';
 import { conPersonalizador } from './personalizador-carga.js';
 
@@ -97,7 +97,10 @@ export function iniciarCajon() {
   $('#drawer')?.addEventListener('keydown', e => {
     if (e.key === 'Enter' && e.target.matches('#coForm input')) { e.preventDefault(); ($('#goPago') || $('#sendOrder'))?.click(); }
   });
-  $('#drawer')?.addEventListener('change', e => { if (e.target.id === 'anticipoFile' && e.target.files[0]) elegirComprobante(e.target.files[0]); });
+  $('#drawer')?.addEventListener('change', e => {
+    if (e.target.id === 'anticipoFile' && e.target.files[0]) elegirComprobante(e.target.files[0]);
+    if (e.target.id === 'pagador') cambiarPagador(e.target.value);
+  });
 
   $('#cartBtn')?.addEventListener('click', openDrawer);
   document.addEventListener('click', e => { if (e.target.closest('[data-dclose]')) closeDrawer(); });
