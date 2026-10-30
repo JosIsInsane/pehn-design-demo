@@ -751,5 +751,25 @@ prueba('Correo al cliente lleva adjunto el comprobante del anticipo', () => {
   ok(t.mails[0].attachments.length === 0, 'sin comprobante no adjunta nada');
 });
 
+prueba('Candado: sin anticipo CONFIRMADO no pasa a producción (CRM); confirmado sí', () => {
+  const s = nuevo(); s.post(pedido(s)); const k = JSON.stringify(s.config('Clave del CRM'));
+  let err = ''; try { s.run(`crm(${k}, "estado", { row: 2, estado: 'En producción' })`); } catch (e) { err = e.message; }
+  ok(/anticipo confirmado/.test(err) && s.hoja('Pedidos')[0].Estado === 'Nuevo', 'verificado solo (Coincide) no alcanza: ' + err);
+  s.run(`crm(${k}, "estado", { row: 2, estado: 'Aprobado' })`); ok(s.hoja('Pedidos')[0].Estado === 'Aprobado', 'antes de producir sí se mueve');
+  s.run(`crm(${k}, "pago", { row: 2, resultado: 'Confirmado', monto: 375 })`);
+  s.run(`crm(${k}, "estado", { row: 2, estado: 'En producción' })`); ok(s.hoja('Pedidos')[0].Estado === 'En producción', 'con anticipo confirmado');
+  err = ''; try { s.run(`crm(${k}, "estado", { row: 2, estado: 'Entregado' })`); } catch (e) { err = e.message; }
+  ok(/saldo/.test(err), 'entregar pide el total confirmado');
+  s.run(`setConfig_('Candado de producción', 'No')`); s.run(`crm(${k}, "estado", { row: 2, estado: 'Entregado' })`);
+  ok(s.hoja('Pedidos')[0].Estado === 'Entregado', 'Config No apaga el candado');
+});
+prueba('Candado: cambiar el estado a mano en la hoja se revierte', () => {
+  const s = nuevo(); s.post(pedido(s));
+  const sh = s.run(`sheet_('pedidos')`), col = s.run(`COL.pedidos.Estado`);
+  sh.getRange(2, col).setValue('En producción');
+  s.run(`alEditar_`)({ range: sh.getRange(2, col), value: 'En producción', oldValue: 'Nuevo' });
+  ok(s.hoja('Pedidos')[0].Estado === 'Nuevo', s.hoja('Pedidos')[0].Estado);
+});
+
 console.log(`\n${n - fallas} de ${n} pruebas pasaron.`);
 process.exit(fallas ? 1 : 0);

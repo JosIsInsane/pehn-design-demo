@@ -136,7 +136,7 @@ function alEditar_(e) {
   if (name === SHEETS.config && c === COL.config.Valor && sh.getRange(r, COL.config.Ajuste).getValue() === 'Hora del resumen diario') {
     try { instalarResumen_(); } catch (err) { console.error('No se reprogramó el resumen:', err); }
   }
-  if (name === SHEETS.pedidos && c === COL.pedidos.Estado) conCandado_(() => aplicarEstado_(r, e.value));
+  if (name === SHEETS.pedidos && c === COL.pedidos.Estado) conCandado_(() => cambioDeEstadoEnHoja_(sh, r, e));
   if (name === SHEETS.inventario && c === COL.inventario.Stock) {
     const antes = Number(e.oldValue) || 0, ahora = Number(e.value) || 0;
     if (antes !== ahora) {
@@ -144,6 +144,14 @@ function alEditar_(e) {
       sh.getRange(r, COL.inventario.Actualizado).setValue(now_());
     }
   }
+}
+
+// estado cambiado a mano en la hoja: si el candado lo impide, vuelve al estado anterior y avisa
+function cambioDeEstadoEnHoja_(sh, r, e) {
+  const bloqueo = candadoDeEstado_(rows_('pedidos').find(x => x._row === r), e.value, config_());
+  if (!bloqueo) return aplicarEstado_(r, e.value);
+  sh.getRange(r, COL.pedidos.Estado).setValue(e.oldValue || 'Nuevo');
+  ss_().toast(bloqueo, 'Candado de producción', 10);
 }
 
 // ---------- alertas ----------

@@ -25,6 +25,20 @@ function pedidoDeCliente_(d) {
 
 function pagosDe_(id) { return rows_('pagos').filter(x => String(x.Pedido) === String(id)); }
 
+// ---------- candado de producción ----------
+// Solo cuenta lo que confirmó una persona en CRM › Pagos (después de verlo en la app del banco).
+// "Coincide" (lectura automática) NO alcanza: una captura editada podría pasar la lectura.
+const confirmadoDe_ = id => pagosDe_(id).filter(x => x.Resultado === 'Confirmado').reduce((s, x) => s + (Number(x['Monto leído']) || 0), 0);
+// '' si el pedido puede pasar a "nuevo"; si no, el motivo
+function candadoDeEstado_(p, nuevo, cfg) {
+  if (!yes_(cfg['Candado de producción'] ?? 'Sí') || nuevo === 'Cancelado') return '';
+  const i = ESTADOS.indexOf(nuevo), total = Number(p.Total) || 0, pagado = confirmadoDe_(p.ID);
+  const anticipo = Math.round(total * (Number(cfg['Anticipo (%)']) || 50) / 100);
+  if (i >= ESTADOS.indexOf('Enviado') && pagado + 1 < total) return `Falta confirmar el saldo: confirmado ${money_(pagado, p.Moneda)} de ${money_(total, p.Moneda)} (CRM › Pagos).`;
+  if (i >= ESTADOS.indexOf('En producción') && pagado + 1 < anticipo) return `No se puede producir sin el anticipo confirmado: confirmado ${money_(pagado, p.Moneda)} de ${money_(anticipo, p.Moneda)} (CRM › Pagos).`;
+  return '';
+}
+
 function resumenPago_(p, cfg) {
   const total = Number(p.Total) || 0, pct = Number(cfg['Anticipo (%)']) || 50;
   const pagado = pagosDe_(p.ID).filter(x => PAGO_OK.includes(x.Resultado)).reduce((s, x) => s + (Number(x['Monto leído']) || 0), 0);

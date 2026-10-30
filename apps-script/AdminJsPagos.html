@@ -3,33 +3,39 @@
    Comprobantes que suben los clientes en "Rastrear pedido". Depende de: Base, Servidor. */
 // ---------- pagos (comprobantes que suben los clientes en "Rastrear pedido") ----------
 const PAGO_OK = ['Coincide', 'Confirmado'];
-const porRevisar = x => !PAGO_OK.includes(x.resultado) && x.resultado !== 'Rechazado';
+// Candado de producción: solo "Confirmado" (lo confirma una persona viendo la app del banco) deja producir.
+// "Coincide" = la lectura automática cuadró: se confirma con un clic.
+const porRevisar = x => !['Confirmado', 'Rechazado'].includes(x.resultado);
+const clienteDe = id => ((D.pedidos || []).find(p => p.id === id) || {}).cliente || '';
 const pagadoDe = id => (D.pagos || []).filter(x => x.pedido === id && PAGO_OK.includes(x.resultado)).reduce((s, x) => s + x.monto, 0);
 // solo enlaces https (nunca javascript: ni otros esquemas) aunque alguien edite la hoja a mano
 const urlSegura = u => /^https:[/][/][\w.-]+[.]google[.]com[/]/.test(String(u)) ? String(u) : '';
 function rPagos() {
   const P = D.pagos || [], q = $('#qPg').value.trim().toLowerCase(), mes = new Date(); mes.setDate(1); mes.setHours(0, 0, 0, 0);
-  const delMes = P.filter(x => x.fecha && new Date(x.fecha) >= mes && PAGO_OK.includes(x.resultado));
-  $('#pSub').textContent = `El sitio lee el monto de cada comprobante. "Coincide" ya cuenta como pagado; lo demás revísalo y confirma o rechaza. Anticipo: ${D.anticipo}%.`;
+  const delMes = P.filter(x => x.fecha && new Date(x.fecha) >= mes && x.resultado === 'Confirmado');
+  $('#pSub').textContent = `Confirma cada pago después de verlo en la app del banco: sin "Confirmado" el pedido no puede pasar a producción. "Verificado" = el monto, la cuenta y el nombre ya cuadraron solos. Anticipo: ${D.anticipo}%.`;
   $('#kpiPag').innerHTML = [
-    kpi('Por revisar', P.filter(porRevisar).length, { sub: 'Monto distinto o sin lectura', bad: true, tone: 'rose', icon: 'alert' }),
-    kpi('Cobrado este mes', money(delMes.reduce((s, x) => s + x.monto, 0)), { sub: plural(delMes.length, 'comprobante', 'comprobantes'), tone: 'mint', icon: 'cash' }),
-    kpi('Leídos solos', P.filter(x => x.resultado === 'Coincide').length, { sub: 'Monto igual al esperado', tone: 'sky', icon: 'check' }),
+    kpi('Por confirmar', P.filter(porRevisar).length, { sub: 'Revísalos en la app del banco', bad: true, tone: 'rose', icon: 'alert' }),
+    kpi('Confirmado este mes', money(delMes.reduce((s, x) => s + x.monto, 0)), { sub: plural(delMes.length, 'comprobante', 'comprobantes'), tone: 'mint', icon: 'cash' }),
+    kpi('Verificados solos', P.filter(x => x.resultado === 'Coincide').length, { sub: 'Listos para confirmar con 1 clic', tone: 'sky', icon: 'check' }),
     kpi('Rechazados', P.filter(x => x.resultado === 'Rechazado').length, { tone: 'lav', icon: 'ticket' }),
   ].join('');
-  const opts = ['Por revisar', 'Pagados', 'Rechazados', 'Todos'], fit = (x, t) => t === 'Todos' || (t === 'Por revisar' ? porRevisar(x) : t === 'Pagados' ? PAGO_OK.includes(x.resultado) : x.resultado === 'Rechazado');
+  const opts = ['Por revisar', 'Pagados', 'Rechazados', 'Todos'], fit = (x, t) => t === 'Todos' || (t === 'Por revisar' ? porRevisar(x) : t === 'Pagados' ? x.resultado === 'Confirmado' : x.resultado === 'Rechazado');
   $('#fPg').innerHTML = opts.map(o => `<button aria-pressed="${o === UI.fPg}" data-fpg="${o}">${o}<i>${P.filter(x => fit(x, o)).length}</i></button>`).join('');
   const list = P.filter(x => fit(x, UI.fPg)).filter(x => !q || x.pedido.toLowerCase().includes(q));
   $('#nPg').textContent = list.length;
-  const tono = r => PAGO_OK.includes(r) ? 'ok' : r === 'Rechazado' ? 'bad' : 'warn';
+  const tono = r => r === 'Confirmado' ? 'ok' : r === 'Rechazado' ? 'bad' : r === 'Coincide' ? 'info' : 'warn';
+  const etiqueta = r => r === 'Coincide' ? 'Verificado · falta confirmar' : r;
+  const pago = x => [(x.notas.match(/^Pagó: (.+)/) || [])[1], x.ref && 'Ref. ' + x.ref].filter(Boolean).map(esc).join('<br>') || '<span class="muted">—</span>';
   $('#pagos').innerHTML = list.map(x => `<tr><td class="muted nw">${fdate(x.fecha)}</td>
-    <td><button class="btn sm ghost" data-pid="${esc(x.pedido)}">${esc(x.pedido)}</button></td>
+    <td><button class="btn sm ghost" data-pid="${esc(x.pedido)}">${esc(x.pedido)}</button><br><small class="muted">${esc(clienteDe(x.pedido))}</small></td>
     <td class="num"><input class="in" style="max-width:110px;text-align:right" type="number" min="0" step="0.01" value="${x.leido === '' ? '' : x.monto}" data-pmonto="${x.row}" aria-label="Monto de ${esc(x.pedido)}" title="${esc(x.texto)}"></td>
     <td class="num money">${money(x.esperado)}</td>
-    <td><span class="tag ${tono(x.resultado)}">${esc(x.resultado)}</span>${x.revisado ? `<br><small class="muted">${esc(x.revisado)}</small>` : ''}</td>
+    <td><small>${pago(x)}</small></td>
+    <td><span class="tag ${tono(x.resultado)}">${esc(etiqueta(x.resultado))}</span>${x.revisado ? `<br><small class="muted">${esc(x.revisado)}</small>` : ''}${porRevisar(x) && x.notas && !/^Pagó:/.test(x.notas) ? `<br><small class="muted">${esc(x.notas)}</small>` : ''}</td>
     <td>${urlSegura(x.url) ? `<a class="btn sm" href="${esc(urlSegura(x.url))}" target="_blank" rel="noopener noreferrer">Ver ↗</a>` : ''}</td>
-    <td class="nw"><button class="btn sm dark" data-pago="${x.row}" data-res="Confirmado">Confirmar</button> <button class="btn sm ghost" data-pago="${x.row}" data-res="Rechazado">Rechazar</button></td></tr>`).join('')
-    || `<tr><td colspan="7" class="empty">${UI.fPg === 'Por revisar' ? 'Nada por revisar. 👌' : 'Sin comprobantes todavía.'}</td></tr>`;
+    <td class="nw">${porRevisar(x) ? `<button class="btn sm dark" data-pago="${x.row}" data-res="Confirmado">Confirmar</button> <button class="btn sm ghost" data-pago="${x.row}" data-res="Rechazado">Rechazar</button>` : ''}</td></tr>`).join('')
+    || `<tr><td colspan="8" class="empty">${UI.fPg === 'Por revisar' ? 'Nada por revisar. 👌' : 'Sin comprobantes todavía.'}</td></tr>`;
 }
 
 
