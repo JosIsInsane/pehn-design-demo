@@ -64,6 +64,7 @@ const CONFIG_DEFAULTS = [
   ['Resumen diario al negocio', 'Sí', 'Sí / No. Reemplaza al viejo "Aviso de stock bajo" (si ese ajuste existía, se copia aquí su valor).'],
   ['Comprobante que no pasa la verificación', 'Rechazar', 'Rechazar = el sitio no deja enviar un comprobante que no cuadra (monto, cuenta, fecha, repetido). Revisar = lo acepta y queda en CRM › Pagos para revisarlo a mano.'],
   ['Días que vale un comprobante', 7, 'Un comprobante con fecha más vieja que esto se rechaza (si el comprobante muestra fecha).'],
+  ['Nombre de quien paga', 'Debe coincidir', 'Debe coincidir = si el comprobante muestra quién transfirió, debe ser el cliente o la persona que puso en "¿Lo paga otra persona?". No revisar = no se compara el nombre.'],
 ];
 
 // hora del resumen: entero 0–23; vacío o inválido = 20

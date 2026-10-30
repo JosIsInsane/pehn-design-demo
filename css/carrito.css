@@ -68,6 +68,9 @@
 .drop{display:flex;gap:12px;align-items:center;padding:16px;border-radius:var(--r-sm);border:2px dashed var(--line-2);background:var(--surface);cursor:pointer;transition:border-color .2s,background-color .2s}
 .drop:hover,.drop:focus-within{border-color:var(--ink)}
 .drop.lleno{border-style:solid;border-color:var(--green)}
+.pagador{display:grid;gap:6px;font-size:14px;font-weight:600}
+.pagador small{font-weight:400;color:var(--ink-3)}
+.pagador input{height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line-2);background:var(--surface);font-size:15px}
 .drop.malo{border-style:solid;border-color:var(--danger)}
 .drop.revisando{opacity:.7;pointer-events:none;cursor:progress}
 .drop.revisando .drop-ico{animation:latido 1s ease-in-out infinite}

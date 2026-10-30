@@ -53,7 +53,7 @@ function recibirComprobante_(d, cfg) {
 
   // lo lento (OCR y Drive) va FUERA del candado; si no pasa y Config dice Rechazar, no se guarda nada
   const lectura = leerComprobante_(d.file);
-  const revision = revisarComprobante_(lectura, esperado, pago.saldo || esperado, cfg);
+  const revision = revisarComprobante_(lectura, esperado, pago.saldo || esperado, cfg, [p.Cliente, linea_(d.pagador, 80)]);
   if (!revision.ok && rechazarSinVerificar_(cfg)) throw new Error(revision.motivo);
   const archivo = guardarComprobante_(carpetaDePedido_(p), d.file);
   return conCandado_(() => anotarPago_(p, { archivo, lectura, revision }, esperado));
@@ -73,7 +73,7 @@ function anotarPago_(p, { archivo, lectura, revision }, esperado) {
   const monto = revision.monto;
   const resultado = revision.ok ? 'Coincide' : lectura.texto == null ? 'Sin lectura' : 'Revisar: ' + revision.nota;
   sheet_('pagos').appendRow(fila_([now_(), p.ID, monto == null ? '' : monto, esperado, resultado, archivo.url,
-    texto_(lectura.texto || '', 2000), '', revision.ok ? '' : revision.motivo, marcaDe_(lectura)]));
+    texto_(lectura.texto || '', 2000), '', revision.ok ? (revision.pagador ? 'Pagó: ' + revision.pagador : '') : revision.motivo, marcaDe_(lectura)]));
   return { resultado: revision.ok ? 'Coincide' : 'Revisión', monto, esperado };
 }
 

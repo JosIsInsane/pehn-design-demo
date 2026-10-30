@@ -646,7 +646,7 @@ prueba('_headers: Turnstile permitido solo en script-src y frame-src; datos.js l
 
 
 // ---------- verificación de comprobantes en el momento (Verificacion.gs) ----------
-const verificar = (s, comprobante, total = 750) => s.post({ token: s.config('Token del sitio'), accion: 'verificar', comprobante, total });
+const verificar = (s, comprobante, total = 750, extra = {}) => s.post({ token: s.config('Token del sitio'), accion: 'verificar', comprobante, total, nombre: 'Ana López', ...extra });
 const rechazo = (s, ocr, extra = {}) => { s.ctx.__ocr = ocr; const r = s.post(pedido(s, extra)); ok(!r.ok && s.hoja('Pedidos').length === 0, JSON.stringify(r)); return r.error; };
 
 prueba('Verificar: comprobante correcto pasa y devuelve ficha', () => {
@@ -728,7 +728,20 @@ prueba('Comprobante BAC real (formato de notificación) pasa', () => {
   const s = nuevo(); s.run(`setConfig_('Datos bancarios', 'BAC · Leda Villela · 746710241')`);
   const d = new Date(), mes = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'][d.getMonth()];
   s.ctx.__ocr = `BAC\nNotificación de transferencia\nHola,\nLe informamos que EMMA LUZ GARCIA MEJIA realizó una transferencia a la cuenta bancaria Nº 746710241 a nombre de LEDA DAMARIS VILLELA PORTILLO.\nFecha\n${d.getDate()} ${mes} ${d.getFullYear()}\nHora\n9:40 AM\nMonto\nL345.00\nDetalle\nAnticipo 50%\nReferencia\n412441383`;
-  const v = verificar(s, jpgNuevo(), 690).verificacion; ok(v.ok && v.monto === 345, JSON.stringify(v));
+  const v = verificar(s, jpgNuevo(), 690, { nombre: 'Emma García' }).verificacion; ok(v.ok && v.monto === 345, JSON.stringify(v));
+  ok(/nombre de quien transfirió/.test(verificar(s, jpgNuevo(), 690, { nombre: 'Cesar Romero' }).verificacion.motivo), 'otro nombre: rechazo');
+  ok(verificar(s, jpgNuevo(), 690, { nombre: 'Cesar Romero', pagador: 'Emma Luz García' }).verificacion.ok, 'lo paga otra persona: pasa');
+  s.run(`setConfig_('Nombre de quien paga', 'No revisar')`);
+  ok(verificar(s, jpgNuevo(), 690, { nombre: 'Cesar Romero' }).verificacion.ok, 'Config No revisar');
+});
+
+prueba('Nombre del que paga: pedido con ordenante distinto se rechaza; sin nombre en el comprobante pasa', () => {
+  const s = nuevo();
+  s.ctx.__ocr = RECIBO('375.00', 'Ordenante: PEDRO PICAPIEDRA'); const r = s.post(pedido(s));
+  ok(!r.ok && /nombre de quien transfirió/.test(r.error), JSON.stringify(r));
+  s.ctx.__ocr = RECIBO('375.00', 'Ordenante: ANA MARIA LOPEZ REYES'); ok(s.post(pedido(s)).ok, 'mismo cliente');
+  s.ctx.__ocr = RECIBO('375.00', 'Ordenante: PEDRO PICAPIEDRA'); ok(s.post(pedido(s, { pagador: 'Pedro Picapiedra' })).ok, 'pagador declarado');
+  ok(/Pagó: PEDRO PICAPIEDRA/.test(s.hoja('Pagos').at(-1).Notas), 'queda anotado quién pagó');
 });
 
 console.log(`\n${n - fallas} de ${n} pruebas pasaron.`);

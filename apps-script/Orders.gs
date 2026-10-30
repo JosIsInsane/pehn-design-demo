@@ -97,7 +97,7 @@ function limpiarPedido_(d) {
   }));
   return { customer, items, total: num(d.total, 0, 1e7), currency: /^[A-Z]{3}$/.test(d.currency) ? d.currency : 'HNL',
     comprobante: typeof d.comprobante === 'string' ? d.comprobante : '',
-    ficha: typeof d.ficha === 'string' ? d.ficha.slice(0, 40) : '' };
+    ficha: typeof d.ficha === 'string' ? d.ficha.slice(0, 40) : '', pagador: linea_(d.pagador, 80) };
 }
 
 function json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
@@ -168,7 +168,7 @@ function subirFotos_(folder, d) {
 function verificarAnticipo_(d, esperado, cfg) {
   if (!d.comprobante) return null;
   const lectura = lecturaDeFicha_(d.ficha, d.comprobante, d.total) || leerComprobante_(d.comprobante);
-  const revision = revisarComprobante_(lectura, esperado, d.total, cfg);
+  const revision = revisarComprobante_(lectura, esperado, d.total, cfg, [d.customer.name, d.pagador]);
   if (!revision.ok && rechazarSinVerificar_(cfg)) throw new Error(revision.motivo);
   return { lectura, revision };
 }

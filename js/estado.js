@@ -23,7 +23,7 @@ export function reinsertarEnCarrito(idx, renglon) { carrito.splice(idx, 0, rengl
 export function vaciarCarrito() { carrito = []; }
 
 // ---------- el cajón del pedido: paso, datos del paso 1, comprobante y cuándo se mostró el formulario ----------
-const caja = { vista: 'cart', datos: null, comprobante: '', ficha: '', desde: 0 };
+const caja = { vista: 'cart', datos: null, comprobante: '', ficha: '', pagador: '', desde: 0 };
 // qué paso se ve: 'cart' | 'checkout' | 'anticipo'
 export const vistaDeCaja = () => caja.vista;
 export function irAVistaDeCaja(vista) { caja.vista = vista; }
@@ -34,12 +34,15 @@ export function guardarDatosDeCaja(datos) { caja.datos = datos; }
 export const comprobanteDeCaja = () => caja.comprobante;
 export const fichaDeCaja = () => caja.ficha;
 export function guardarComprobanteDeCaja(comprobante, ficha = '') { caja.comprobante = comprobante; caja.ficha = comprobante ? ficha : ''; }
+// nombre del titular de la cuenta si paga otra persona ('' = paga el cliente)
+export const pagadorDeCaja = () => caja.pagador;
+export function guardarPagadorDeCaja(nombre) { caja.pagador = String(nombre || '').trim(); }
 // anota la hora en que se mostró el formulario (solo la primera vez): el servidor rechaza envíos "instantáneos" de bots
 export function marcarInicioDeFormulario() { if (!caja.desde) caja.desde = performance.now(); }
 // milisegundos desde que se mostró el formulario
 export const msDesdeElFormulario = () => Math.round(performance.now() - caja.desde);
 // después de enviar el pedido: el cajón vuelve a empezar
-export function reiniciarCaja() { Object.assign(caja, { vista: 'cart', datos: null, comprobante: '', ficha: '', desde: 0 }); }
+export function reiniciarCaja() { Object.assign(caja, { vista: 'cart', datos: null, comprobante: '', ficha: '', pagador: '', desde: 0 }); }
 
 // ---------- el diseño abierto en el personalizador ----------
 // { p (producto), cfg (opciones elegidas), qty, editIdx (posición en el carrito, o null si es nuevo), fig (figura activa),

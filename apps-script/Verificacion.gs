@@ -6,6 +6,7 @@
  *   1. que el texto se pueda leer (OCR de Drive)          4. la cuenta del negocio (si Config › Datos bancarios tiene número)
  *   2. que parezca un comprobante (palabras de banco)     5. la fecha (si trae una, de los últimos días)
  *   3. el monto del anticipo                              6. que no se haya usado antes (mismo archivo o misma referencia)
+ *   7. quién transfirió: si el comprobante lo muestra, debe ser el cliente o quien dijo que paga por él
  * Límite honesto: un OCR no prueba que el banco movió el dinero; solo descarta lo que no cuadra.
  * Config › "Comprobante que no pasa la verificación": Rechazar (por defecto) o Revisar (se acepta y queda para el CRM).
  */
@@ -20,6 +21,7 @@ const MOTIVOS = {
   cuenta: 'El comprobante no muestra nuestra cuenta. Revisa que transferiste a la cuenta indicada.',
   fecha: 'La fecha del comprobante es de hace varios días. Sube el comprobante de esta transferencia.',
   usado: 'Este comprobante ya se usó en otro pago. Si es un error, escríbenos por WhatsApp.',
+  nombre: 'El nombre de quien transfirió no coincide con el del pedido. Si otra persona pagó por ti, escribe su nombre en "¿Lo paga otra persona?".',
   sinFicha: 'Vuelve a subir tu comprobante para verificarlo.',
 };
 
@@ -27,7 +29,7 @@ const PALABRAS_COMPROBANTE = /transferencia|transacci[oó]n|comprobante|dep[oó]
 const REFERENCIA = /(?:referencia|ref\.?|autorizaci[oó]n|n[uú]mero\s+de\s+(?:transacci[oó]n|comprobante|operaci[oó]n)|no\.?\s+de\s+(?:transacci[oó]n|operaci[oó]n))\s*[:#.]?\s*([A-Z0-9-]{5,})/i;
 
 // ---------- entrada desde el sitio: accion "verificar" ----------
-// d: { comprobante: dataUrl, total } -> { ok, monto, motivo, ficha }
+// d: { comprobante: dataUrl, total, nombre (cliente), pagador (opcional) } -> { ok, monto, motivo, ficha }
 function verificarDesdeSitio_(d, cfg) {
   limite_('v_hora', 200, 3600, 'Demasiados intentos. Espera unos minutos.');
   const total = Number(d.total);
@@ -35,7 +37,7 @@ function verificarDesdeSitio_(d, cfg) {
   if (!comprobanteValido_(d.comprobante)) throw new Error('El comprobante debe ser foto (JPG, PNG) o PDF de menos de 5 MB.');
   const esperado = anticipoDe_(total, cfg);
   const lectura = leerComprobante_(d.comprobante);
-  const r = revisarComprobante_(lectura, esperado, total, cfg);
+  const r = revisarComprobante_(lectura, esperado, total, cfg, [d.nombre, d.pagador]);
   const ficha = r.ok ? guardarFicha_(lectura, total) : '';
   return { ok: r.ok, monto: r.monto, motivo: r.motivo, ficha };
 }
@@ -57,8 +59,9 @@ function referenciaEn_(texto) {
 }
 
 // ---------- reglas ----------
-// -> { ok, monto, motivo, nota } ; motivo es el texto público del primer fallo
-function revisarComprobante_(lectura, esperado, total, cfg) {
+// nombres: quienes pueden haber pagado (el cliente y, si lo dijo, otra persona)
+// -> { ok, monto, motivo, nota, pagador } ; motivo es el texto público del primer fallo
+function revisarComprobante_(lectura, esperado, total, cfg, nombres = []) {
   const texto = lectura.texto;
   const falla = (clave, monto) => ({ ok: false, monto: monto == null ? null : monto, motivo: MOTIVOS[clave], nota: clave });
   if (texto == null || (texto.match(/[a-záéíóúñ]/gi) || []).length < VERIF.minLetras) return falla('ilegible');
@@ -68,7 +71,9 @@ function revisarComprobante_(lectura, esperado, total, cfg) {
   if (!muestraLaCuenta_(texto, cfg['Datos bancarios'])) return falla('cuenta', monto);
   if (!fechaReciente_(texto, diasDeComprobante_(cfg))) return falla('fecha', monto);
   if (yaUsado_(lectura)) return falla('usado', monto);
-  return { ok: true, monto, motivo: '', nota: 'verificado' };
+  const pagador = pagadorEn_(texto);
+  if (revisarNombre_(cfg) && pagador && !nombreCoincide_(pagador, nombres)) return falla('nombre', monto);
+  return { ok: true, monto, motivo: '', nota: 'verificado', pagador };
 }
 
 // monto igual al anticipo (±1), o algo entre el anticipo y el total marcado como dinero (pagó de más)
@@ -115,6 +120,30 @@ function yaUsado_(lectura) {
   return marcas.some(h => h.includes('sha:' + lectura.huella) || (lectura.referencia && h.includes('ref:' + lectura.referencia)));
 }
 const marcaDe_ = lectura => `sha:${lectura.huella}${lectura.referencia ? ' ref:' + lectura.referencia : ''}`;
+
+// ---------- quién transfirió ----------
+// Formatos comunes: "Le informamos que NOMBRE realizó una transferencia" (BAC), "Ordenante: NOMBRE", "Remitente", "De:", "Enviado por"
+const PAGADOR = [
+  /que\s+([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ .'-]{3,60}?)\s+realiz[oó]\s+una\s+transferencia/i,
+  /(?:ordenante|remitente|nombre\s+del\s+ordenante|enviado\s+por|de\s+parte\s+de|titular\s+(?:de\s+la\s+cuenta\s+)?origen|cuenta\s+origen\s+a\s+nombre\s+de)\s*[:\n]\s*([A-ZÁÉÍÓÚÑ][A-ZÁÉÍÓÚÑ .'-]{3,60})/i,
+];
+function pagadorEn_(texto) {
+  for (const re of PAGADOR) { const m = re.exec(String(texto || '')); if (m) return m[1].replace(/\s+/g, ' ').trim(); }
+  return '';
+}
+// palabras de un nombre sin tildes ni partículas: "César de la Rosa" -> ["CESAR", "ROSA"]
+const palabrasDeNombre_ = n => String(n || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase()
+  .split(/[^A-ZÑ]+/).filter(w => w.length >= 3 && !['DEL', 'LAS', 'LOS'].includes(w));
+// coincide si comparten 2 palabras (o 1 si el nombre escrito tiene una sola): "Cesar Romero" ~ "CESAR JOSUE ROMERO REYES"
+function nombreCoincide_(pagador, nombres) {
+  const del = palabrasDeNombre_(pagador);
+  return nombres.some(n => {
+    const p = palabrasDeNombre_(n);
+    return p.length && p.filter(w => del.includes(w)).length >= Math.min(2, p.length);
+  });
+}
+// Config › Nombre de quien paga: "Debe coincidir" (por defecto) o "No revisar"
+const revisarNombre_ = cfg => String(cfg['Nombre de quien paga'] || 'Debe coincidir').trim().toLowerCase() !== 'no revisar';
 
 // ---------- ficha: el resultado de "verificar" se reusa al enviar el pedido (sin repetir el OCR) ----------
 function guardarFicha_(lectura, total) {
