@@ -72,7 +72,8 @@ function figurasHTML(g, cfg, sc) {
       <div class="figbox" role="tabpanel">
         <div class="looks"><span>Estilo rápido:</span>${LOOKS.map((l, j) => `<button type="button" data-look="${j}">${l.label}</button>`).join('')}</div>
         ${FIG_GROUPS.map(fg => groupHTML(fg, f, 'f')).join('')}
-        ${v.length > g.min ? `<button type="button" class="rm del-fig" ${a} data-d="-1">Quitar ${esc(String(f.name || '').trim() || 'esta figura')}</button>` : ''}
+        <div class="fig-acc"><button type="button" class="btn-3d" data-ver3d="${i}">Ver en 3D</button>${v.length > 1 ? `<span class="fmove" role="group" aria-label="Lugar en el cuadro"><button type="button" data-figmove="${i}:-1" ${i ? '' : 'disabled'} aria-label="Mover a la izquierda">← Izquierda</button><button type="button" data-figmove="${i}:1" ${i < v.length - 1 ? '' : 'disabled'} aria-label="Mover a la derecha">Derecha →</button></span>` : ''}
+        ${v.length > g.min ? `<button type="button" class="rm del-fig" ${a} data-d="-1">Quitar ${esc(String(f.name || '').trim() || 'esta figura')}</button>` : ''}</div>
       </div></div>`;
 }
 const HTML_DE_GRUPO = { swatch: opcionesHTML, choice: opcionesHTML, multi: multiHTML, text: textoHTML, textarea: textoHTML, date: fechaHTML, file: archivoHTML, stepper: contadorHTML, figs: figurasHTML };

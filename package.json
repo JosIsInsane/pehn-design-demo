@@ -6,8 +6,8 @@
   "type": "module",
   "scripts": {
     "lint": "eslint .",
-    "test": "node pruebas/seguridad.test.js && node pruebas/precios.test.js && node pruebas/tamanos.test.js && node pruebas/modulos.test.js && node pruebas/sitio.test.js",
-    "test:rapido": "node pruebas/seguridad.test.js && node pruebas/precios.test.js && node pruebas/tamanos.test.js && node pruebas/modulos.test.js"
+    "test": "node pruebas/seguridad.test.js && node pruebas/portero.test.js && node pruebas/precios.test.js && node pruebas/tamanos.test.js && node pruebas/modulos.test.js && node pruebas/sitio.test.js",
+    "test:rapido": "node pruebas/seguridad.test.js && node pruebas/portero.test.js && node pruebas/precios.test.js && node pruebas/tamanos.test.js && node pruebas/modulos.test.js"
   },
   "devDependencies": {
     "eslint": "9.39.5",

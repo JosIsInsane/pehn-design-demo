@@ -22,6 +22,8 @@ const SITIO_DEFAULTS = [
   ['hero.foto.pie', 'Pedido real · Fer & Clau', 'texto', 'Leyenda de la foto de portada.'],
   ['seccion.categorias', 'Elige qué personalizar', 'texto', 'Título de la sección de categorías.'],
   ['seccion.destacados', 'Los más pedidos', 'texto', 'Título de la sección de pedidos reales.'],
+  ['seccion.ocasiones', 'Regala por ocasión', 'texto', 'Título de la sección de ocasiones en el inicio.'],
+  ['plazo.produccion', 'Te confirmamos la fecha de entrega al aprobar tu diseño.', 'texto', 'Aviso del plazo en el carrito, ej. "Listo en 3 a 5 días hábiles después de aprobar tu diseño".'],
   ['como.titulo', 'Así se hace un pedido', 'texto', 'Título de "Cómo funciona".'],
   ['como.1.titulo', 'Elige un diseño', 'texto', 'Paso 1.'],
   ['como.1.texto', 'Parte de un pedido real o empieza desde cero. Cuadros, figuras, ropa, bolsas y vasos.', 'largo', 'Paso 1.'],

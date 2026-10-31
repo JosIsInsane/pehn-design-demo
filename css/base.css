@@ -113,6 +113,7 @@ p{margin:0;text-wrap:pretty}
 
 /* ---------- footer ---------- */
 .foot{margin-top:var(--sec);padding:72px 0 32px;border-top:1px solid var(--line);background:var(--surface-2)}
+@media (max-width:720px){.foot{padding-bottom:calc(104px + env(safe-area-inset-bottom))}} /* que los botones flotantes no tapen la última línea */
 .foot-grid{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:32px}
 .foot-brand p{color:var(--ink-2);margin:16px 0 0;max-width:34ch;font-size:15px}
 .foot nav{display:flex;flex-direction:column;gap:10px}
@@ -218,3 +219,17 @@ html{scroll-padding-top:calc(var(--nav-h) + 16px)}
   .aviso{left:12px;right:12px;width:auto;bottom:calc(12px + env(safe-area-inset-bottom))}
   .con-aviso .wa-float,.con-aviso .cart-fab{visibility:hidden}
 }
+
+.copy-nota{flex-basis:100%;margin:4px 0 0;font-size:12px;color:var(--ink-3)}
+.copy-nota a{text-decoration:underline}
+
+.aviso-gpc{display:block;margin-top:6px;font-weight:600;color:var(--brand-ink)}
+
+/* página 404 */
+.no-encontrada{padding:72px 0 96px;text-align:center}
+.no-encontrada .ne-fig{width:120px;height:150px;margin:0 auto 24px;display:block;animation:ne-mece 3s ease-in-out infinite;transform-origin:50% 100%}
+.no-encontrada h1{font-size:clamp(30px,6vw,48px)}
+.no-encontrada .lead{max-width:460px;margin:14px auto 28px;color:var(--ink-2)}
+.ne-acciones{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+@keyframes ne-mece{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+@media (prefers-reduced-motion:reduce){.no-encontrada .ne-fig{animation:none}}

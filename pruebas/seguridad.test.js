@@ -609,6 +609,25 @@ prueba('Errores: cada mensaje de limite_/throw de Orders y Pagos que ve el clien
   ok(!faltan.length, 'faltan en MENSAJES_PUBLICOS: ' + faltan.join(' | '));
 });
 
+// ---------- portero de Cloudflare (functions/api.js): IP y Turnstile ya revisado ----------
+prueba('Portero: con portero:true Apps Script no vuelve a consultar Turnstile (el token sirve una vez)', () => {
+  const s = nuevo({ propiedades: { TURNSTILE_SECRET: 'sec-123' } });
+  s.red.responder = () => ({ success: false });
+  const r = s.post(pedido(s, { portero: true }));
+  ok(r.ok && s.red.llamadas.length === 0, JSON.stringify(r));
+  ok(!s.post(pedido(s, { portero: 'true' })).ok, 'solo vale el booleano true');
+});
+
+prueba('Portero: límite por IP aunque cambien de WhatsApp (5º pedido en 10 min desde la misma IP se frena)', () => {
+  const s = nuevo();
+  const desde = (ip, k) => s.post(pedido(s, { ip, customer: { name: 'Ana López', phone: '9876 54' + String(10 + k), email: 'ana@correo.com', city: 'Tegucigalpa', date: '', notes: '' } }));
+  for (let k = 0; k < 4; k++) { const r = desde('203.0.113.7', k); ok(r.ok, JSON.stringify(r)); }
+  const r5 = desde('203.0.113.7', 5);
+  ok(!r5.ok && /Demasiados intentos/.test(r5.error), JSON.stringify(r5));
+  ok(desde('198.51.100.2', 6).ok, 'otra IP sí pasa');
+  ok(desde('<script>', 7).ok && desde('', 8).ok, 'IP rara o vacía no rompe nada');
+});
+
 // ---------- Turnstile (opcional) ----------
 prueba('Turnstile: sin TURNSTILE_SECRET todo sigue como hoy (no se consulta a Cloudflare)', () => {
   const s = nuevo(); const r = s.post(pedido(s)); ok(r.ok, JSON.stringify(r));

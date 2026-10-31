@@ -55,18 +55,25 @@ const bloquesGs = archivosGs.map(f => ({
 }));
 
 export default [
-  { ignores: ['node_modules/', 'docs/'] },
+  { ignores: ['node_modules/', 'docs/', 'vendor/'] }, // vendor/: librerías de terceros ya minificadas (Three.js)
 
   // ---------- el sitio en el navegador: módulos de js/ y los de datos, dibujos y marco ----------
   {
-    files: ['js/**/*.js', 'datos.js', 'piezas.js', 'datos-tienda.js', 'dibujos.js', 'marco.js'],
+    files: ['js/**/*.js', 'datos.js', 'regalo.js', 'accesorios.js', 'piezas.js', 'datos-tienda.js', 'dibujos.js', 'marco.js'],
     languageOptions: { ecmaVersion: 2022, sourceType: 'module', globals: { ...globals.browser } },
+    rules: reglas,
+  },
+
+  // ---------- Cloudflare Pages Functions (functions/): corren en los servidores de Cloudflare (como un service worker) ----------
+  {
+    files: ['functions/**/*.js'],
+    languageOptions: { ecmaVersion: 2022, sourceType: 'module', globals: { ...globals.serviceworker, FixedLengthStream: 'readonly' } },
     rules: reglas,
   },
 
   // ---------- Node: pruebas, herramientas y este mismo archivo ----------
   {
-    files: ['pruebas/**/*.js', 'herramientas/**/*.js', 'eslint.config.js'],
+    files: ['pruebas/**/*.js', 'herramientas/**/*.{js,mjs}', 'eslint.config.js'],
     languageOptions: { ecmaVersion: 2022, sourceType: 'module', globals: { ...globals.node } },
     rules: reglas,
   },

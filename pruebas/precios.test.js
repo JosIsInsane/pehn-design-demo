@@ -52,7 +52,8 @@ const CSV = Object.fromEntries(filas.map(r => [r[0], Number(r[5])]));
   ok(await precio({ size: 'gra', dogs: 1, adds: ['luces'] }) === 570 + 180 + 70 + 90, 'Cuadro: Retratera 3D grande + 2 figuras + 1 perro + luces = 910');
   ok(await precio({ size: 'peq' }) === 500 + 180, 'Cuadro: Retratera 3D pequeña + 2 figuras = 680');
   ok(await precio({ size: 'med', cats: 1, bunnies: 2 }) === 530 + 180 + 70 + 140, 'Cuadro: mediana + gatito + 2 conejitos');
-  ok(await precio({ size: 'med', adds: ['luces', 'dedicatoria', 'iniciales', 'fotos', 'fondo', 'dulces'] }) === 530 + 180 + 90 + 30 + 40 + 30 + 30 + 120, 'Cuadro: los seis extras suman sus piezas');
+  ok(await precio({ size: 'med', adds: ['luces', 'dedicatoria', 'iniciales', 'fotos', 'dulces'] }) === 530 + 180 + 90 + 30 + 40 + 30 + 120, 'Cuadro: los cinco extras suman sus piezas');
+  ok(await precio({ size: 'med', fondo: 'foto' }) === 530 + 180 + 30 && await precio({ size: 'med', fondo: 'blanco' }) === 530 + 180, 'Cuadro: fondo con tu foto suma L 30; blanco no');
   ok(await precio({ size: 'med', tpl: 'calendario', deco: 'pride', frame: '#B9824C' }) === 530 + 180, 'Calendario, arcoíris y marco madera no cuestan');
   const conFig = await conSitio(page, ({ productoDe, defaults, priceOf }) => {
     const p = productoDe('cuadro'), cfg = defaults(p); cfg.size = 'med';

@@ -8,6 +8,20 @@
 <meta name="description" content="Personaliza cuadros con minifiguras, sudaderas, bolsas y vasos. Precio al instante y vista previa en vivo.">
 <meta name="theme-color" content="#FBF7F2">
 <link rel="icon" href="logo.png">
+<link rel="canonical" href="https://pehn-design-demo.pages.dev/catalogo.html">
+<!-- vista previa al compartir (WhatsApp, Facebook, Instagram): si cambia el dominio, cambia también estas URL, robots.txt y sitemap.xml -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Pehn Design">
+<meta property="og:locale" content="es_HN">
+<meta property="og:title" content="Catálogo · Pehn Design">
+<meta property="og:description" content="Personaliza cuadros con minifiguras, sudaderas, bolsas y vasos. Precio al instante y vista previa en vivo.">
+<meta property="og:url" content="https://pehn-design-demo.pages.dev/catalogo.html">
+<meta property="og:image" content="https://pehn-design-demo.pages.dev/compartir.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Cuadro de Pehn Design con dos minifiguras personalizadas">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="apple-touch-icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,400..700,0..100,0..1;1,9..144,400..700,0..100,0..1&family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=Great+Vibes&family=Bagel+Fat+One&family=Pacifico&family=Space+Mono:wght@700&family=Alfa+Slab+One&display=swap" rel="stylesheet">
@@ -74,6 +88,10 @@
                 <option value="name">Nombre (A–Z)</option>
               </select>
             </div>
+            <div class="side-sec">
+              <h3 class="side-t" id="ocT">Regalo para</h3>
+              <div class="ocs" id="ocasiones" role="group" aria-labelledby="ocT"></div>
+            </div>
             <nav class="side-sec" aria-labelledby="catT">
               <h3 class="side-t" id="catT">Categorías</h3>
               <ul class="acc" id="filters"></ul>
@@ -129,7 +147,8 @@
         <button type="button" id="zOut" aria-label="Alejar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
         <output id="zVal">100%</output>
         <button type="button" id="zIn" aria-label="Acercar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
-        <button type="button" id="zReset" aria-label="Restablecer zoom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 15v5h-5M4 4l6 6M20 20l-6-6"/></svg></button>
+        <button type="button" id="zReset" aria-label="Volver al tamaño normal" title="Volver al tamaño normal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></button>
+        <button type="button" id="zFull" aria-label="Ver en pantalla completa" title="Pantalla completa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 15v5h-5M15 4h5v5M9 20H4v-5"/></svg></button>
       </div>
       <button class="ref" id="refBtn" hidden aria-label="Comparar con la foto del pedido real"><img alt=""><span>Pedido real</span></button>
           </div>
@@ -159,6 +178,17 @@
 </div>
 
 
+<div class="modal full" id="cFull" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Tu diseño en pantalla completa">
+  <div class="full-stage" id="fullStage"></div>
+  <button type="button" class="x full-x" data-fullclose aria-label="Cerrar pantalla completa">✕</button>
+  <p class="full-tip">Toca el diseño para acercar · pellizca en el teléfono</p>
+</div>
+<div class="modal full" id="c3d" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="t3d">
+  <h2 class="t3d" id="t3d"></h2>
+  <div class="full-stage stage3d" id="stage3d"></div>
+  <button type="button" class="x full-x" data-3dclose aria-label="Cerrar vista 3D">✕</button>
+  <p class="full-tip">Arrastra para girar · doble toque vuelve al frente</p>
+</div>
 <script type="module" src="js/paginas/catalogo.js"></script>
 </body>
 </html>

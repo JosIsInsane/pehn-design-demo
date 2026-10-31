@@ -12,7 +12,7 @@ const LAZY = f => /^js\/(personalizador(?!-carga)[\w-]*|zoom)\.js$/.test(f);
 
 const lista = dir => fs.readdirSync(path.join(RAIZ, dir), { withFileTypes: true })
   .flatMap(e => e.isDirectory() ? lista(path.join(dir, e.name)) : [path.posix.join(...path.join(dir, e.name).split(path.sep))]);
-const archivos = [...lista('js'), 'datos.js', 'piezas.js', 'datos-tienda.js', 'dibujos.js', 'marco.js'].filter(f => f.endsWith('.js'));
+const archivos = [...lista('js'), 'datos.js', 'regalo.js', 'accesorios.js', 'piezas.js', 'datos-tienda.js', 'dibujos.js', 'marco.js'].filter(f => f.endsWith('.js'));
 const fuente = f => fs.readFileSync(path.join(RAIZ, f), 'utf8');
 const resolver = (desde, destino) => path.posix.normalize(path.posix.join(path.posix.dirname(desde), destino));
 
@@ -67,9 +67,9 @@ ok(importa['js/personalizador-carga.js'].dinamicos.includes('js/personalizador.j
 const paginas = fs.readdirSync(RAIZ).filter(f => f.endsWith('.html'));
 const mal = paginas.filter(p => {
   const scripts = [...fuente(p).matchAll(/<script\b[^>]*>/g)].map(m => m[0]);
-  return scripts.length !== 1 || !/type="module"\s+src="js\/paginas\/[\w-]+\.js"/.test(scripts[0]);
+  return scripts.length !== 1 || !/type="module"\s+src="\/?js\/paginas\/[\w-]+\.js"/.test(scripts[0]);
 });
-ok(paginas.length === 4 && !mal.length, `Cada página (${paginas.join(', ')}) carga un solo <script type="module"> de js/paginas/` + (mal.length ? ': revisa ' + mal.join(', ') : ''));
+ok(paginas.length === 5 && !mal.length, `Cada página (${paginas.join(', ')}) carga un solo <script type="module"> de js/paginas/` + (mal.length ? ': revisa ' + mal.join(', ') : ''));
 
 console.log(fallas ? `\n${fallas} fallaron` : '\nTodo pasó');
 process.exit(fallas ? 1 : 0);

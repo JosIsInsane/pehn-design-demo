@@ -97,16 +97,18 @@ export async function previewImage(p, cfg, size = 900) {
 }
 
 // ---------- la puerta ----------
-// Única puerta hacia Google Sheets (apps-script/Orders.gs › doPost). accion: 'pedido' | 'verificar' | 'seguimiento' | 'comprobante' | 'misPedidos'.
-// Se manda como texto plano: así el navegador no hace la consulta previa (CORS) que Apps Script no contesta.
+// Única puerta hacia Google Sheets: el portero de Cloudflare (functions/api.js) le agrega el token y pasa a apps-script/Orders.gs › doPost.
+// accion: 'pedido' | 'verificar' | 'seguimiento' | 'comprobante' | 'misPedidos'. La acción y Turnstile van en cabeceras:
+// así el portero no tiene que abrir el pedido (con fotos pesa megas).
 export async function api(accion, data) {
-  if (!CONFIG.sheetsUrl) {
-    console.warn('[Pehn] Falta CONFIG.sheetsUrl en datos.js: no se envió nada.', accion);
+  if (!CONFIG.api) {
+    console.warn('[Pehn] Falta CONFIG.api en datos.js: no se envió nada.', accion);
     throw new Error('el sistema de pedidos no está conectado');
   }
   const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 60000);
   try {
-    const res = await fetch(CONFIG.sheetsUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ ...data, accion, token: CONFIG.sheetsToken }), signal: ctl.signal });
+    const headers = { 'Content-Type': 'text/plain;charset=utf-8', 'X-Accion': accion, 'X-Turnstile': data.turnstile || '' };
+    const res = await fetch(CONFIG.api, { method: 'POST', headers, body: JSON.stringify({ ...data, accion }), signal: ctl.signal });
     const out = await res.json().catch(() => ({ ok: false, error: 'Respuesta inválida del servidor' }));
     if (!out.ok) throw new Error(out.error || 'No se pudo completar');
     return out;

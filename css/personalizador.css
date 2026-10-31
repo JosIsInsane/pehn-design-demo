@@ -20,7 +20,10 @@
 .c-stage.zoomed .zoom-layer svg{filter:none}
 .zoom-layer.anim{transition:transform .35s var(--ease)}
 .zoom-layer svg,.zoom-layer .stage-photo{width:100%;height:100%;max-width:560px;max-height:100%;filter:drop-shadow(0 26px 30px rgba(30,22,17,.26));pointer-events:none}
-.stage-photo{width:auto;object-fit:contain;border-radius:8px}
+/* foto real: anclada al área (Safari en iPhone ignora width/height 100% de una imagen dentro de la cuadrícula
+   y la pinta a su tamaño original). El margen sale de --ph (el mismo que el padding de la capa). */
+.zoom-layer{--ph:7%}
+.zoom-layer .stage-photo{position:absolute;left:var(--ph-x,var(--ph));top:var(--ph-t,var(--ph));width:calc(100% - 2 * var(--ph-x,var(--ph)));height:calc(100% - var(--ph-t,var(--ph)) - var(--ph-b,var(--ph)));max-width:none;max-height:none;object-fit:contain}
 .zoom-ctl{position:absolute;z-index:3;right:16px;bottom:44px;display:flex;align-items:center;gap:2px;padding:4px;border-radius:999px;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);box-shadow:var(--sh-2)}
 .zoom-ctl button{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;transition:background-color .2s}
 .zoom-ctl button:hover{background:var(--bg)}
@@ -107,6 +110,12 @@
 .figbox .grp:first-of-type{border-top:0}
 
 .del-fig{display:block;margin:4px 0 6px;color:var(--danger)}
+.fig-acc{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-top:8px}
+.fig-acc .del-fig{margin:0}
+.fmove{display:inline-flex;gap:6px}
+.fmove button{min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line-2);background:var(--surface);font-size:13px;font-weight:600;color:var(--ink-2);transition:border-color .2s,background-color .2s}
+.fmove button:hover:not(:disabled){border-color:var(--ink);color:var(--ink)}
+.fmove button:disabled{opacity:.35;cursor:default}
 .c-foot{padding:16px 32px 20px;border-top:1px solid var(--line);background:var(--surface)}
 .breakdown{margin-bottom:14px}
 .breakdown[hidden]{display:none}
@@ -178,3 +187,26 @@
 .leave p+p{color:var(--ink-2);font-size:14.5px;margin:4px 0 16px}
 .leave-row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 .c-panel{position:relative}
+
+/* pantalla completa del diseño (pantalla-completa.js) */
+.modal.full{z-index:95;background:var(--bg);overflow:hidden}
+.modal.full.open{animation:fade .25s var(--ease)}
+.modal.full.closing{animation:fadeOut .2s var(--ease-in) forwards}
+.full-stage{position:absolute;inset:calc(56px + env(safe-area-inset-top)) 16px calc(52px + env(safe-area-inset-bottom));display:grid;place-items:center;touch-action:pinch-zoom;transition:transform .35s var(--ease)}
+.full-stage.z2{transform:scale(2);cursor:zoom-out}
+.full-stage>svg,.full-stage>img{width:100%;height:100%;max-width:min(92vh,100%);object-fit:contain;cursor:zoom-in;filter:drop-shadow(0 30px 40px rgba(30,22,17,.25))}
+.full-x{position:absolute;top:calc(12px + env(safe-area-inset-top));right:12px;width:44px;height:44px;border-radius:50%;background:var(--surface);box-shadow:var(--sh-1);display:grid;place-items:center;font-size:16px}
+.full-tip{position:absolute;left:0;right:0;bottom:calc(16px + env(safe-area-inset-bottom));text-align:center;font-size:13px;color:var(--ink-3)}
+@media (prefers-reduced-motion:reduce){.full-stage{transition:none}}
+
+/* botón y visor "Ver en 3D" (figura-3d.js) */
+.btn-3d{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--ink);background:var(--surface);font-size:13px;font-weight:600;color:var(--ink);transition:background-color .2s,color .2s}
+.btn-3d::before{content:"";width:14px;height:14px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'%3E%3Cpath d='M12 2 3 7v10l9 5 9-5V7Z'/%3E%3Cpath d='M3 7l9 5 9-5M12 12v10'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linejoin='round'%3E%3Cpath d='M12 2 3 7v10l9 5 9-5V7Z'/%3E%3Cpath d='M3 7l9 5 9-5M12 12v10'/%3E%3C/svg%3E") center/contain no-repeat}
+.btn-3d:hover{background:var(--ink);color:#fff}
+.btn-3d[aria-busy="true"]{opacity:.6;pointer-events:none}
+.btn-3d.m{margin:4px 0 14px}
+.t3d{position:absolute;top:calc(20px + env(safe-area-inset-top));left:20px;right:72px;margin:0;font-size:20px}
+.stage3d{touch-action:none;cursor:grab}
+.stage3d:active{cursor:grabbing}
+.stage3d canvas{width:100%;height:100%;display:block}
+.stage3d.cargando::after{content:'Armando tu figura…';position:absolute;inset:0;display:grid;place-items:center;color:var(--muted,#6E6A66);font-size:15px;pointer-events:none}

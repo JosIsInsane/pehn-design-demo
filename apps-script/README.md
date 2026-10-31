@@ -65,11 +65,11 @@ correctos pasaría. Para eso hay que comparar con el estado de cuenta (o las ale
 4. **Implementar › Nueva implementación › App web**:
    - Ejecutar como: **Yo**
    - Quién tiene acceso: **Cualquier usuario**
-5. Menú **Pehn › Ver URL y token para el sitio**. Pega los dos valores en `datos.js`:
-   ```js
-   sheetsUrl: 'https://script.google.com/macros/s/…/exec',
-   sheetsToken: '…',
-   ```
+5. Menú **Pehn › Ver URL y token para el sitio**. El sitio no habla directo con Apps Script: pasa por el portero de
+   Cloudflare (`functions/api.js`). En Cloudflare › Workers y Pages › pehn-design-demo › Settings › Variables and Secrets
+   (Production y Preview) crea **SITE_TOKEN** (tipo *Secret*) con el token, y **APPS_SCRIPT_URL** solo si la URL cambió.
+   Después: Deployments › ⋯ › *Retry deployment*. El token **no** va en `datos.js` (el navegador no debe verlo).
+   Para cambiarlo: **Pehn › Cambiar token del sitio** (y pegar el nuevo en Cloudflare).
 6. Haz un pedido de prueba en el sitio. Debe aparecer en *Pedidos* con su foto.
 
 > Si cambias el código de Apps Script, vuelve a **Implementar › Gestionar implementaciones › Editar (lápiz) › Versión: Nueva versión › Implementar**. La URL no cambia. Sin este paso el sitio y el CRM siguen usando el código viejo.
