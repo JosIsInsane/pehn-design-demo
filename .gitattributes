@@ -1,0 +1,7 @@
+# Saltos de línea LF en todos los sistemas (en Windows git los cambiaba a CRLF y algunas pruebas fallaban)
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.xlsx binary

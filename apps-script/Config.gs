@@ -9,7 +9,7 @@
  *   Inventory.gs  recetas, apartados y movimientos de stock
  *   Pagos.gs      Rastrear pedido y comprobantes del anticipo (lee el monto)
  *   Sitio.gs      colores, textos y fotos del sitio que se cambian desde el CRM
- *   Admin.gs      datos y acciones del CRM; Admin.html y AdminEstilos, AdminVistas y AdminJs*.html son la pantalla
+ *   Admin.gs      datos y acciones del CRM; AdminPagina.html y AdminEstilos, AdminVistas y AdminJs*.html son la pantalla
  *
  * SI ALGO FALLA: menú Pehn › Revisar que todo funcione. Dice qué está mal y cómo arreglarlo.
  * Para cambiar una columna: agrégala AL FINAL de HEADERS (nunca en medio) y corre Pehn › Configurar hojas.

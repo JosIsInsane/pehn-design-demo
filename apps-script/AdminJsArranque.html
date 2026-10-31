@@ -1,6 +1,6 @@
 <script>
 /* Admin — ARRANQUE: lo último que corre. Si el servidor no pudo leer la hoja muestra el error; si no, abre Inicio.
-   Depende de: Admin.html (D y ERROR vienen de ahí), AdminJsNavegacion (go). */
+   Depende de: AdminPagina.html (D y ERROR vienen de ahí), AdminJsNavegacion (go). */
 if (ERROR || !D) {
   $('#fatal').innerHTML = `<div class="err"><b>No se pudieron leer los datos de la hoja.</b><br>En el editor de Apps Script corre la función <b>probarCRM</b> y revisa el registro, o corre <b>Pehn › Configurar hojas</b>.<pre>${esc(ERROR || 'Sin datos')}</pre></div>`;
   document.querySelectorAll('.view').forEach(v => { v.hidden = true; });

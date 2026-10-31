@@ -1,4 +1,4 @@
-/* global D, K -- variables de la página del CRM (apps-script/Admin.html), que corre dentro del navegador */
+/* global D, K -- variables de la página del CRM (apps-script/AdminPagina.html), que corre dentro del navegador */
 /* Prueba de punta a punta: el sitio real en Chromium, con Google Sheets simulado (pruebas/simulador.js).
    Correr:  node pruebas/sitio.test.js   (necesita Playwright instalado)
    Hace un pedido completo, lo rastrea, sube el comprobante y revisa que nada inyecte código. */
