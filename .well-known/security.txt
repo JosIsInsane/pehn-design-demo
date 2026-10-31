@@ -1,0 +1,6 @@
+# Si encontraste una falla de seguridad en este sitio, avísanos (gracias). No publiques el detalle hasta que esté arreglada.
+Contact: https://www.instagram.com/pehn.designn/
+Expires: 2027-10-31T00:00:00.000Z
+Preferred-Languages: es, en
+Canonical: https://pehn-design-demo.pages.dev/.well-known/security.txt
+Policy: https://pehn-design-demo.pages.dev/privacidad.html

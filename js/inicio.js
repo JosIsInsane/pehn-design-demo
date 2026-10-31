@@ -1,6 +1,7 @@
 /* Pehn Design — PÁGINA DE INICIO: cuadros que se cruzan en el hero, destacados, categorías, blog y huecos de fotos.
    Va ANTES de iniciarMovimiento() para que las tarjetas que pinta también aparezcan al desplazar. */
 import { PORTADA, CARDS, CAT_TILES, PRODUCTS, catName, productoDe } from '../datos.js';
+import { OCASIONES, ocasionesDe } from '../regalo.js';
 import { frameSVG, renderProduct } from '../dibujos.js';
 import { $, clone, movimientoReducido } from './utiles.js';
 import { defaults, cardCfg } from './producto.js';
@@ -60,11 +61,18 @@ function catTileHTML(t) {
   return `<a class="cat-tile" href="catalogo.html?cat=${t.cat}" style="--tint:${t.tint}"><div class="cat-art">${art}</div>
     <div class="cat-label"><div><h3>${catName(t.cat)}</h3><small>${t.note} · ${n} diseño${n > 1 ? 's' : ''}</small></div><span class="cat-go">${ARROW}</span></div></a>`;
 }
+// "Regala por ocasión": el dibujo es el kit de esa ocasión (o el primer cuadro que encaje)
+function ocasionTileHTML(o) {
+  const i = Math.max(0, CARDS.findIndex(c => c.ocasion === o.id), CARDS.findIndex(c => c.id === 'cuadro' && !c.ocasion && ocasionesDe(c, productoDe(c.id)).includes(o.id)));
+  return `<a class="oc-tile" href="catalogo.html?ocasion=${o.id}" style="--tint:${o.tint}"><div class="oc-art">${frameSVG(cardCfg(CARDS[i]))}</div>
+    <div class="oc-label"><h3>${o.nombre}</h3><small>${o.nota}</small></div><span class="cat-go">${ARROW}</span></a>`;
+}
 function pintarSecciones() {
   const minis = PORTADA.blog.map(i => CARDS[i].cfg);
   document.querySelectorAll('[data-mini]').forEach(el => { el.innerHTML = cuadroDe(minis[+el.dataset.mini]); });
   if ($('#featured')) $('#featured').innerHTML = PORTADA.destacados.map(i => cardHTML(CARDS[i], i, `catalogo.html?card=${i}`)).join('');
   if ($('#cats')) $('#cats').innerHTML = CAT_TILES.map(catTileHTML).join('');
+  if ($('#ocasionesInicio')) $('#ocasionesInicio').innerHTML = OCASIONES.map(ocasionTileHTML).join('');
   $('#howFig')?.insertAdjacentHTML('afterbegin', frameSVG(cardCfg(CARDS[0])));
 }
 

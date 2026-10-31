@@ -51,7 +51,27 @@ function aplicarEstilo(b) {
   Object.assign(cur.cfg.figs[cur.fig], clone(LOOKS[+b.dataset.look].f));
   buildForm(); update();
 }
-const CLICS_SUELTOS = [['tab', cambiarPestana], ['sec', plegarSeccion], ['figopen', abrirFigura], ['draft', resolverBorrador], ['step', cambiarPaso], ['qty', cambiarCantidad], ['look', aplicarEstilo]];
+// ordena las figuras: "j:dir" (dir -1 = más a la izquierda en el cuadro, 1 = más a la derecha)
+function moverFigura(b) {
+  const cur = disenoActual(), arr = cur.cfg.figs, [j, dir] = b.dataset.figmove.split(':').map(Number), k = j + dir;
+  if (k < 0 || k >= arr.length) return;
+  [arr[j], arr[k]] = [arr[k], arr[j]]; cambiarFigura(k);
+  buildForm(); update();
+  document.querySelector(`[data-figmove="${k}:${dir}"]`)?.focus();
+}
+// "Ver en 3D": el visor (y Three.js) se descargan solo la primera vez que se pide
+let tresListo = false; // los botones de cierre del visor se escuchan una sola vez
+async function verEn3D(b) {
+  const cur = disenoActual(), j = +b.dataset.ver3d, f = cur.cfg.figs[j]; if (!f) return;
+  b.setAttribute('aria-busy', 'true'); const txt = b.textContent; b.textContent = 'Cargando 3D…';
+  try {
+    const m = await import('./figura-3d.js');
+    if (!tresListo) { tresListo = true; document.addEventListener('click', e => { if (e.target.closest('[data-3dclose]') || e.target.id === 'c3d') m.cerrar3D(); }); document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#c3d')?.classList.contains('open')) m.cerrar3D(); }); }
+    m.abrir3D(f, `${String(f.name || '').trim() || 'Figura ' + (j + 1)} en 3D`);
+  } catch (err) { console.error(err); toast('No se pudo cargar la vista 3D. Revisa tu conexión.'); }
+  finally { b.removeAttribute('aria-busy'); b.textContent = txt; }
+}
+const CLICS_SUELTOS = [['ver3d', verEn3D], ['figmove', moverFigura], ['tab', cambiarPestana], ['sec', plegarSeccion], ['figopen', abrirFigura], ['draft', resolverBorrador], ['step', cambiarPaso], ['qty', cambiarCantidad], ['look', aplicarEstilo]];
 
 // ---------- botones de un grupo (data-sc + data-g) ----------
 // opción de varias a la vez; algunas se excluyen entre sí

@@ -1,0 +1,9 @@
+Piezas 3D de la minifigura (vendor/ldraw/*.bin)
+
+Salen de la biblioteca de piezas LDraw (https://www.ldraw.org), hecha por la comunidad LDraw.
+Licencia: Creative Commons Attribution 4.0 (CC BY 4.0) — https://creativecommons.org/licenses/by/4.0/
+(algunas piezas viejas también bajo CC BY 2.0). Se convirtieron a un formato binario chiquito con
+herramientas/piezas-ldraw.mjs, sin cambiar su forma.
+
+LDraw™ es una marca de la LDraw Organization. LEGO® es una marca de The LEGO Group, que no patrocina,
+autoriza ni respalda este sitio ni la biblioteca LDraw.

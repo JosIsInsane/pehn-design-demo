@@ -24,8 +24,8 @@
 #custom.pg .c-preview{flex:none;height:clamp(180px,30dvh,300px);transition:height .35s var(--ease)}
 #custom.pg .sheet.mini .c-preview,#custom.pg .sheet.kb .c-preview{height:84px;cursor:zoom-in}
 #custom.pg .sheet.mini .zoom-ctl,#custom.pg .sheet.mini .ref,#custom.pg .sheet.mini .zoom-tip,#custom.pg .sheet.kb .zoom-ctl,#custom.pg .sheet.kb .ref,#custom.pg .sheet.kb .zoom-tip{display:none}
-#custom.pg .sheet.mini .zoom-layer,#custom.pg .sheet.kb .zoom-layer{padding:6px}
-#custom.pg .zoom-layer{padding:3% 6% 14%}
+#custom.pg .sheet.mini .zoom-layer,#custom.pg .sheet.kb .zoom-layer{padding:6px;--ph:6px;--ph-x:6px;--ph-t:6px;--ph-b:6px}
+#custom.pg .zoom-layer{padding:3% 6% 14%;--ph-t:3%;--ph-x:6%;--ph-b:14%}
 #custom.pg .zoom-ctl{right:12px;bottom:10px}
 #custom.pg .zoom-ctl button{width:44px;height:44px}
 #custom.pg .zoom-ctl output{display:none}
@@ -80,6 +80,10 @@
 .sec-b[hidden]{display:none}
 /* lista de figuras del cuadro */
 .figlist{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:12px}
+.figlist li{display:flex;align-items:stretch;gap:8px}
+.figlist .figrow{flex:1;min-width:0}
+.fmove.v{flex-direction:column;justify-content:center}
+.fmove.v button{width:44px;min-height:38px;padding:0;font-size:16px}
 .figrow{display:flex;align-items:center;gap:14px;width:100%;min-height:80px;padding:12px 14px;border-radius:18px;border:1px solid var(--line-2);background:var(--surface);text-align:left;transition:border-color .2s,transform .25s var(--spring)}
 .figrow:active{transform:scale(.98);border-color:var(--ink)}
 .figrow .av{flex:none;width:60px;height:56px;border-radius:14px;background:var(--brand-soft);display:grid;place-items:center;overflow:hidden}

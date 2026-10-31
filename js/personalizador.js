@@ -1,7 +1,7 @@
 /* Pehn Design — PERSONALIZADOR · APERTURA: arma el diseño abierto (estado.js) y abre el modal o la página del teléfono.
    Es la puerta de entrada del personalizador: personalizador-carga.js lo descarga solo cuando se abre un producto
    y llama a iniciarPersonalizador() una vez. */
-import { CARDS, productoDe, catName, normCfg } from '../datos.js';
+import { CARDS, productoDe, catName, normCfg, figDefault } from '../datos.js';
 import { $, clone } from './utiles.js';
 import { abrirDiseno, setBorrador } from './estado.js';
 import { defaults, cardCfg } from './producto.js';
@@ -12,6 +12,7 @@ import { MOV, cargarBorrador, buildForm, vvAjusta, iniciarPaginaMovil } from './
 import { update, olvidarPrecio } from './personalizador-vista.js';
 import { iniciarEventos } from './personalizador-eventos.js';
 import { iniciarCierre } from './personalizador-cierre.js';
+import { iniciarPantallaCompleta } from './pantalla-completa.js';
 
 // qué hay abierto: { p, cfg, qty, editIdx, fig (figura activa), step, photo, photoPos, showPhoto, mov (¿teléfono?), sub (¿pantalla de figura?), stack, open, start, draft, done }
 function nuevoDiseno(p, cfg, qty, editIdx, photo, photoPos) {
@@ -49,10 +50,15 @@ export function openCustom(id, cfg, qty = 1, editIdx = null, photo = null, photo
   $('#cForm').scrollTop = 0;
   if (cur.mov) { vvAjusta(); setTimeout(() => $('#cScreen').focus({ preventScroll: true }), 80); }
 }
-// abre una tarjeta del catálogo (con su foto real, si existe)
-export function openCard(ci) {
+// abre una tarjeta del catálogo (con su foto real, si existe). figuras: cuántas figuras traer de entrada (?figuras=3)
+export function openCard(ci, { figuras } = {}) {
   const card = CARDS[ci]; if (!card) return;
-  openCustom(card.id, cardCfg(card), 1, null, card.photo && fotoDisponible(card.photo) ? card.photo : null, card.photoPos);
+  const cfg = cardCfg(card), g = productoDe(card.id).groups.find(x => x.type === 'figs');
+  if (g && figuras) {
+    const n = Math.max(g.min, Math.min(g.max, Math.round(figuras)));
+    cfg[g.id] = Array.from({ length: n }, (_, i) => cfg[g.id][i] || figDefault(i));
+  }
+  openCustom(card.id, cfg, 1, null, card.photo && fotoDisponible(card.photo) ? card.photo : null, card.photoPos);
 }
 
 // pone a escuchar zoom, teléfono, formulario y cierre (una sola vez, al descargar el personalizador)
@@ -61,4 +67,5 @@ export function iniciarPersonalizador() {
   iniciarPaginaMovil();
   iniciarEventos();
   iniciarCierre();
+  iniciarPantallaCompleta();
 }

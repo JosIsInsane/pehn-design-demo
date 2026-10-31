@@ -7,6 +7,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { cargar } from './simulador.js';
+import { onRequestPost, onRequestGet } from '../functions/api.js';
 
 // Playwright se busca igual que con require: sirve el instalado en el proyecto o el global
 const { chromium } = createRequire(import.meta.url)('playwright');
@@ -15,9 +16,23 @@ const RAIZ = path.join(import.meta.dirname, '..');
 const TIPOS = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg' };
 // mismas cabeceras de seguridad que Cloudflare (archivo _headers): si la política bloquea algo, la prueba lo ve
 const CABECERAS = Object.fromEntries(fs.readFileSync(path.join(RAIZ, '_headers'), 'utf8').split('\n').filter(l => /^\s+\S+:/.test(l)).map(l => { const i = l.indexOf(':'); return [l.slice(0, i).trim(), l.slice(i + 1).trim()]; }));
+// /api: el portero de Cloudflare de verdad (functions/api.js); Google simulado más abajo (fetch → simulador)
+const ENV = { SITE_TOKEN: '' };
+async function portero(req, res) {
+  const trozos = []; for await (const t of req) trozos.push(t);
+  const body = Buffer.concat(trozos);
+  const request = new Request('http://localhost' + req.url, { method: req.method, headers: { ...req.headers, 'cf-connecting-ip': '127.0.0.1' }, body: req.method === 'POST' ? body : undefined });
+  const r = await (req.method === 'POST' ? onRequestPost : onRequestGet)({ request, env: ENV });
+  res.writeHead(r.status, Object.fromEntries(r.headers)); res.end(Buffer.from(await r.arrayBuffer()));
+}
 const server = http.createServer((req, res) => {
+  if (new URL(req.url, 'http://x').pathname === '/api') return void portero(req, res).catch(e => { res.writeHead(500); res.end(String(e)); });
   const f = path.join(RAIZ, decodeURIComponent(new URL(req.url, 'http://x').pathname));
-  if (!f.startsWith(RAIZ) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
+  if (!f.startsWith(RAIZ) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) {
+    // como Cloudflare Pages: una página que no existe muestra 404.html (los archivos que faltan, vacío)
+    if (/(\.html|\/[^.]*)$/.test(req.url.split('?')[0])) { res.writeHead(404, { ...CABECERAS, 'Content-Type': 'text/html' }); return fs.createReadStream(path.join(RAIZ, '404.html')).pipe(res); }
+    res.writeHead(404); return res.end();
+  }
   res.writeHead(200, { ...CABECERAS, 'Content-Type': TIPOS[path.extname(f)] || 'application/octet-stream' }); fs.createReadStream(f).pipe(res);
 });
 
@@ -32,7 +47,7 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
   await new Promise(r => server.listen(0, r));
   const base = `http://localhost:${server.address().port}/`;
   const sim = cargar({ silencio: true });
-  const token = sim.config('Token del sitio');
+  const token = sim.config('Token del sitio'); ENV.SITE_TOKEN = token;
   sim.run(`setConfig_('Datos bancarios', 'BAC · Ahorro · 7421 0098 31')`);
   const b = await chromium.launch();
   const ctx = await b.newContext({ viewport: { width: 1280, height: 900 } });
@@ -43,20 +58,18 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
   const turnstile = []; page.on('request', r => { if (/challenges\.cloudflare\.com/.test(r.url())) turnstile.push(r.url()); });
   page.on('console', m => { if (m.type() === 'error' && /Content Security Policy|Refused/.test(m.text())) errores.push('CSP: ' + m.text()); });
   page.on('dialog', d => { errores.push('dialog: ' + d.message()); d.dismiss(); });
-  // Google Sheets simulado: el sitio manda su token real; aquí se cambia por el del simulador
-  await page.route(/script\.google\.com/, async route => {
-    if (route.request().method() === 'GET') {
-      const q = Object.fromEntries(new URL(route.request().url()).searchParams);
-      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(sim.get(q)) });
-    }
-    const body = JSON.parse(route.request().postData() || '{}');
+  // Google Sheets simulado: lo que el portero manda a Apps Script lo contesta el simulador (el token lo pone el portero)
+  const fetchReal = globalThis.fetch;
+  globalThis.fetch = async (url, o = {}) => {
+    if (!String(url).startsWith('https://script.google.com/')) return fetchReal(url, o);
+    if (!o.method || o.method === 'GET') return new Response(JSON.stringify(sim.get(Object.fromEntries(new URL(url).searchParams))));
+    const body = JSON.parse(await new Response(o.body).text());
     // texto que "lee" el OCR simulado; global.falso = la siguiente verificación recibe una foto que no es comprobante
     const recibo = (monto, ref) => `BAC Credomatic\nTransferencia exitosa\n${new Date().toLocaleDateString('es-HN')}\nCuenta destino ****9831\nMonto L ${monto}.00\nReferencia: ${ref}`;
     if (body.accion === 'verificar') sim.ctx.__ocr = global.falso ? 'Selfie en la playa con mis amigos del colegio' : recibo(Math.round(body.total * 0.5), 'RF8812');
     if (body.accion === 'comprobante') sim.ctx.__ocr = recibo(global.saldo, 'RF8813');
-    const out = sim.post({ ...body, token });
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(out) });
-  });
+    return new Response(JSON.stringify(sim.post(body)));
+  };
   await page.route(/fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, body: '' }));
 
   // 1. catálogo y aviso de privacidad
@@ -304,11 +317,11 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
     await t.route(/\/datos\.js$/, async r => { const res = await r.fetch(); await r.fulfill({ response: res, body: (await res.text()).replace("turnstileSiteKey: ''", "turnstileSiteKey: 'LLAVE-PRUEBA'") }); });
     await t.route(/challenges\.cloudflare\.com/, r => r.fulfill({ status: 200, contentType: 'text/javascript', body: 'window.turnstile={render:function(el,o){window.__tsOpts=o;return 7},reset:function(w){window.__tsReset=w}};' }));
     let enviado = null;
-    await t.route(/script\.google\.com/, async r => {
+    await t.route(/\/api(\?|$)/, async r => {
       if (r.request().method() === 'GET') return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(sim.get(Object.fromEntries(new URL(r.request().url()).searchParams))) });
       const cuerpo = JSON.parse(r.request().postData() || '{}');
       if (cuerpo.accion === 'verificar') return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, verificacion: { ok: true, monto: 100, ficha: 'f-prueba', motivo: '' } }) });
-      enviado = cuerpo;
+      enviado = { ...cuerpo, cabeceraTs: r.request().headers()['x-turnstile'] };
       await r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: false, error: 'Verificación fallida. Recarga la página e intenta de nuevo.' }) });
     });
     await t.goto(base + 'catalogo.html');
@@ -325,10 +338,93 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
     ok(enviado === null && /verificando/.test(await t.textContent('#coErr')), 'Turnstile: sin token no se envía el pedido');
     await t.evaluate(() => window.__tsOpts.callback('tok-123'));
     await t.click('#sendOrder'); await t.waitForTimeout(1500);
-    ok(enviado && enviado.turnstile === 'tok-123', 'Turnstile: el token viaja con el pedido');
+    ok(enviado && enviado.turnstile === 'tok-123' && enviado.cabeceraTs === 'tok-123' && !enviado.token, 'Turnstile: el token viaja con el pedido (en la cabecera para el portero) y el navegador ya no manda el token del sitio');
     ok(await t.evaluate(() => window.__tsReset === 7), 'Turnstile: tras un error se pide otro token');
     ok(!tErr.length, 'Turnstile: sin errores de JavaScript ni CSP' + (tErr.length ? ': ' + tErr.join(' | ') : ''));
     await tctx.close();
+  }
+
+  // 10. regalos: ocasiones, kits con ?figuras=, ordenar figuras y extras del carrito
+  {
+    const r = await ctx.newPage();
+    r.on('pageerror', e => errores.push('regalos: ' + e.message));
+    await r.route(/fonts\.(googleapis|gstatic)\.com|script\.google\.com/, x => x.fulfill({ status: 200, body: '{}' }));
+    await r.addInitScript(() => { localStorage.setItem('pehn_aviso', '1'); localStorage.removeItem('pehn_cart'); });
+    await r.goto(base + 'index.html'); await r.waitForTimeout(400);
+    ok(await r.locator('#ocasionesInicio .oc-tile').count() === 5, 'Inicio: 5 ocasiones con su cuadro');
+    await r.goto(base + 'catalogo.html?ocasion=graduacion'); await r.waitForTimeout(500);
+    ok(await r.getAttribute('[data-oc="graduacion"]', 'aria-pressed') === 'true' && /Graduación/.test(await r.textContent('#chipTxt')), 'Catálogo: ?ocasion= marca la ocasión y el filtro activo');
+    const titulos = await r.locator('#grid .card h3').allTextContents();
+    ok(titulos.some(t => /Kit Graduación/.test(t)) && !titulos.some(t => /Pijama/.test(t)), 'Catálogo: la ocasión filtra (kit sí, pijamas no): ' + titulos.join(', '));
+    await r.click('[data-oc="graduacion"]'); await r.waitForTimeout(400);
+    ok(!new URL(r.url()).searchParams.has('ocasion'), 'Catálogo: otro toque quita la ocasión');
+    const kit = await r.evaluate(() => [...document.querySelectorAll('.card[data-card]')].find(c => /Kit Graduación/.test(c.textContent))?.dataset.card);
+    await r.goto(base + `catalogo.html?card=${kit}&figuras=3`); await r.waitForSelector('#custom.open'); await r.waitForTimeout(600);
+    ok(await r.locator('.ftabs [data-tab]').count() === 3, 'Kit con ?figuras=3 abre con 3 figuras');
+    const antes = await r.locator('.ftabs [data-tab] .nm').allTextContents();
+    await r.click('[data-figmove="0:1"]'); await r.waitForTimeout(300);
+    const despues = await r.locator('.ftabs [data-tab] .nm').allTextContents();
+    ok(antes[0] === 'Fer' && despues[1] === 'Fer' && despues[0] !== 'Fer', `Ordenar figuras (Fer pasa a la derecha): ${antes.join('|')} -> ${despues.join('|')}`);
+    await r.click('#zFull'); await r.waitForTimeout(500);
+    ok(await r.isVisible('#cFull #fullStage > svg'), 'Pantalla completa: el diseño ocupa la pantalla');
+    await r.keyboard.press('Escape'); await r.waitForTimeout(1500);
+    ok(!(await r.evaluate(() => document.querySelector('#cFull').classList.contains('open'))) && await r.isVisible('#custom.open'), 'Pantalla completa: Escape la cierra y deja el personalizador abierto');
+    // "Ver en 3D": Three.js se descarga solo al pedirlo y el visor abre (o avisa si el navegador no tiene WebGL)
+    const scripts3d = [];
+    r.on('request', q => { if (/three-[\d.]+\.module/.test(q.url())) scripts3d.push(q.url()); });
+    ok(!scripts3d.length, '3D: Three.js no se descarga antes de pedirlo');
+    await r.click('[data-ver3d]'); await r.waitForTimeout(2500);
+    const abrio = await r.evaluate(() => document.querySelector('#c3d').classList.contains('open') && !!document.querySelector('#stage3d canvas'));
+    ok(scripts3d.length === 1 && (abrio || await r.isVisible('.toast')), '3D: al pedirlo se descarga Three.js y se abre el visor');
+    if (abrio) { await r.keyboard.press('Escape'); await r.waitForTimeout(800); }
+    ok(!(await r.evaluate(() => document.querySelector('#c3d').classList.contains('open'))) && await r.isVisible('#custom.open'), '3D: Escape cierra el visor y deja el personalizador');
+    // la foto del pedido real queda dentro del área de la vista previa (en iPhone se salía)
+    await r.goto(base + 'catalogo.html?card=1'); await r.waitForSelector('#custom.open'); await r.waitForTimeout(600);
+    if (!(await r.$('.stage-photo'))) { await r.click('#refBtn'); await r.waitForTimeout(500); }
+    const dentro = await r.evaluate(() => { const a = document.querySelector('.stage-photo').getBoundingClientRect(), z = document.querySelector('#cStage').getBoundingClientRect(); return a.top >= z.top && a.bottom <= z.bottom && a.left >= z.left && a.right <= z.right && a.height > z.height * .6; });
+    ok(dentro, 'Foto del pedido real: centrada y dentro de la vista previa');
+    await r.goto(base + `catalogo.html?card=${kit}&figuras=3`); await r.waitForSelector('#custom.open'); await r.waitForTimeout(600);
+    await r.click('[data-step="1"]'); await r.waitForTimeout(400);
+    await r.click('[data-g="fondo"][data-v="foto"]'); await r.waitForTimeout(300);
+    await r.setInputFiles('input[data-g="bgImg"]', path.join(import.meta.dirname, '..', 'fotos', 'cuadro-amor.jpg')); await r.waitForTimeout(1200);
+    ok(await r.evaluate(() => !!document.querySelector('#cPreview svg image')), 'Fondo: "Tu foto" pide la imagen y se ve en el cuadro');
+    await r.close();
+    const c = await ctx.newPage();
+    await c.route(/fonts\.(googleapis|gstatic)\.com|script\.google\.com/, x => x.fulfill({ status: 200, body: '{}' }));
+    await c.addInitScript(() => { localStorage.setItem('pehn_aviso', '1'); localStorage.setItem('pehn_cart', JSON.stringify([{ id: 't-taza-peltre', cfg: {}, qty: 1 }])); });
+    await c.goto(base + 'catalogo.html'); await c.waitForTimeout(400);
+    await c.click('#cartBtn'); await c.waitForTimeout(500);
+    ok(await c.locator('.extras [data-extra]').count() === 3 && await c.isVisible('.plazo'), 'Carrito: sugiere 3 extras y muestra el plazo');
+    await c.click('[data-extra="x-caja"]'); await c.waitForTimeout(400);
+    const ids = await c.evaluate(() => JSON.parse(localStorage.getItem('pehn_cart')).map(i => i.id));
+    ok(ids.includes('x-caja') && !(await c.locator('[data-extra="x-caja"]').count()), 'Carrito: el extra entra al pedido y deja de sugerirse');
+    await c.close();
+  }
+
+  // 11. página 404, vista previa al compartir y GPC
+  {
+    const n = await ctx.newPage(); const errN = [];
+    n.on('pageerror', e => errN.push(e.message)); n.on('console', m => m.type() === 'error' && /Content Security Policy|Refused/.test(m.text()) && errN.push(m.text()));
+    await n.route(/fonts\.(googleapis|gstatic)\.com|script\.google\.com/, x => x.fulfill({ status: 200, body: '{}' }));
+    const resp = await n.goto(base + 'una/ruta/que/no/existe'); await n.waitForTimeout(500);
+    const enlace = await n.evaluate(() => document.querySelector('footer a[href="pedido.html"]')?.href || '');
+    ok(resp.status() === 404 && /no está en la caja/.test(await n.textContent('h1')) && enlace === base + 'pedido.html' && !errN.length,
+      '404: página propia, con menú y pie que apuntan a la raíz aunque la ruta sea profunda' + (errN.length ? ': ' + errN.join(' | ') : ''));
+    const sinOg = [];
+    for (const pg of ['index.html', 'catalogo.html', 'pedido.html', 'privacidad.html']) {
+      const h = fs.readFileSync(path.join(RAIZ, pg), 'utf8');
+      if (!/property="og:image" content="https:\/\/[^"]+\/compartir\.jpg"/.test(h) || !/property="og:title"/.test(h)) sinOg.push(pg);
+    }
+    ok(!sinOg.length && fs.existsSync(path.join(RAIZ, 'compartir.jpg')), 'Todas las páginas tienen vista previa para WhatsApp/Facebook' + (sinOg.length ? ': falta en ' + sinOg.join(', ') : ''));
+    await n.close();
+    const g = await ctx.newPage();
+    await g.route(/fonts\.(googleapis|gstatic)\.com|script\.google\.com/, x => x.fulfill({ status: 200, body: '{}' }));
+    await g.addInitScript(() => { localStorage.clear(); Object.defineProperty(Navigator.prototype, 'globalPrivacyControl', { get: () => true }); });
+    await g.goto(base + 'index.html'); await g.waitForTimeout(500);
+    const gpc = await g.evaluate(() => localStorage.getItem('pehn_aviso'));
+    ok(!(await g.isVisible('#aviso')) && /minimo/.test(gpc || '') && await g.locator('#aviso .aviso-gpc').count() === 1, 'GPC: con la señal del navegador queda "Solo el carrito" sin preguntar');
+    ok(JSON.parse(fs.readFileSync(path.join(RAIZ, '.well-known', 'gpc.json'), 'utf8')).gpc === true, 'GPC: el sitio lo declara en /.well-known/gpc.json');
+    await g.close();
   }
 
   ok(!turnstile.length, 'Sin turnstileSiteKey no se carga nada de Cloudflare Turnstile');

@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /pedido.html
+
+Sitemap: https://pehn-design-demo.pages.dev/sitemap.xml

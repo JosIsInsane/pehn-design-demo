@@ -50,7 +50,7 @@ const CONFIG_DEFAULTS = [
   ['Correo del negocio', '', 'Recibe UN solo correo al día con el resumen (pedidos, cobros, entregas y stock). Los pedidos no avisan uno por uno: míralos en el CRM.'],
   ['Admins', '', 'Correos que pueden abrir el CRM sin la clave, separados por coma.'],
   ['WhatsApp del negocio', '', 'Con código de país, ej. 50498765432.'],
-  ['Token del sitio', '', 'Se genera solo. Cópialo en CONFIG.sheetsToken de datos.js.'],
+  ['Token del sitio', '', 'Se genera solo. Va SOLO en Cloudflare (variable secreta SITE_TOKEN). Para cambiarlo: Pehn › Cambiar token del sitio.'],
   ['Clave del CRM', '', 'Se genera sola. Va en el enlace del CRM (?k=…). Cámbiala si el enlace se comparte de más.'],
   ['Estado que descuenta stock', 'En producción', 'Al llegar a este estado se descuentan las piezas.'],
   ['Confirmar al cliente por correo', 'Sí', 'Sí / No. Un solo correo al cliente por pedido, al confirmarlo.'],

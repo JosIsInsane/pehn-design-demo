@@ -95,3 +95,17 @@
 @media (prefers-reduced-motion:reduce){
   .done-card img,.drop.revisando .drop-ico{animation:none!important}
 }
+
+/* "Agrega al regalo" y aviso de plazo (extras-carrito.js) */
+.extras{margin-top:18px;padding:16px;border-radius:var(--r);background:var(--bg-2)}
+.extras h3{margin:0 0 10px;font-family:var(--sans);font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.extras ul{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.extras li{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:8px 8px 8px 10px;border-radius:12px;background:var(--surface)}
+.ex-sw{width:34px;height:34px;border-radius:10px;box-shadow:inset 0 0 0 1px rgba(30,22,17,.08)}
+.ex-t{display:grid;min-width:0}
+.ex-t b{font-size:14.5px;font-weight:600}
+.ex-t small{font-size:12.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ex-add{min-height:40px;padding:0 14px;border-radius:999px;border:1px solid var(--line-2);background:var(--surface);font-size:13.5px;font-weight:600;white-space:nowrap;transition:background-color .2s,color .2s,border-color .2s}
+.ex-add:hover,.ex-add:focus-visible{background:var(--ink);border-color:var(--ink);color:#fff;outline:none}
+.plazo{display:flex;align-items:flex-start;gap:8px;margin:6px 0 2px;font-size:13px;color:var(--ink-2)}
+.plazo svg{flex:none;width:16px;height:16px;margin-top:1px;color:var(--brand-ink,var(--ink))}

@@ -14,6 +14,7 @@ import { HOLA, waURL, waCartText } from './whatsapp.js';
 import { renderCheckout, renderAnticipo, validarDatos, leerDatos, elegirComprobante, cambiarPagador, enviarPedido } from './checkout.js';
 import { openModal, closeModal, toast } from './modales.js';
 import { conPersonalizador } from './personalizador-carga.js';
+import { extrasHTML, agregarExtra, plazoHTML } from './extras-carrito.js';
 
 const SIN_PEDIDOS = '<div class="empty locked-box"><div class="lock-ico"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 1a5 5 0 0 0-5 5v3H5v14h14V9h-2V6a5 5 0 0 0-5-5Zm-3 5a3 3 0 0 1 6 0v3H9V6Z"/></svg></div><p><b>El carrito abre muy pronto.</b><br>Mientras tanto, personaliza tu diseño y mándalo por WhatsApp con un clic: te llega con todos los detalles y el precio.</p></div>';
 
@@ -31,16 +32,17 @@ function drawerVacio() {
 const itemHTML = (r, idx) => `<div class="item" style="--i:${idx}">
     <div class="th" style="background:${r.p.render === 'frame' ? '#E9E1D6' : r.p.bg}">${renderProduct(r.p, r.i.cfg)}</div>
     <div><h4>${r.p.name}</h4><ul>${summary(r.p, r.i.cfg).slice(0, 5).map(([k, v]) => `<li>${esc(k)}: <b>${esc(String(v).slice(0, 60))}</b></li>`).join('')}</ul>
-      <button class="rm" data-edit="${idx}">Editar</button> · <button class="rm" data-del="${idx}">Quitar</button></div>
+      ${r.p.extra ? '' : `<button class="rm" data-edit="${idx}">Editar</button> · `}<button class="rm" data-del="${idx}">Quitar</button></div>
     <div class="side"><div><b>${fmt(r.total)}</b><small>${r.i.qty} × ${fmt(r.unit)}</small>${r.disc ? `<small style="color:var(--green)">−${CONFIG.bulkPct}%</small>` : ''}</div></div>
   </div>`;
 function drawerLista({ rows, gross, disc, total }) {
   $('#dTitle').textContent = 'Tu pedido';
-  $('#dBody').innerHTML = rows.map(itemHTML).join('');
+  $('#dBody').innerHTML = rows.map(itemHTML).join('') + extrasHTML();
   $('#dFoot').innerHTML = `<div class="tot"><span>Subtotal</span><span>${fmt(gross)}</span></div>
     ${disc ? `<div class="tot"><span>Descuento por volumen</span><span class="disc">−${fmt(disc)}</span></div>` : ''}
     <div class="tot"><span>Envío</span><span>Se cotiza al confirmar</span></div>
     <div class="tot big"><span>Total</span><span>${fmt(total)}</span></div>
+    ${plazoHTML()}
     <button class="btn btn-dark" id="goCheckout">Poner mis datos de envío →</button>
     <a class="btn btn-ghost wa-cart" href="${waURL(waCartText())}" target="_blank" rel="noopener">o pídelo por WhatsApp</a>
     <p class="note">Para empezar se paga un anticipo. Antes de producir te mandamos tu diseño para aprobar.</p>`;
@@ -92,6 +94,7 @@ export function iniciarCajon() {
     const t = e.target;
     if (t.dataset.del !== undefined) quitarItem(t);
     else if (t.dataset.edit !== undefined) editarRenglon(+t.dataset.edit);
+    else if (t.dataset.extra) { const p = agregarExtra(t.dataset.extra); if (p) { renderDrawer(); toast(`${p.name} agregado`); } }
     else ACCIONES_CAJON[t.id]?.(t);
   });
   $('#drawer')?.addEventListener('keydown', e => {

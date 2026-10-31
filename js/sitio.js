@@ -46,7 +46,10 @@ function aplicarSitio(v) {
 
 export function iniciarSitio() {
   aplicarSitio(leer(KEY_SITIO, null)); // lo guardado: la página sale con el contenido nuevo sin esperar
-  if (CONFIG.sheetsUrl) {
-    fetch(CONFIG.sheetsUrl + '?api=sitio').then(r => r.json()).then(r => { if (r && r.ok && r.sitio) { aplicarSitio(r.sitio); guardar(KEY_SITIO, r.sitio); if (r.pago) guardar(KEY_PAGO, r.pago); } }).catch(() => { /* sin conexión: queda el HTML */ });
+  if (CONFIG.api) {
+    fetch(CONFIG.api + '?api=sitio').then(r => r.json()).then(r => { if (r && r.ok && r.sitio) { aplicarSitio(r.sitio); guardar(KEY_SITIO, r.sitio); if (r.pago) guardar(KEY_PAGO, r.pago); } }).catch(() => { /* sin conexión: queda el HTML */ });
   }
 }
+
+// un texto editable para piezas que se pintan después (carrito, personalizador): lo guardado del CRM o el de siempre
+export const textoSitio = (clave, deSiempre) => String(leer(KEY_SITIO, {})[clave] || deSiempre);
