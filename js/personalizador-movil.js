@@ -75,7 +75,7 @@ function figListHTML(g) {
 // pantalla de una figura: estilos rápidos y sus secciones
 function figSubHTML() {
   const cur = disenoActual(), g = cur.p.groups.find(x => x.type === 'figs'), v = cur.cfg.figs, f = v[cur.fig];
-  return `<div class="looks-wrap"><p class="looks-t">Estilos rápidos</p><div class="looks">${LOOKS.map((l, j) => `<button type="button" data-look="${j}">${l.label}</button>`).join('')}</div></div>
+  return `<button type="button" class="btn-3d m" data-ver3d="${cur.fig}">Ver en 3D</button><div class="looks-wrap"><p class="looks-t">Estilos rápidos</p><div class="looks">${LOOKS.map((l, j) => `<button type="button" data-look="${j}">${l.label}</button>`).join('')}</div></div>
     ${secHTML(FIG_GROUPS, f, 'f')}
     ${v.length > g.min ? `<button type="button" class="rm del-fig" data-sc="p" data-g="${g.id}" data-d="-1">Quitar ${esc(figName(cur.fig) || 'esta figura')}</button>` : ''}`;
 }

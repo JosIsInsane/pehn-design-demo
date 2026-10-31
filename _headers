@@ -16,3 +16,6 @@
   Cache-Control: public, max-age=0, must-revalidate
 /css/*
   Cache-Control: public, max-age=0, must-revalidate
+# Librerías de terceros: el nombre lleva la versión, así que nunca cambian (caché de un año)
+/vendor/*
+  Cache-Control: public, max-age=31536000, immutable

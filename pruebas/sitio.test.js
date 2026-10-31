@@ -356,6 +356,15 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
     ok(await r.isVisible('#cFull #fullStage > svg'), 'Pantalla completa: el diseño ocupa la pantalla');
     await r.keyboard.press('Escape'); await r.waitForTimeout(1500);
     ok(!(await r.evaluate(() => document.querySelector('#cFull').classList.contains('open'))) && await r.isVisible('#custom.open'), 'Pantalla completa: Escape la cierra y deja el personalizador abierto');
+    // "Ver en 3D": Three.js se descarga solo al pedirlo y el visor abre (o avisa si el navegador no tiene WebGL)
+    const scripts3d = [];
+    r.on('request', q => { if (/three-[\d.]+\.module/.test(q.url())) scripts3d.push(q.url()); });
+    ok(!scripts3d.length, '3D: Three.js no se descarga antes de pedirlo');
+    await r.click('[data-ver3d]'); await r.waitForTimeout(2500);
+    const abrio = await r.evaluate(() => document.querySelector('#c3d').classList.contains('open') && !!document.querySelector('#stage3d canvas'));
+    ok(scripts3d.length === 1 && (abrio || await r.isVisible('.toast')), '3D: al pedirlo se descarga Three.js y se abre el visor');
+    if (abrio) { await r.keyboard.press('Escape'); await r.waitForTimeout(800); }
+    ok(!(await r.evaluate(() => document.querySelector('#c3d').classList.contains('open'))) && await r.isVisible('#custom.open'), '3D: Escape cierra el visor y deja el personalizador');
     // la foto del pedido real queda dentro del área de la vista previa (en iPhone se salía)
     await r.goto(base + 'catalogo.html?card=1'); await r.waitForSelector('#custom.open'); await r.waitForTimeout(600);
     if (!(await r.$('.stage-photo'))) { await r.click('#refBtn'); await r.waitForTimeout(500); }

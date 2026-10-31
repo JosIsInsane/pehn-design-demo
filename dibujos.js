@@ -563,3 +563,14 @@ export const renderProduct = (p, cfg) => RENDER[p.render](cfg, p);
 export function headSVG(f) {
   return `<svg viewBox="40 0 120 100" aria-hidden="true">${minifig(f, { half: true })}</svg>`;
 }
+
+// ---------- texturas para la figura en 3D (js/figura-3d.js): solo la cara y el estampado del torso, sin sombras ----------
+export function caraSVG(f0) {
+  const f = normFig({ ...f0, extras: [...(f0.extras || [])] });
+  return `<svg viewBox="66 30 68 48" xmlns="http://www.w3.org/2000/svg">${faceSVG(f)}</svg>`;
+}
+export function estampadoSVG(f0) {
+  const f = normFig({ ...f0, extras: [...(f0.extras || [])] }), k = 'e' + (++UID), t = f.torso || '#1F2A44';
+  const cuello = f.outfit === 'traje' || f.outfit === 'blusa' ? '' : `<path d="M86 90Q100 104 114 90" fill="none" stroke="${shade(t, -0.32)}" stroke-width="2"/>`;
+  return `<svg viewBox="52 90 96 96" xmlns="http://www.w3.org/2000/svg"><rect x="52" y="90" width="96" height="96" fill="${t}"/>${cuello}${outfitSVG(f, k)}</svg>`;
+}

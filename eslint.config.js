@@ -55,7 +55,7 @@ const bloquesGs = archivosGs.map(f => ({
 }));
 
 export default [
-  { ignores: ['node_modules/', 'docs/'] },
+  { ignores: ['node_modules/', 'docs/', 'vendor/'] }, // vendor/: librerías de terceros ya minificadas (Three.js)
 
   // ---------- el sitio en el navegador: módulos de js/ y los de datos, dibujos y marco ----------
   {

@@ -19,7 +19,7 @@ export function iniciarCierre() {
     if (e.target.closest('[data-leave]')) { $('#leave').hidden = true; closeModal('#custom'); }
   });
   document.addEventListener('keydown', e => {
-    if (e.key !== 'Escape' || !$('#custom') || $('#cFull')?.classList.contains('open')) return; // pantalla completa se cierra sola
+    if (e.key !== 'Escape' || !$('#custom') || $('#cFull')?.classList.contains('open') || $('#c3d')?.classList.contains('open')) return; // pantalla completa se cierra sola
     if ($('#leave') && !$('#leave').hidden) { $('#leave').hidden = true; return; }
     if ($('#custom').classList.contains('open')) disenoActual()?.mov ? atras() : tryCloseCustom();
   });
