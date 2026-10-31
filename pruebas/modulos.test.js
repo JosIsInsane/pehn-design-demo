@@ -12,7 +12,7 @@ const LAZY = f => /^js\/(personalizador(?!-carga)[\w-]*|zoom)\.js$/.test(f);
 
 const lista = dir => fs.readdirSync(path.join(RAIZ, dir), { withFileTypes: true })
   .flatMap(e => e.isDirectory() ? lista(path.join(dir, e.name)) : [path.posix.join(...path.join(dir, e.name).split(path.sep))]);
-const archivos = [...lista('js'), 'datos.js', 'regalo.js', 'piezas.js', 'datos-tienda.js', 'dibujos.js', 'marco.js'].filter(f => f.endsWith('.js'));
+const archivos = [...lista('js'), 'datos.js', 'regalo.js', 'accesorios.js', 'piezas.js', 'datos-tienda.js', 'dibujos.js', 'marco.js'].filter(f => f.endsWith('.js'));
 const fuente = f => fs.readFileSync(path.join(RAIZ, f), 'utf8');
 const resolver = (desde, destino) => path.posix.normalize(path.posix.join(path.posix.dirname(desde), destino));
 

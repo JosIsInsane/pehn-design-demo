@@ -97,7 +97,7 @@ export const FIG_GROUPS = [
   { id: 'torso', label: 'Color de ropa', type: 'swatch', options: sw(CLOTH) },
   { id: 'printText', label: 'Texto en playera', type: 'text', max: 6, placeholder: 'Ej. PAPÁ…', showIf: c => c.outfit === 'texto' },
   { id: 'legs', label: 'Color de pantalón', type: 'swatch', options: sw(PANTS), showIf: c => c.outfit !== 'vestido' },
-  // todos los accesorios del CSV (categoría Accesorios) que no son ropa ni sombrero; se dibuja una etiqueta con la inicial
+  // todos los accesorios del CSV (categoría Accesorios) que no son ropa ni sombrero; su dibujo está en accesorios.js (sin dibujo: ficha con la inicial)
   { id: 'hand', label: 'Accesorio en la mano', type: 'choice', options: [{ v: 'ninguno', label: 'Ninguno', price: 0 }].concat([
     ['bebe', 'Bebé', 'ACC-BEBE'], ['camara', 'Cámara', 'ACC-CAMARA'], ['gym', 'Gym', 'ACC-GYM'], ['varita', 'Varita mágica', 'ACC-VARITA-MAGICA'],
     ['flores', 'Flores', 'ACC-FLORES'], ['microfono', 'Micrófono', 'ACC-MICROFONO'], ['taza', 'Taza', 'ACC-TAZA'], ['bufanda', 'Bufanda', 'ACC-BUFANDA'],

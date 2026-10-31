@@ -4,6 +4,7 @@
    SI UN DIBUJO SALE EN BLANCO: en la consola (F12) prueba renderProduct(PRODUCTS[0], defaults(PRODUCTS[0])).
    Un error ahí dice qué opción llega vacía.
    Es un módulo: exporta renderProduct, RENDER y las funciones de dibujo que usan otros archivos. */
+import { ACC } from './accesorios.js';
 import { CONFIG, FIG_GROUPS, FONTS, catName, normFig } from './datos.js';
 import { esc, shade } from './js/utiles.js';
 
@@ -30,12 +31,21 @@ function figDefs(k) {
 
 // pelo como pieza LEGO: casco de plástico grueso que tapa el botón de la cabeza, con volumen y brillo
 const PELOS = {
-  corto: 'M63 64C60 22 78 7 100 7C122 7 140 22 137 64L130 64C130 52 128 45 123 42C110 37 90 37 77 42C72 45 70 52 70 64Z',
-  lado: 'M62 66C58 20 80 5 103 6C126 7 141 24 138 62L131 60C131 50 128 44 122 40C112 44 96 42 84 36C80 44 72 50 70 66Z',
+  corto: 'M61 64C56 18 76 3 100 3C124 3 144 18 139 64L131 64C131 52 129 46 124 43C110 37 90 37 76 43C71 46 69 52 69 64Z',
+  lado: 'M60 66C54 18 78 1 104 2C130 3 146 22 140 62L132 60C132 50 129 44 123 40C112 46 94 44 82 37C78 45 71 52 69 66Z',
   largo: 'M61 60C57 16 80 5 100 5C120 5 143 16 139 60L145 114Q134 121 122 114L125 52Q118 40 100 39Q82 40 75 52L78 114Q66 121 55 114Z',
   ondas: 'M61 60C57 16 80 5 100 5C120 5 143 16 139 60C147 72 137 82 145 94C149 104 139 114 127 108C121 99 127 86 124 74L125 52Q118 40 100 39Q82 40 75 52L76 74C73 86 79 99 73 108C61 114 51 104 55 94C63 82 53 72 61 60Z',
   chongo: 'M63 62C60 26 78 14 100 14C122 14 140 26 137 62L130 60C129 50 126 44 120 41C108 37 92 37 80 41C74 44 71 50 70 60Z',
 };
+// mechones esculpidos: surco oscuro con su borde de luz al lado (como el plástico moldeado)
+const MECHONES = {
+  corto: ['M80 10Q74 24 74 40', 'M95 6Q90 22 90 37', 'M110 6Q112 22 112 37', 'M124 12Q128 26 128 42'],
+  lado: ['M66 34Q90 14 132 18', 'M70 46Q96 26 136 32', 'M86 8Q104 6 126 12'],
+  largo: ['M84 9Q78 24 76 42', 'M116 9Q122 24 124 42', 'M70 64Q68 88 64 110', 'M130 64Q132 88 136 110'],
+  ondas: ['M84 9Q78 24 76 42', 'M116 9Q122 24 124 42', 'M66 66Q72 82 64 100', 'M134 66Q128 82 136 100'],
+  chongo: ['M84 18Q80 28 78 40', 'M116 18Q120 28 122 40'],
+};
+const mechonesSVG = (style, s, luz) => (MECHONES[style] || []).map(d => `<path d="${d}" fill="none" stroke="${s}" stroke-width="2.2" stroke-linecap="round" opacity=".6"/><path d="${d}" fill="none" stroke="${luz}" stroke-width="1.4" stroke-linecap="round" opacity=".45" transform="translate(-2 0)"/>`).join('');
 function hairSVG(style, c, k) {
   const s = shade(c, -0.38), luz = shade(c, 0.35);
   const st = `fill="${c}" stroke="${s}" stroke-width="1.6" stroke-linejoin="round"`;
@@ -43,10 +53,10 @@ function hairSVG(style, c, k) {
   const brillo = `<path d="M80 18Q92 11 106 12" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="3.2" stroke-linecap="round"/>`;
   switch (style) {
     case 'corto': case 'lado': case 'largo': case 'ondas':
-      return pieza(PELOS[style]) + (style === 'lado' ? `<path d="M84 36Q100 26 124 22" fill="none" stroke="${s}" stroke-width="1.6" opacity=".6"/>` : `<path d="M82 40Q100 34 118 40" fill="none" stroke="${luz}" stroke-opacity=".5" stroke-width="1.6"/>`) + brillo;
+      return pieza(PELOS[style]) + mechonesSVG(style, s, luz) + brillo;
     case 'rizos': return `<g ${st}>${[[68, 46], [78, 28], [100, 20], [122, 28], [132, 46], [64, 62], [136, 62], [90, 24], [110, 24]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="13.5"/>`).join('')}</g>
       <g fill="url(#${k}g)">${[[78, 28], [100, 20], [122, 28]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="13.5"/>`).join('')}</g>${brillo}`;
-    case 'chongo': return `<circle cx="100" cy="13" r="12.5" ${st}/><circle cx="100" cy="13" r="12.5" fill="url(#${k}g)"/><path d="M93 8Q98 4 105 6" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="2.4" stroke-linecap="round"/>${pieza(PELOS.chongo)}${brillo}`;
+    case 'chongo': return `<circle cx="100" cy="13" r="12.5" ${st}/><circle cx="100" cy="13" r="12.5" fill="url(#${k}g)"/><path d="M93 8Q98 4 105 6" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="2.4" stroke-linecap="round"/>${pieza(PELOS.chongo)}${mechonesSVG('chongo', s, luz)}${brillo}`;
     default: return '';
   }
 }
@@ -125,12 +135,16 @@ function outfitSVG(f, k) {
 
 // accesorio en la mano: etiqueta redonda con la inicial (son 23 accesorios; no se dibuja cada uno)
 const HAND_COLS = ['#E45A84', '#3E6E8E', '#2F8F5B', '#F08A1C', '#8E6CEF', '#D9363E', '#C9A44C'];
-function handSVG(v) {
+function handSVG(v, k) {
   const g = v && v !== 'ninguno' ? FIG_GROUPS.find(x => x.id === 'hand').options : null, i = g ? g.findIndex(o => o.v === v) : -1;
   if (i < 1) return '';
-  const col = HAND_COLS[i % HAND_COLS.length];
-  return `<g><circle cx="168" cy="148" r="19" fill="${col}" stroke="${shade(col, -0.35)}" stroke-width="2"/><circle cx="168" cy="148" r="19" fill="#fff" opacity=".12"/>
-    <text x="168" y="156" text-anchor="middle" font-family="'Inter'" font-weight="700" font-size="22" fill="#fff">${esc(g[i].label.charAt(0).toUpperCase())}</text></g>`;
+  if (ACC[v]) return `<g transform="translate(149 168) scale(1.35)">${ACC[v]}</g>`; // dibujo propio en la mano (accesorios.js)
+  const col = HAND_COLS[i % HAND_COLS.length], borde = shade(col, -0.35);
+  // sin dibujo: ficha con su inicial sostenida en la mano (asa dentro de la C)
+  return `<g><rect x="146" y="150" width="6" height="26" rx="3" fill="${shade(col, -0.15)}" stroke="${borde}" stroke-width="1.2"/>
+    <circle cx="160" cy="136" r="17" fill="${col}" stroke="${borde}" stroke-width="2"/><circle cx="160" cy="136" r="17" fill="url(#${k}g)"/>
+    <path d="M150 128Q156 122 164 122" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="2.4" stroke-linecap="round"/>
+    <text x="160" y="143" text-anchor="middle" font-family="'Inter'" font-weight="700" font-size="19" fill="#fff">${esc(g[i].label.charAt(0).toUpperCase())}</text></g>`;
 }
 
 // ---------- piezas del cuerpo (forma de minifigura: plástico con volumen, luz arriba a la izquierda) ----------
@@ -197,7 +211,7 @@ function minifig(f0, opts = {}) {
     <path d="M66 90L52 186H60L72 92Z" fill="#fff" opacity=".12"/><path d="M134 90L148 186H140L128 92Z" fill="#000" opacity=".14"/>
     <path d="M70 92H130" stroke="#fff" stroke-opacity=".35" stroke-width="2" stroke-linecap="round"/>
     ${manoSVG(-1, skin, so)}${manoSVG(1, skin, so)}
-    ${handSVG(f.hand)}
+    ${f.hand === 'bufanda' ? `<g stroke="#7A1A24" stroke-width="1.4" stroke-linejoin="round"><path d="M80 86Q100 98 120 86L122 94Q100 108 78 94Z" fill="#B3262E"/><path d="M108 96L112 122L102 124L100 100Z" fill="#B3262E"/><path d="M104 112h7M103 118h7" stroke="#F4EDE4"/></g>` : handSVG(f.hand, k)}
     <rect x="88" y="15" width="24" height="13" rx="2" fill="${skin}" stroke="${so}" ${L}/><rect x="88" y="15" width="24" height="13" rx="2" ${C}/>
     <ellipse cx="100" cy="15.5" rx="12" ry="3" fill="${shade(skin, 0.18)}" stroke="${so}" stroke-width="1.2"/>
     <rect x="70" y="25" width="60" height="61" rx="17" fill="${skin}" stroke="${so}" ${L}/>
