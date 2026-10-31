@@ -10,8 +10,9 @@
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()
   Strict-Transport-Security: max-age=31536000; includeSubDomains
-# Código y estilos del sitio: caché de 1 hora (si cambias un archivo, en una hora todos lo ven).
+# Código y estilos: el navegador pregunta siempre si cambiaron (ETag, responde 304 si no). Con caché larga,
+# el HTML nuevo podía quedar con JS viejo y un botón nuevo no hacía nada.
 /js/*
-  Cache-Control: public, max-age=3600
+  Cache-Control: public, max-age=0, must-revalidate
 /css/*
-  Cache-Control: public, max-age=3600
+  Cache-Control: public, max-age=0, must-revalidate

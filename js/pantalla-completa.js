@@ -20,10 +20,14 @@ export function abrirPantallaCompleta() {
   if (!disenoActual()) return;
   volverA = document.activeElement;
   pintar(); openModal('#cFull');
+  // pantalla completa de verdad (sin barras del navegador) donde se puede: computadora y Android.
+  // En iPhone Safari no lo permite: queda la vista que cubre toda la página.
+  $('#cFull').requestFullscreen?.().catch(() => {});
   setTimeout(() => $('#cFull .full-x').focus({ preventScroll: true }), 60);
 }
 function cerrar() {
   if (!abierta()) return;
+  if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
   closeModal('#cFull');
   setTimeout(() => volverA?.focus?.({ preventScroll: true }), 220);
 }
@@ -40,4 +44,6 @@ export function iniciarPantallaCompleta() {
   $('#zFull')?.addEventListener('click', abrirPantallaCompleta);
   $('#cFull')?.addEventListener('click', tocar);
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && abierta()) cerrar(); }); // aunque el foco quede en el dibujo
+  // salir de la pantalla completa con la tecla o el gesto del sistema también cierra la vista
+  document.addEventListener('fullscreenchange', () => { if (!document.fullscreenElement && abierta()) cerrar(); });
 }
