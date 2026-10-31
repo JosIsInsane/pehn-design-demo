@@ -175,7 +175,8 @@ function crmInventario_({ txt, iso }) {
 function crmPagos_({ txt, iso }) {
   try {
     return rows_('pagos').slice(-300).reverse().map(x => ({ row: x._row, fecha: iso(x.Fecha), pedido: txt(x.Pedido), monto: Number(x['Monto leído']) || 0, leido: txt(x['Monto leído']),
-      esperado: Number(x.Esperado) || 0, resultado: txt(x.Resultado), url: txt(x.Comprobante), revisado: txt(x['Revisado por']), texto: txt(x['Texto leído']).slice(0, 400) }));
+      esperado: Number(x.Esperado) || 0, resultado: txt(x.Resultado), url: txt(x.Comprobante), revisado: txt(x['Revisado por']), texto: txt(x['Texto leído']).slice(0, 400),
+      notas: txt(x.Notas), ref: (txt(x.Huella).match(/ref:(\S+)/) || [])[1] || '' }));
   } catch (e) { console.warn('Sin hoja Pagos: corre Pehn › Configurar hojas.'); return []; }
 }
 
@@ -217,7 +218,11 @@ function crmImagenes_(args) {
 function crmEstado_(args) {
   if (!ESTADOS.includes(args.estado)) throw new Error('Estado inválido.');
   const row = filaValida_('pedidos', args.row);
-  conCandado_(() => { sheet_('pedidos').getRange(row, COL.pedidos.Estado).setValue(args.estado); aplicarEstado_(row, args.estado); });
+  conCandado_(() => {
+    const bloqueo = candadoDeEstado_(rows_('pedidos').find(x => x._row === row), args.estado, config_());
+    if (bloqueo) throw new Error(bloqueo);
+    sheet_('pedidos').getRange(row, COL.pedidos.Estado).setValue(args.estado); aplicarEstado_(row, args.estado);
+  });
 }
 function crmNota_(args) {
   sheet_('pedidos').getRange(filaValida_('pedidos', args.row), COL.pedidos['Notas internas']).setValue(celda_(texto_(args.texto, 2000)));

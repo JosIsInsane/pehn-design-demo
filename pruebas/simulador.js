@@ -89,6 +89,13 @@ export function cargar(opts = {}) {
   }
   const props = { ...(opts.propiedades || {}) };
   const red = { llamadas: [], responder: () => ({ success: true }) }; // UrlFetchApp simulado
+  const respuesta = (code, txt) => ({ getResponseCode: () => code, getContentText: () => txt });
+  // API REST de Drive (OCR de Ocr.gs): sube -> { id }, exporta -> el texto de ctx.__ocr; con ocr:false responde 403
+  const drive = url => {
+    if (!/googleapis\.com\/(upload\/)?drive\//.test(url)) return null;
+    if (opts.ocr === false || opts.rest === false) return respuesta(403, 'Drive API desactivada');
+    return /\/export\?/.test(url) ? respuesta(200, ctx.__ocr || '') : respuesta(200, JSON.stringify({ id: nid('D') }));
+  };
 
   const ctx = {
     console: opts.silencio ? { log() {}, warn() {}, error() {} } : console,
@@ -115,15 +122,15 @@ export function cargar(opts = {}) {
     ScriptApp: {
       getProjectTriggers: () => triggers.map(t => ({ getHandlerFunction: () => t.fn, _t: t })),
       deleteTrigger: tr => { const i = triggers.indexOf(tr._t); if (i >= 0) triggers.splice(i, 1); },
-      newTrigger: fn => { const t = { fn, tipo: '', hora: null }; const b = {}; ['forSpreadsheet', 'onEdit', 'timeBased', 'everyDays', 'onWeekDay', 'atHour', 'inTimezone'].forEach(k => { b[k] = (...a) => { if (k === 'atHour') t.hora = a[0]; if (k === 'timeBased') t.tipo = 'tiempo'; if (k === 'onEdit') t.tipo = 'edit'; return b; }; }); b.create = () => { triggers.push(t); return t; }; return b; }, getService: () => ({ getUrl: () => 'https://script.google.com/macros/s/X/exec' }), WeekDay: { MONDAY: 1 } },
+      newTrigger: fn => { const t = { fn, tipo: '', hora: null }; const b = {}; ['forSpreadsheet', 'onEdit', 'timeBased', 'everyDays', 'onWeekDay', 'atHour', 'inTimezone'].forEach(k => { b[k] = (...a) => { if (k === 'atHour') t.hora = a[0]; if (k === 'timeBased') t.tipo = 'tiempo'; if (k === 'onEdit') t.tipo = 'edit'; return b; }; }); b.create = () => { triggers.push(t); return t; }; return b; }, getService: () => ({ getUrl: () => 'https://script.google.com/macros/s/X/exec' }), getOAuthToken: () => 'token-prueba', WeekDay: { MONDAY: 1 } },
     PropertiesService: { getScriptProperties: () => ({ getProperty: k => (k in props ? props[k] : null), setProperty: (k, v) => { props[k] = v; } }) },
-    UrlFetchApp: { fetch: (url, o) => { red.llamadas.push({ url, o }); const r = red.responder(url, o); return { getResponseCode: () => 200, getContentText: () => JSON.stringify(r) }; } },
+    UrlFetchApp: { fetch: (url, o) => drive(url) || (red.llamadas.push({ url, o }), respuesta(200, JSON.stringify(red.responder(url, o)))) },
     DocumentApp: { openById: () => ({ getBody: () => ({ getText: () => ctx.__ocr || '' }) }) },
   };
-  if (opts.ocr !== false) ctx.Drive = { Files: { create: () => ({ id: nid('D') }) } };
+  if (opts.ocr !== false) ctx.Drive = { Files: { create: () => ({ id: nid('D') }) } }; // respaldo de Ocr.gs
   vm.createContext(ctx);
   const dir = path.join(import.meta.dirname, '..', 'apps-script');
-  const code = ['Config', 'Catalogo', 'Setup', 'Orders', 'Inventory', 'Pagos', 'Sitio', 'Admin'].map(f => fs.readFileSync(path.join(dir, f + '.gs'), 'utf8')).join('\n;\n');
+  const code = ['Config', 'Catalogo', 'Setup', 'Orders', 'Inventory', 'Pagos', 'Ocr', 'Verificacion', 'Sitio', 'Admin'].map(f => fs.readFileSync(path.join(dir, f + '.gs'), 'utf8')).join('\n;\n');
   // las const de arriba quedan visibles para las pruebas
   vm.runInContext(code + '\n;globalThis.__x = { COL, HEADERS, LIMITS, telKey_, celda_, montosEn_, elegirMonto_, numeroDe_ };', ctx);
 

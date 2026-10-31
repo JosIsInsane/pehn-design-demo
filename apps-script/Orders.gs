@@ -37,13 +37,14 @@ function doPost(e) {
       case 'pedido': { const r = recibirPedido_(data, cfg); return json_({ ok: true, id: r.id, pago: r.pago }); }
       case 'seguimiento': return json_({ ok: true, pedido: seguimiento_(data) });
       case 'comprobante': return json_({ ok: true, pago: recibirComprobante_(data, cfg) });
+      case 'verificar': return json_({ ok: true, verificacion: verificarDesdeSitio_(data, cfg) });
       case 'misPedidos': return json_({ ok: true, pedidos: misPedidos_(data) });
       default: throw new Error('Acción desconocida.');
     }
   } catch (err) {
     console.error(err); // el detalle completo queda en Ejecuciones; al sitio solo van mensajes conocidos
     const msg = String(err && err.message || err);
-    return json_({ ok: false, error: MENSAJES_PUBLICOS.includes(msg) ? msg : 'No se pudo procesar. Intenta de nuevo o escríbenos por WhatsApp.' });
+    return json_({ ok: false, error: esMensajePublico_(msg) ? msg : 'No se pudo procesar. Intenta de nuevo o escríbenos por WhatsApp.' });
   }
 }
 
@@ -57,7 +58,10 @@ const MENSAJES_PUBLICOS = [
   'Revisa el número de pedido y tu WhatsApp.', 'Demasiados intentos. Espera unos minutos.', 'No encontramos un pedido con ese número y ese WhatsApp.',
   'Ya recibimos varios comprobantes de este pedido. Escríbenos por WhatsApp.', 'Este pedido está cancelado. Escríbenos por WhatsApp.',
   'La hoja está ocupada con otro cambio. Espera unos segundos e intenta de nuevo.', 'Verificación fallida. Recarga la página e intenta de nuevo.',
+  'El precio del pedido no coincide. Recarga la página e intenta de nuevo.',
 ];
+// también son públicos los motivos de Verificacion.gs (se leen al usarse: el orden de los archivos no importa)
+const esMensajePublico_ = msg => MENSAJES_PUBLICOS.includes(msg) || Object.values(MOTIVOS).includes(msg);
 
 // cuenta en caché: más de "max" en "seg" segundos = rechazo
 function limite_(clave, max, seg, msg) {
@@ -92,7 +96,8 @@ function limpiarPedido_(d) {
     images: (Array.isArray(it.images) ? it.images : []).filter(x => typeof x === 'string').slice(0, LIMITS.imagesPerItem),
   }));
   return { customer, items, total: num(d.total, 0, 1e7), currency: /^[A-Z]{3}$/.test(d.currency) ? d.currency : 'HNL',
-    comprobante: typeof d.comprobante === 'string' ? d.comprobante : '' };
+    comprobante: typeof d.comprobante === 'string' ? d.comprobante : '',
+    ficha: typeof d.ficha === 'string' ? d.ficha.slice(0, 40) : '', pagador: linea_(d.pagador, 80) };
 }
 
 function json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
@@ -115,16 +120,17 @@ function verificarTurnstile_(token) {
 
 // Lo lento (Drive, OCR, correo) va FUERA del candado; dentro solo ID, filas y stock.
 // Si algo falla antes de guardar el pedido, la carpeta temporal se manda a la papelera (si no se puede, queda huérfana sin daño).
-// Pasos: validar -> fotos y comprobante (sin candado) -> guardar filas (con candado) -> correo (sin candado).
+// Pasos: validar -> verificar comprobante (antes de crear nada) -> fotos (sin candado) -> filas (con candado) -> correo.
 function recibirPedido_(raw, cfg) {
   const d = limpiarPedido_(raw), c = d.customer;
   validarPedido_(raw, d, cfg);
+  const esperado = anticipoDe_(d.total, cfg);
+  const anticipo = verificarAnticipo_(d, esperado, cfg); // si no pasa y Config dice Rechazar, aquí termina
   const folder = folder_().createFolder(`Nuevo · ${String(c.name).slice(0, 40)}`);
   const estado = { guardado: false }; // pasa a true cuando la fila del pedido ya está en la hoja
   try {
     const partidas = subirFotos_(folder, d);
-    const esperado = Math.round(d.total * (Number(cfg['Anticipo (%)']) || 50) / 100);
-    const leido = leerAnticipo_(folder, d);
+    const leido = guardarAnticipo_(folder, d, anticipo);
     const { id, pago } = conCandado_(() => guardarFilas_(d, folder, partidas, leido, esperado, estado));
     avisarCliente_(id, d, partidas, cfg, pago, esperado);
     return { id, pago };
@@ -141,6 +147,14 @@ function validarPedido_(raw, d, cfg) {
   verificarTurnstile_(raw.turnstile);
   limite_('p_' + telKey_(d.customer.phone), LIMITS.perContact, 600, 'Demasiados pedidos seguidos. Escríbenos por WhatsApp.');
   limite_('p_hora', LIMITS.perHour, 3600, 'Estamos recibiendo muchos pedidos. Intenta en unos minutos o escríbenos por WhatsApp.');
+  if (d.total + 1 < totalMinimo_(d.items)) throw new Error('El precio del pedido no coincide. Recarga la página e intenta de nuevo.');
+}
+// Lo mínimo que puede costar el pedido: sus piezas a precio de catálogo, con el descuento por volumen más alto (10 %)
+// y algo de margen. Un total bajado a mano en el navegador (para pagar menos anticipo) no pasa.
+function totalMinimo_(items) {
+  const precio = {}; CATALOGO_PIEZAS.forEach(p => { precio[p[0]] = Number(p[3]) || 0; });
+  const suma = consumoDePedido_(items).reduce((s, x) => s + (precio[x.sku] || 0) * x.qty, 0);
+  return Math.floor(suma * 0.85);
 }
 // 1) sin candado: la vista previa y las fotos del cliente de cada producto, guardadas en Drive
 function subirFotos_(folder, d) {
@@ -150,11 +164,19 @@ function subirFotos_(folder, d) {
     return { it, prev, subidas };
   });
 }
-// lectura del comprobante (OCR); el pedido no se pierde si falla
-function leerAnticipo_(folder, d) {
+// comprobante del anticipo: reusa la ficha de "verificar" (mismo archivo y total) o lo lee ahora
+function verificarAnticipo_(d, esperado, cfg) {
   if (!d.comprobante) return null;
-  try { return prepararComprobante_(folder, d.comprobante); }
-  catch (err) { console.error('Comprobante no procesado:', err); return null; }
+  const lectura = lecturaDeFicha_(d.ficha, d.comprobante, d.total) || leerComprobante_(d.comprobante);
+  const revision = revisarComprobante_(lectura, esperado, d.total, cfg, [d.customer.name, d.pagador]);
+  if (!revision.ok && rechazarSinVerificar_(cfg)) throw new Error(revision.motivo);
+  return { lectura, revision };
+}
+// guarda el archivo del comprobante en la carpeta del pedido; si Drive falla, el pedido sigue
+function guardarAnticipo_(folder, d, anticipo) {
+  if (!anticipo) return null;
+  try { return { archivo: guardarComprobante_(folder, d.comprobante), ...anticipo }; }
+  catch (err) { console.error('Comprobante no guardado:', err); return null; }
 }
 
 // 2) con candado: ID, filas y stock
@@ -352,7 +374,13 @@ function correoCliente_(id, d, partidas, cfg, pago, subioComprobante, anticipo) 
       <p style="background:#F4EDE4;padding:12px 14px;border-radius:10px">${estadoPago}</p>
       ${rastrear}${wa}<p style="color:#8B7B6F;font-size:12px">${esc_(negocio)} · Guarda tu número de pedido para darle seguimiento.</p></div>`,
     inlineImages: inline,
+    attachments: adjuntoComprobante_(d.comprobante, id),
     name: negocio,
   });
   return 'Enviado';
+}
+// el comprobante del anticipo va adjunto en el mismo correo (si lo subió)
+function adjuntoComprobante_(dataUrl, id) {
+  const m = dataUrl && dataUrlValido_(dataUrl);
+  return m ? [Utilities.newBlob(Utilities.base64Decode(m[2]), m[1], `Comprobante anticipo ${id}.${TIPOS_OK[m[1]]}`)] : [];
 }

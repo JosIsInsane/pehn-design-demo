@@ -97,7 +97,7 @@ export async function previewImage(p, cfg, size = 900) {
 }
 
 // ---------- la puerta ----------
-// Única puerta hacia Google Sheets (apps-script/Orders.gs › doPost). accion: 'pedido' | 'seguimiento' | 'comprobante' | 'misPedidos'.
+// Única puerta hacia Google Sheets (apps-script/Orders.gs › doPost). accion: 'pedido' | 'verificar' | 'seguimiento' | 'comprobante' | 'misPedidos'.
 // Se manda como texto plano: así el navegador no hace la consulta previa (CORS) que Apps Script no contesta.
 export async function api(accion, data) {
   if (!CONFIG.sheetsUrl) {

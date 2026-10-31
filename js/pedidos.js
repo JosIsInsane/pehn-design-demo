@@ -29,6 +29,7 @@ function cobroHTML(p) {
   return `<div class="pago">
       <h3>${falta ? `Paga tu anticipo de ${fmt(p.porPagarAnticipo)} para empezar` : `Saldo pendiente: ${fmt(p.saldo)}`}</h3>
       ${p.banco ? `<p class="banco">${esc(p.banco)}</p>` : '<p class="note">Te mandamos los datos de pago por WhatsApp.</p>'}
+      <label class="pagador">¿Lo paga otra persona? <small>(opcional) nombre del titular de la cuenta que transfiere</small><input id="pagadorSaldo" maxlength="80" autocomplete="off" placeholder="Ej. Emma García"></label>
       <label class="drop" id="drop"><input type="file" id="voucher" accept="image/jpeg,image/png,image/webp,application/pdf"><span class="drop-ico" aria-hidden="true">${FLECHA_SUBIR}</span><span id="dropTxt"><b>Sube la foto o PDF de tu comprobante</b><small>JPG, PNG o PDF · máx. 5 MB</small></span></label>
       <button class="btn btn-dark" id="sendVoucher" disabled>Enviar comprobante</button>
       <div class="err" id="voucherErr" role="alert"></div>
@@ -102,7 +103,7 @@ async function enviarVoucher(btn, f) {
   const err = $('#voucherErr');
   btn.disabled = true; btn.textContent = 'Enviando y leyendo el monto…';
   try {
-    const { pago } = await api('comprobante', { ...seguido, file: voucherData });
+    const { pago } = await api('comprobante', { ...seguido, file: voucherData, pagador: $('#pagadorSaldo')?.value.trim() || '' });
     voucherData = '';
     toast(pago.resultado === 'Coincide' ? `¡Listo! Recibimos ${fmt(pago.monto)}.` : 'Recibimos tu comprobante. Lo revisamos y te confirmamos por WhatsApp.');
     f.requestSubmit();
