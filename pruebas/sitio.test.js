@@ -7,6 +7,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import { cargar } from './simulador.js';
+import { onRequestPost, onRequestGet } from '../functions/api.js';
 
 // Playwright se busca igual que con require: sirve el instalado en el proyecto o el global
 const { chromium } = createRequire(import.meta.url)('playwright');
@@ -15,7 +16,17 @@ const RAIZ = path.join(import.meta.dirname, '..');
 const TIPOS = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.png': 'image/png', '.jpg': 'image/jpeg' };
 // mismas cabeceras de seguridad que Cloudflare (archivo _headers): si la política bloquea algo, la prueba lo ve
 const CABECERAS = Object.fromEntries(fs.readFileSync(path.join(RAIZ, '_headers'), 'utf8').split('\n').filter(l => /^\s+\S+:/.test(l)).map(l => { const i = l.indexOf(':'); return [l.slice(0, i).trim(), l.slice(i + 1).trim()]; }));
+// /api: el portero de Cloudflare de verdad (functions/api.js); Google simulado más abajo (fetch → simulador)
+const ENV = { SITE_TOKEN: '' };
+async function portero(req, res) {
+  const trozos = []; for await (const t of req) trozos.push(t);
+  const body = Buffer.concat(trozos);
+  const request = new Request('http://localhost' + req.url, { method: req.method, headers: { ...req.headers, 'cf-connecting-ip': '127.0.0.1' }, body: req.method === 'POST' ? body : undefined });
+  const r = await (req.method === 'POST' ? onRequestPost : onRequestGet)({ request, env: ENV });
+  res.writeHead(r.status, Object.fromEntries(r.headers)); res.end(Buffer.from(await r.arrayBuffer()));
+}
 const server = http.createServer((req, res) => {
+  if (new URL(req.url, 'http://x').pathname === '/api') return void portero(req, res).catch(e => { res.writeHead(500); res.end(String(e)); });
   const f = path.join(RAIZ, decodeURIComponent(new URL(req.url, 'http://x').pathname));
   if (!f.startsWith(RAIZ) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) {
     // como Cloudflare Pages: una página que no existe muestra 404.html (los archivos que faltan, vacío)
@@ -36,7 +47,7 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
   await new Promise(r => server.listen(0, r));
   const base = `http://localhost:${server.address().port}/`;
   const sim = cargar({ silencio: true });
-  const token = sim.config('Token del sitio');
+  const token = sim.config('Token del sitio'); ENV.SITE_TOKEN = token;
   sim.run(`setConfig_('Datos bancarios', 'BAC · Ahorro · 7421 0098 31')`);
   const b = await chromium.launch();
   const ctx = await b.newContext({ viewport: { width: 1280, height: 900 } });
@@ -47,20 +58,18 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
   const turnstile = []; page.on('request', r => { if (/challenges\.cloudflare\.com/.test(r.url())) turnstile.push(r.url()); });
   page.on('console', m => { if (m.type() === 'error' && /Content Security Policy|Refused/.test(m.text())) errores.push('CSP: ' + m.text()); });
   page.on('dialog', d => { errores.push('dialog: ' + d.message()); d.dismiss(); });
-  // Google Sheets simulado: el sitio manda su token real; aquí se cambia por el del simulador
-  await page.route(/script\.google\.com/, async route => {
-    if (route.request().method() === 'GET') {
-      const q = Object.fromEntries(new URL(route.request().url()).searchParams);
-      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(sim.get(q)) });
-    }
-    const body = JSON.parse(route.request().postData() || '{}');
+  // Google Sheets simulado: lo que el portero manda a Apps Script lo contesta el simulador (el token lo pone el portero)
+  const fetchReal = globalThis.fetch;
+  globalThis.fetch = async (url, o = {}) => {
+    if (!String(url).startsWith('https://script.google.com/')) return fetchReal(url, o);
+    if (!o.method || o.method === 'GET') return new Response(JSON.stringify(sim.get(Object.fromEntries(new URL(url).searchParams))));
+    const body = JSON.parse(await new Response(o.body).text());
     // texto que "lee" el OCR simulado; global.falso = la siguiente verificación recibe una foto que no es comprobante
     const recibo = (monto, ref) => `BAC Credomatic\nTransferencia exitosa\n${new Date().toLocaleDateString('es-HN')}\nCuenta destino ****9831\nMonto L ${monto}.00\nReferencia: ${ref}`;
     if (body.accion === 'verificar') sim.ctx.__ocr = global.falso ? 'Selfie en la playa con mis amigos del colegio' : recibo(Math.round(body.total * 0.5), 'RF8812');
     if (body.accion === 'comprobante') sim.ctx.__ocr = recibo(global.saldo, 'RF8813');
-    const out = sim.post({ ...body, token });
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(out) });
-  });
+    return new Response(JSON.stringify(sim.post(body)));
+  };
   await page.route(/fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, body: '' }));
 
   // 1. catálogo y aviso de privacidad
@@ -308,11 +317,11 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
     await t.route(/\/datos\.js$/, async r => { const res = await r.fetch(); await r.fulfill({ response: res, body: (await res.text()).replace("turnstileSiteKey: ''", "turnstileSiteKey: 'LLAVE-PRUEBA'") }); });
     await t.route(/challenges\.cloudflare\.com/, r => r.fulfill({ status: 200, contentType: 'text/javascript', body: 'window.turnstile={render:function(el,o){window.__tsOpts=o;return 7},reset:function(w){window.__tsReset=w}};' }));
     let enviado = null;
-    await t.route(/script\.google\.com/, async r => {
+    await t.route(/\/api(\?|$)/, async r => {
       if (r.request().method() === 'GET') return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(sim.get(Object.fromEntries(new URL(r.request().url()).searchParams))) });
       const cuerpo = JSON.parse(r.request().postData() || '{}');
       if (cuerpo.accion === 'verificar') return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, verificacion: { ok: true, monto: 100, ficha: 'f-prueba', motivo: '' } }) });
-      enviado = cuerpo;
+      enviado = { ...cuerpo, cabeceraTs: r.request().headers()['x-turnstile'] };
       await r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: false, error: 'Verificación fallida. Recarga la página e intenta de nuevo.' }) });
     });
     await t.goto(base + 'catalogo.html');
@@ -329,7 +338,7 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
     ok(enviado === null && /verificando/.test(await t.textContent('#coErr')), 'Turnstile: sin token no se envía el pedido');
     await t.evaluate(() => window.__tsOpts.callback('tok-123'));
     await t.click('#sendOrder'); await t.waitForTimeout(1500);
-    ok(enviado && enviado.turnstile === 'tok-123', 'Turnstile: el token viaja con el pedido');
+    ok(enviado && enviado.turnstile === 'tok-123' && enviado.cabeceraTs === 'tok-123' && !enviado.token, 'Turnstile: el token viaja con el pedido (en la cabecera para el portero) y el navegador ya no manda el token del sitio');
     ok(await t.evaluate(() => window.__tsReset === 7), 'Turnstile: tras un error se pide otro token');
     ok(!tErr.length, 'Turnstile: sin errores de JavaScript ni CSP' + (tErr.length ? ': ' + tErr.join(' | ') : ''));
     await tctx.close();

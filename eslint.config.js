@@ -64,9 +64,16 @@ export default [
     rules: reglas,
   },
 
+  // ---------- Cloudflare Pages Functions (functions/): corren en los servidores de Cloudflare (como un service worker) ----------
+  {
+    files: ['functions/**/*.js'],
+    languageOptions: { ecmaVersion: 2022, sourceType: 'module', globals: { ...globals.serviceworker, FixedLengthStream: 'readonly' } },
+    rules: reglas,
+  },
+
   // ---------- Node: pruebas, herramientas y este mismo archivo ----------
   {
-    files: ['pruebas/**/*.js', 'herramientas/**/*.js', 'eslint.config.js'],
+    files: ['pruebas/**/*.js', 'herramientas/**/*.{js,mjs}', 'eslint.config.js'],
     languageOptions: { ecmaVersion: 2022, sourceType: 'module', globals: { ...globals.node } },
     rules: reglas,
   },

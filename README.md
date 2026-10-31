@@ -19,7 +19,7 @@ Landing + catálogo con personalizador para [@pehn.designn](https://www.instagra
 
 Sitio estático: hay que servir la carpeta (`python3 -m http.server`) y abrir `http://localhost:8000`; con doble clic en `index.html` (`file://`) los módulos ES no cargan.
 
-Precios en lempiras (HNL). Para guardar pedidos, sigue `apps-script/README.md` y pega `sheetsUrl` y `sheetsToken` en `datos.js`.
+Precios en lempiras (HNL). Para guardar pedidos, sigue `apps-script/README.md`: el sitio habla con el portero `functions/api.js` (Cloudflare Pages Function), que lleva el token en secreto (variable `SITE_TOKEN`).
 
 Pendiente: precios reales (en `datos.js`), fotos de sudaderas y taller. El WhatsApp, textos, colores y fotos de portada se cambian en CRM › Sitio web.
 

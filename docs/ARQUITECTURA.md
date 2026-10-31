@@ -53,7 +53,7 @@ Mientras carga, la tarjeta lleva `aria-busy="true"` y se avisa con el toast; si 
 ## Cómo fluye un pedido
 1. La persona arma su diseño (personalizador) y lo agrega al carrito (`estado.js` + `localStorage`).
 2. Cajón: datos (`checkout.js`) → anticipo y comprobante → `enviarPedido()` arma el pedido, la foto del diseño y el consumo de piezas (`envio.js`, `bomOf`).
-3. `api('pedido', …)` hace un `POST` de texto plano a la URL de Apps Script (`CONFIG.sheetsUrl`, con Turnstile si hay llave).
+3. `api('pedido', …)` hace un `POST` de texto plano a `/api` (`CONFIG.api`): el **portero** de Cloudflare (`functions/api.js`) revisa acción, tamaño, límite por IP y Turnstile, le agrega el token secreto y la IP, y lo pasa a Apps Script sin abrirlo.
 4. `apps-script/Orders.gs › doPost` valida (anti-bots, límites, anti-fórmulas), guarda en la hoja (Pedidos, Partidas, Pagos), sube fotos a Drive, descuenta Inventario según Recetas y lee el monto del comprobante (`Pagos.gs`).
 5. Se mandan los correos (`MailApp`) y el pedido aparece en el CRM. El cliente lo sigue en `pedido.html` (`api('seguimiento', …)`).
 

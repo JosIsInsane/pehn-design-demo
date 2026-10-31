@@ -3,7 +3,7 @@
  * escribe Pedidos y Partidas, revisa stock y manda UN correo al cliente (al negocio solo le llega el resumen diario).
  *
  * SI EL SITIO DICE "No se pudo enviar":
- *   "Token inválido"   -> el token de datos.js no es el de Config › Token del sitio (Pehn › Ver URL y token).
+ *   "Token inválido"   -> SITE_TOKEN de Cloudflare no es el de Config › Token del sitio (Pehn › Ver URL y token).
  *   "Respuesta inválida" -> la app web no está publicada para "Cualquier usuario" o la URL de datos.js es vieja.
  *   Otro error         -> Extensiones › Apps Script › Ejecuciones: abre la de doPost y lee el mensaje.
  * Después de cambiar código: Implementar › Gestionar implementaciones › Nueva versión (si no, sigue el viejo).
@@ -33,6 +33,7 @@ function doPost(e) {
   try {
     const cfg = config_();
     if (!cfg['Token del sitio'] || data.token !== cfg['Token del sitio']) throw new Error('Token inválido.');
+    limitePorIp_(data);
     switch (data.accion || 'pedido') {
       case 'pedido': { const r = recibirPedido_(data, cfg); return json_({ ok: true, id: r.id, pago: r.pago }); }
       case 'seguimiento': return json_({ ok: true, pedido: seguimiento_(data) });
@@ -46,6 +47,14 @@ function doPost(e) {
     const msg = String(err && err.message || err);
     return json_({ ok: false, error: esMensajePublico_(msg) ? msg : 'No se pudo procesar. Intenta de nuevo o escríbenos por WhatsApp.' });
   }
+}
+
+// Límite por IP: la IP la pone el portero de Cloudflare (functions/api.js), que es el único que tiene el token.
+// Mismos topes que TOPES de functions/api.js (allá es un primer filtro; aquí la cuenta de verdad).
+const TOPES_IP = { pedido: [4, 600], comprobante: [8, 3600], verificar: [30, 3600], seguimiento: [30, 600], misPedidos: [30, 600] };
+function limitePorIp_(data) {
+  const ip = typeof data.ip === 'string' ? data.ip.replace(/[^0-9a-fA-F:.]/g, '').slice(0, 45) : '', tope = TOPES_IP[data.accion || 'pedido'];
+  if (ip && tope) limite_('ip_' + (data.accion || 'pedido') + '_' + ip, tope[0], tope[1], 'Demasiados intentos. Espera unos minutos.');
 }
 
 // Únicos mensajes de error que ve el cliente. Cualquier otro (nombres de hojas, SKU, fallos de Google) se oculta.
@@ -104,7 +113,9 @@ function json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).se
 
 // Turnstile (opcional): si la propiedad de script TURNSTILE_SECRET existe, el pedido debe traer un token válido.
 // Sin la propiedad no se pide nada (ver apps-script/README.md › Turnstile).
-function verificarTurnstile_(token) {
+// portero = true: el portero de Cloudflare ya lo revisó (un token de Turnstile sirve una sola vez). Solo él tiene el token del sitio.
+function verificarTurnstile_(token, portero) {
+  if (portero === true) return;
   const secret = PropertiesService.getScriptProperties().getProperty('TURNSTILE_SECRET');
   if (!secret) return;
   const falla = new Error('Verificación fallida. Recarga la página e intenta de nuevo.');
@@ -144,7 +155,7 @@ function recibirPedido_(raw, cfg) {
 function validarPedido_(raw, d, cfg) {
   if (d.comprobante && !comprobanteValido_(d.comprobante)) throw new Error('El comprobante debe ser foto (JPG, PNG) o PDF de menos de 5 MB.');
   if (!d.comprobante && yes_(cfg['Anticipo antes de enviar'] ?? 'Sí')) throw new Error('Sube el comprobante de tu anticipo para enviar el pedido.');
-  verificarTurnstile_(raw.turnstile);
+  verificarTurnstile_(raw.turnstile, raw.portero);
   limite_('p_' + telKey_(d.customer.phone), LIMITS.perContact, 600, 'Demasiados pedidos seguidos. Escríbenos por WhatsApp.');
   limite_('p_hora', LIMITS.perHour, 3600, 'Estamos recibiendo muchos pedidos. Intenta en unos minutos o escríbenos por WhatsApp.');
   if (d.total + 1 < totalMinimo_(d.items)) throw new Error('El precio del pedido no coincide. Recarga la página e intenta de nuevo.');
