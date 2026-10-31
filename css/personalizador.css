@@ -20,7 +20,10 @@
 .c-stage.zoomed .zoom-layer svg{filter:none}
 .zoom-layer.anim{transition:transform .35s var(--ease)}
 .zoom-layer svg,.zoom-layer .stage-photo{width:100%;height:100%;max-width:560px;max-height:100%;filter:drop-shadow(0 26px 30px rgba(30,22,17,.26));pointer-events:none}
-.stage-photo{width:auto;object-fit:contain;border-radius:8px}
+/* foto real: anclada al área (Safari en iPhone ignora width/height 100% de una imagen dentro de la cuadrícula
+   y la pinta a su tamaño original). El margen sale de --ph (el mismo que el padding de la capa). */
+.zoom-layer{--ph:7%}
+.zoom-layer .stage-photo{position:absolute;left:var(--ph-x,var(--ph));top:var(--ph-t,var(--ph));width:calc(100% - 2 * var(--ph-x,var(--ph)));height:calc(100% - var(--ph-t,var(--ph)) - var(--ph-b,var(--ph)));max-width:none;max-height:none;object-fit:contain}
 .zoom-ctl{position:absolute;z-index:3;right:16px;bottom:44px;display:flex;align-items:center;gap:2px;padding:4px;border-radius:999px;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);box-shadow:var(--sh-2)}
 .zoom-ctl button{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;transition:background-color .2s}
 .zoom-ctl button:hover{background:var(--bg)}

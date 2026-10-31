@@ -24,8 +24,8 @@
 #custom.pg .c-preview{flex:none;height:clamp(180px,30dvh,300px);transition:height .35s var(--ease)}
 #custom.pg .sheet.mini .c-preview,#custom.pg .sheet.kb .c-preview{height:84px;cursor:zoom-in}
 #custom.pg .sheet.mini .zoom-ctl,#custom.pg .sheet.mini .ref,#custom.pg .sheet.mini .zoom-tip,#custom.pg .sheet.kb .zoom-ctl,#custom.pg .sheet.kb .ref,#custom.pg .sheet.kb .zoom-tip{display:none}
-#custom.pg .sheet.mini .zoom-layer,#custom.pg .sheet.kb .zoom-layer{padding:6px}
-#custom.pg .zoom-layer{padding:3% 6% 14%}
+#custom.pg .sheet.mini .zoom-layer,#custom.pg .sheet.kb .zoom-layer{padding:6px;--ph:6px;--ph-x:6px;--ph-t:6px;--ph-b:6px}
+#custom.pg .zoom-layer{padding:3% 6% 14%;--ph-t:3%;--ph-x:6%;--ph-b:14%}
 #custom.pg .zoom-ctl{right:12px;bottom:10px}
 #custom.pg .zoom-ctl button{width:44px;height:44px}
 #custom.pg .zoom-ctl output{display:none}

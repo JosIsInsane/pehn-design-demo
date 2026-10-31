@@ -352,6 +352,12 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
     await r.click('[data-figmove="0:1"]'); await r.waitForTimeout(300);
     const despues = await r.locator('.ftabs [data-tab] .nm').allTextContents();
     ok(antes[0] === 'Fer' && despues[1] === 'Fer' && despues[0] !== 'Fer', `Ordenar figuras (Fer pasa a la derecha): ${antes.join('|')} -> ${despues.join('|')}`);
+    // la foto del pedido real queda dentro del área de la vista previa (en iPhone se salía)
+    await r.goto(base + 'catalogo.html?card=1'); await r.waitForSelector('#custom.open'); await r.waitForTimeout(600);
+    if (!(await r.$('.stage-photo'))) { await r.click('#refBtn'); await r.waitForTimeout(500); }
+    const dentro = await r.evaluate(() => { const a = document.querySelector('.stage-photo').getBoundingClientRect(), z = document.querySelector('#cStage').getBoundingClientRect(); return a.top >= z.top && a.bottom <= z.bottom && a.left >= z.left && a.right <= z.right && a.height > z.height * .6; });
+    ok(dentro, 'Foto del pedido real: centrada y dentro de la vista previa');
+    await r.goto(base + `catalogo.html?card=${kit}&figuras=3`); await r.waitForSelector('#custom.open'); await r.waitForTimeout(600);
     await r.click('[data-step="1"]'); await r.waitForTimeout(400);
     await r.click('[data-g="fondo"][data-v="foto"]'); await r.waitForTimeout(300);
     await r.setInputFiles('input[data-g="bgImg"]', path.join(import.meta.dirname, '..', 'fotos', 'cuadro-amor.jpg')); await r.waitForTimeout(1200);
