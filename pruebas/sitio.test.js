@@ -17,7 +17,11 @@ const TIPOS = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/cs
 const CABECERAS = Object.fromEntries(fs.readFileSync(path.join(RAIZ, '_headers'), 'utf8').split('\n').filter(l => /^\s+\S+:/.test(l)).map(l => { const i = l.indexOf(':'); return [l.slice(0, i).trim(), l.slice(i + 1).trim()]; }));
 const server = http.createServer((req, res) => {
   const f = path.join(RAIZ, decodeURIComponent(new URL(req.url, 'http://x').pathname));
-  if (!f.startsWith(RAIZ) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
+  if (!f.startsWith(RAIZ) || !fs.existsSync(f) || fs.statSync(f).isDirectory()) {
+    // como Cloudflare Pages: una página que no existe muestra 404.html (los archivos que faltan, vacío)
+    if (/(\.html|\/[^.]*)$/.test(req.url.split('?')[0])) { res.writeHead(404, { ...CABECERAS, 'Content-Type': 'text/html' }); return fs.createReadStream(path.join(RAIZ, '404.html')).pipe(res); }
+    res.writeHead(404); return res.end();
+  }
   res.writeHead(200, { ...CABECERAS, 'Content-Type': TIPOS[path.extname(f)] || 'application/octet-stream' }); fs.createReadStream(f).pipe(res);
 });
 
@@ -386,6 +390,32 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
     const ids = await c.evaluate(() => JSON.parse(localStorage.getItem('pehn_cart')).map(i => i.id));
     ok(ids.includes('x-caja') && !(await c.locator('[data-extra="x-caja"]').count()), 'Carrito: el extra entra al pedido y deja de sugerirse');
     await c.close();
+  }
+
+  // 11. página 404, vista previa al compartir y GPC
+  {
+    const n = await ctx.newPage(); const errN = [];
+    n.on('pageerror', e => errN.push(e.message)); n.on('console', m => m.type() === 'error' && /Content Security Policy|Refused/.test(m.text()) && errN.push(m.text()));
+    await n.route(/fonts\.(googleapis|gstatic)\.com|script\.google\.com/, x => x.fulfill({ status: 200, body: '{}' }));
+    const resp = await n.goto(base + 'una/ruta/que/no/existe'); await n.waitForTimeout(500);
+    const enlace = await n.evaluate(() => document.querySelector('footer a[href="pedido.html"]')?.href || '');
+    ok(resp.status() === 404 && /no está en la caja/.test(await n.textContent('h1')) && enlace === base + 'pedido.html' && !errN.length,
+      '404: página propia, con menú y pie que apuntan a la raíz aunque la ruta sea profunda' + (errN.length ? ': ' + errN.join(' | ') : ''));
+    const sinOg = [];
+    for (const pg of ['index.html', 'catalogo.html', 'pedido.html', 'privacidad.html']) {
+      const h = fs.readFileSync(path.join(RAIZ, pg), 'utf8');
+      if (!/property="og:image" content="https:\/\/[^"]+\/compartir\.jpg"/.test(h) || !/property="og:title"/.test(h)) sinOg.push(pg);
+    }
+    ok(!sinOg.length && fs.existsSync(path.join(RAIZ, 'compartir.jpg')), 'Todas las páginas tienen vista previa para WhatsApp/Facebook' + (sinOg.length ? ': falta en ' + sinOg.join(', ') : ''));
+    await n.close();
+    const g = await ctx.newPage();
+    await g.route(/fonts\.(googleapis|gstatic)\.com|script\.google\.com/, x => x.fulfill({ status: 200, body: '{}' }));
+    await g.addInitScript(() => { localStorage.clear(); Object.defineProperty(Navigator.prototype, 'globalPrivacyControl', { get: () => true }); });
+    await g.goto(base + 'index.html'); await g.waitForTimeout(500);
+    const gpc = await g.evaluate(() => localStorage.getItem('pehn_aviso'));
+    ok(!(await g.isVisible('#aviso')) && /minimo/.test(gpc || '') && await g.locator('#aviso .aviso-gpc').count() === 1, 'GPC: con la señal del navegador queda "Solo el carrito" sin preguntar');
+    ok(JSON.parse(fs.readFileSync(path.join(RAIZ, '.well-known', 'gpc.json'), 'utf8')).gpc === true, 'GPC: el sitio lo declara en /.well-known/gpc.json');
+    await g.close();
   }
 
   ok(!turnstile.length, 'Sin turnstileSiteKey no se carga nada de Cloudflare Turnstile');

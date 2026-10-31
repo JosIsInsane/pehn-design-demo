@@ -45,3 +45,16 @@ Correr las dos antes de publicar cambios. Si alguna falla, no publicar.
 6. El límite de "1 correo por destinatario" usa la caché de Google, que guarda como máximo 6 horas: un mismo correo puede recibir otro pasado ese tiempo. Si hace falta un día exacto, habría que guardarlo en una hoja.
 7. Si una carpeta de pedido queda suelta en Drive porque un pedido falló a medias, se puede borrar sin problema.
 8. El aviso de privacidad es un modelo de buenas prácticas: que lo revise un abogado en Honduras antes de darlo por definitivo.
+
+## Privacidad, plagio y archivos públicos (31 oct 2026)
+
+- **GPC (Global Privacy Control):** si el navegador manda la señal, `js/aviso.js` elige "Solo el carrito" sin preguntar
+  y lo dice en el aviso. Se declara en `/.well-known/gpc.json`. Si algún día se agrega Pixel, Analytics o similar, se carga
+  **solo** si `permiteMedicion()` (en `js/aviso.js`) da `true`.
+- **security.txt:** `/.well-known/security.txt` dice a quién avisar de una falla. Vence cada año: cambia `Expires` antes del 31 oct 2027.
+- **Licencia:** `LICENSE` (todos los derechos reservados) y © en el pie. El repo debe ser **privado** en GitHub.
+- **Dependabot:** `.github/dependabot.yml` abre un PR al mes si hay versiones nuevas de las acciones o herramientas de prueba.
+  Three.js (en `vendor/`) se actualiza a mano.
+- **Si cambia el dominio** (de `pehn-design-demo.pages.dev` a uno propio), cambia la URL en: las etiquetas `og:` y `canonical`
+  de las 4 páginas, `robots.txt`, `sitemap.xml` y `.well-known/security.txt`.
+- **Página 404:** `404.html` (Cloudflare Pages la muestra sola). Lleva `<base href="/">` para que sus enlaces funcionen en cualquier ruta.

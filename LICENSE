@@ -1,0 +1,11 @@
+Copyright (c) 2026 Pehn Design. Todos los derechos reservados.
+
+El código, el diseño, los textos, las ilustraciones y las fotos de este sitio y de su sistema de pedidos (CRM)
+son propiedad de Pehn Design. No se permite copiarlos, modificarlos, publicarlos ni usarlos para otro negocio
+o sitio, total o parcialmente, sin permiso por escrito de Pehn Design.
+
+Partes de terceros, con su propia licencia (se conservan sus avisos):
+  - vendor/three-*.module.min.js — Three.js, licencia MIT (vendor/THREE-LICENSE.txt).
+  - vendor/ldraw/*.bin — piezas de la biblioteca LDraw, CC BY 4.0 (vendor/ldraw/LEEME.txt).
+
+LEGO® es una marca de The LEGO Group, que no patrocina, autoriza ni respalda este sitio.

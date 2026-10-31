@@ -44,7 +44,7 @@ export function montarMarco() {
       <nav aria-label="Pehn"><b>Pehn</b><a href="${a('index.html#historia')}">Historia</a><a href="${a('index.html#faq')}">Preguntas</a><a href="pedido.html">Mis pedidos</a><a href="privacidad.html">Privacidad</a></nav>
       <nav aria-label="Contacto"><b>Contacto</b><a class="wa-link" href="#" target="_blank" rel="noopener">WhatsApp</a><a class="ig-link" href="https://www.instagram.com/pehn.designn/" target="_blank" rel="noopener">Instagram</a></nav>
     </div>
-    <div class="copy"><span>© <span id="yr"></span> Pehn Design</span><span><a href="privacidad.html">Aviso de privacidad</a> · <button type="button" class="linkish" data-aviso-abrir>Preferencias</button></span></div>
+    <div class="copy"><span>© <span id="yr"></span> Pehn Design. Todos los derechos reservados.</span><span><a href="privacidad.html">Aviso de privacidad</a> · <button type="button" class="linkish" data-aviso-abrir>Preferencias</button></span><p class="copy-nota">LEGO® es una marca de The LEGO Group, que no patrocina ni respalda este sitio. Figuras 3D con piezas de <a href="https://www.ldraw.org" target="_blank" rel="noopener">LDraw</a> (CC BY 4.0).</p></div>
   </div>
 </footer>`,
     flotantes: `<a class="wa-float wa-link" href="#" target="_blank" rel="noopener" aria-label="Escríbenos por WhatsApp">${WA_ICON}</a>
