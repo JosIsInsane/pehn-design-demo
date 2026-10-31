@@ -21,6 +21,8 @@
 
 import { precioDe } from './piezas.js';
 import { CATS_TIENDA, SUBS_TIENDA, TIENDA } from './datos-tienda.js';
+import { EXTRAS } from './regalo.js';
+export { EXTRAS };
 import { clone } from './js/utiles.js';
 
 export const CONFIG = {
@@ -227,6 +229,7 @@ export const PRODUCTS_BASE = [
         op('luces', 'Luces', 'LUCES'), op('dedicatoria', 'Dedicatoria', 'DEDICATORIA'),
         op('iniciales', 'Iniciales', 'INICIALES'), op('fotos', 'Fotos pequeñas', 'FOTOS-PEQUENAS'),
         op('fondo', 'Fondo', 'FONDO-CAJITA'), op('dulces', 'Dulces', 'DULCES')] },
+      { step: 1, id: 'bgImg', label: 'Tu foto de fondo (opcional)', type: 'file', showIf: c => (c.adds || []).includes('fondo') },
       { step: 1, id: 'nameFont', label: 'Letra de los nombres', type: 'choice', noStock: true, options: [
         { v: 'serif', label: 'Elegante', price: 0 }, { v: 'firma', label: 'Manuscrita', price: 0 }] },
       { step: 2, id: 'word', label: 'Palabra', type: 'text', max: 12, placeholder: 'Amor…', showIf: c => c.tpl === 'amor' },
@@ -388,6 +391,19 @@ export const CARDS_BASE = [
     cfg: { tpl: 'amor', word: 'AMOR', body: TEXTS.amor, heart: '#F48FB1', deco: 'pride',
       figs: [{ name: '', skin: '#F6D3B3', hair: 'sombrero', hairColor: '#1F1712', face: 'feliz', outfit: 'playera', torso: '#FFFDF9', legs: '#1F1712' },
         { name: '', skin: '#F6D3B3', hair: 'sombrero', hairColor: '#1F1712', face: 'barba', outfit: 'playera', torso: '#FFFDF9', legs: '#1F1712' }] } },
+  // kits por ocasión: abren el cuadro ya armado para esa fecha (ocasion = filtro de regalo.js)
+  { id: 'cuadro', title: 'Kit Graduación', desc: 'Su figura con birrete y toga, su frase de logro y dedicatoria.', badge: 'Kit', bg: '#C9D6F2', ocasion: 'graduacion',
+    cfg: { tpl: 'frase', body: '¡Lo lograste! Estamos muy orgullosos de ti.', heart: '#8EC5F2', deco: 'estrella', adds: ['dedicatoria'],
+      figs: [{ ...FIG_PRESETS[0], name: 'Fer', hat: 'birrete' }] } },
+  { id: 'cuadro', title: 'Kit Cumpleaños', desc: 'Happy Birthday con gorrito de fiesta, luces y dulces para celebrar.', badge: 'Kit', bg: '#FBD9A7', ocasion: 'cumple',
+    cfg: { tpl: 'cumple', top: 'Happy Birthday', body: TEXTS.cumple, date: '', heart: '#F6B07A', deco: 'brillos', adds: ['luces', 'dulces'],
+      figs: [{ ...FIG_PRESETS[0], name: 'Fer', hat: 'cumple' }, { ...FIG_PRESETS[1], name: 'Clau' }] } },
+  { id: 'cuadro', title: 'Kit Día de la Madre', desc: 'Mamá y su familia con una frase de gracias, luces y dedicatoria.', badge: 'Kit', bg: '#E6D3F2', ocasion: 'mama',
+    cfg: { tpl: 'frase', body: 'Gracias por tanto, mamá. Te amamos.', heart: '#F48FB1', deco: 'corazones', adds: ['luces', 'dedicatoria'],
+      figs: [{ ...FIG_PRESETS[1], name: 'Mamá' }, { ...FIG_PRESETS[0], name: 'Fer' }] } },
+  { id: 'cuadro', title: 'Kit Navidad', desc: 'Su familia en Navidad con corazón rojo, estrella dorada y luces.', badge: 'Kit', bg: '#CDE6D2', ocasion: 'navidad',
+    cfg: { tpl: 'frase', body: 'Feliz Navidad. Que nunca falte el amor.', heart: '#D9363E', deco: 'estrella', adds: ['luces'],
+      figs: [{ ...FIG_PRESETS[0], name: '' }, { ...FIG_PRESETS[1], name: '' }] } },
   { id: 'sudadera', photo: 'fotos/sudaderas.jpg' }, { id: 'vaso', badge: 'Nuevo' }, { id: 'tote' }, { id: 'minifig' },
   { id: 'termo' }, { id: 'llavero' }, { id: 'playera' }, { id: 'taza' },
 ];
@@ -395,7 +411,7 @@ export const CARDS_BASE = [
 CARDS_BASE.forEach(c => c.cfg?.figs?.forEach(normFig));
 
 // el catálogo completo: los personalizadores de arriba + los productos sencillos de datos-tienda.js
-export const PRODUCTS = [...PRODUCTS_BASE, ...TIENDA];
+export const PRODUCTS = [...PRODUCTS_BASE, ...TIENDA, ...EXTRAS]; // EXTRAS: solo desde el carrito (no tienen tarjeta)
 export const CARDS = [...CARDS_BASE, ...TIENDA.map(p => ({ id: p.id }))];
 export const productoDe = id => PRODUCTS.find(p => p.id === id);
 

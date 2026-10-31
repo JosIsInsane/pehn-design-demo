@@ -182,7 +182,7 @@ if (hayFig) {
     addRec(`Figura · ${t} · *`);
   });
 }
-[...D.PRODUCTS_BASE, ...tienda].forEach(p => { // los personalizadores y los productos sencillos que se acaban de armar
+[...D.PRODUCTS_BASE, ...tienda, ...D.EXTRAS].forEach(p => { // los personalizadores, los productos sencillos que se acaban de armar y los extras del carrito (regalo.js)
   const figLike = p.groups.some(g => g.id === 'extras');
   const ids = new Set();
   if (p.variants) D.varSets(p).forEach(s => Object.values(s.map).forEach(i => ids.add(i)));

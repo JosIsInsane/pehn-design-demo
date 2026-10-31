@@ -59,7 +59,7 @@ export default [
 
   // ---------- el sitio en el navegador: módulos de js/ y los de datos, dibujos y marco ----------
   {
-    files: ['js/**/*.js', 'datos.js', 'piezas.js', 'datos-tienda.js', 'dibujos.js', 'marco.js'],
+    files: ['js/**/*.js', 'datos.js', 'regalo.js', 'piezas.js', 'datos-tienda.js', 'dibujos.js', 'marco.js'],
     languageOptions: { ecmaVersion: 2022, sourceType: 'module', globals: { ...globals.browser } },
     rules: reglas,
   },

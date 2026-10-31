@@ -331,6 +331,40 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
     await tctx.close();
   }
 
+  // 10. regalos: ocasiones, kits con ?figuras=, ordenar figuras y extras del carrito
+  {
+    const r = await ctx.newPage();
+    r.on('pageerror', e => errores.push('regalos: ' + e.message));
+    await r.route(/fonts\.(googleapis|gstatic)\.com|script\.google\.com/, x => x.fulfill({ status: 200, body: '{}' }));
+    await r.addInitScript(() => { localStorage.setItem('pehn_aviso', '1'); localStorage.removeItem('pehn_cart'); });
+    await r.goto(base + 'index.html'); await r.waitForTimeout(400);
+    ok(await r.locator('#ocasionesInicio .oc-tile').count() === 5, 'Inicio: 5 ocasiones con su cuadro');
+    await r.goto(base + 'catalogo.html?ocasion=graduacion'); await r.waitForTimeout(500);
+    ok(await r.getAttribute('[data-oc="graduacion"]', 'aria-pressed') === 'true' && /Graduación/.test(await r.textContent('#chipTxt')), 'Catálogo: ?ocasion= marca la ocasión y el filtro activo');
+    const titulos = await r.locator('#grid .card h3').allTextContents();
+    ok(titulos.some(t => /Kit Graduación/.test(t)) && !titulos.some(t => /Pijama/.test(t)), 'Catálogo: la ocasión filtra (kit sí, pijamas no): ' + titulos.join(', '));
+    await r.click('[data-oc="graduacion"]'); await r.waitForTimeout(400);
+    ok(!new URL(r.url()).searchParams.has('ocasion'), 'Catálogo: otro toque quita la ocasión');
+    const kit = await r.evaluate(() => [...document.querySelectorAll('.card[data-card]')].find(c => /Kit Graduación/.test(c.textContent))?.dataset.card);
+    await r.goto(base + `catalogo.html?card=${kit}&figuras=3`); await r.waitForSelector('#custom.open'); await r.waitForTimeout(600);
+    ok(await r.locator('.ftabs [data-tab]').count() === 3, 'Kit con ?figuras=3 abre con 3 figuras');
+    const antes = await r.locator('.ftabs [data-tab] .nm').allTextContents();
+    await r.click('[data-figmove="0:1"]'); await r.waitForTimeout(300);
+    const despues = await r.locator('.ftabs [data-tab] .nm').allTextContents();
+    ok(antes[0] === 'Fer' && despues[1] === 'Fer' && despues[0] !== 'Fer', `Ordenar figuras (Fer pasa a la derecha): ${antes.join('|')} -> ${despues.join('|')}`);
+    await r.close();
+    const c = await ctx.newPage();
+    await c.route(/fonts\.(googleapis|gstatic)\.com|script\.google\.com/, x => x.fulfill({ status: 200, body: '{}' }));
+    await c.addInitScript(() => { localStorage.setItem('pehn_aviso', '1'); localStorage.setItem('pehn_cart', JSON.stringify([{ id: 't-taza-peltre', cfg: {}, qty: 1 }])); });
+    await c.goto(base + 'catalogo.html'); await c.waitForTimeout(400);
+    await c.click('#cartBtn'); await c.waitForTimeout(500);
+    ok(await c.locator('.extras [data-extra]').count() === 3 && await c.isVisible('.plazo'), 'Carrito: sugiere 3 extras y muestra el plazo');
+    await c.click('[data-extra="x-caja"]'); await c.waitForTimeout(400);
+    const ids = await c.evaluate(() => JSON.parse(localStorage.getItem('pehn_cart')).map(i => i.id));
+    ok(ids.includes('x-caja') && !(await c.locator('[data-extra="x-caja"]').count()), 'Carrito: el extra entra al pedido y deja de sugerirse');
+    await c.close();
+  }
+
   ok(!turnstile.length, 'Sin turnstileSiteKey no se carga nada de Cloudflare Turnstile');
   ok(!(await page.evaluate(() => window.__xss)), 'Ningún texto del cliente ejecutó código');
   ok(!errores.length, 'Sin errores de JavaScript' + (errores.length ? ': ' + errores.join(' | ') : ''));

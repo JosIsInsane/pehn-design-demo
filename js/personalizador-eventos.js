@@ -51,7 +51,15 @@ function aplicarEstilo(b) {
   Object.assign(cur.cfg.figs[cur.fig], clone(LOOKS[+b.dataset.look].f));
   buildForm(); update();
 }
-const CLICS_SUELTOS = [['tab', cambiarPestana], ['sec', plegarSeccion], ['figopen', abrirFigura], ['draft', resolverBorrador], ['step', cambiarPaso], ['qty', cambiarCantidad], ['look', aplicarEstilo]];
+// ordena las figuras: "j:dir" (dir -1 = más a la izquierda en el cuadro, 1 = más a la derecha)
+function moverFigura(b) {
+  const cur = disenoActual(), arr = cur.cfg.figs, [j, dir] = b.dataset.figmove.split(':').map(Number), k = j + dir;
+  if (k < 0 || k >= arr.length) return;
+  [arr[j], arr[k]] = [arr[k], arr[j]]; cambiarFigura(k);
+  buildForm(); update();
+  document.querySelector(`[data-figmove="${k}:${dir}"]`)?.focus();
+}
+const CLICS_SUELTOS = [['figmove', moverFigura], ['tab', cambiarPestana], ['sec', plegarSeccion], ['figopen', abrirFigura], ['draft', resolverBorrador], ['step', cambiarPaso], ['qty', cambiarCantidad], ['look', aplicarEstilo]];
 
 // ---------- botones de un grupo (data-sc + data-g) ----------
 // opción de varias a la vez; algunas se excluyen entre sí

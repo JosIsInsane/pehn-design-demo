@@ -592,4 +592,10 @@ const CATALOGO_RECETAS = [
   ['Vaso de vidrio · Estándar', 'VASO-DE-VIDRIO-TRA', 1, ''],
   ['Vaso sublimado Navidad', '', 1, 'Sin inventario'],
   ['Vaso sublimado Navidad · Estándar', 'VASO-SUBLIMADO-NAVIDAD', 1, ''],
+  ['Dedicatoria escrita', '', 1, 'Sin inventario'],
+  ['Dedicatoria escrita · Estándar', 'DEDICATORIA', 1, ''],
+  ['Caja de regalo', '', 1, 'Sin inventario'],
+  ['Caja de regalo · Estándar', 'CAJAS', 1, ''],
+  ['Dulces', '', 1, 'Sin inventario'],
+  ['Dulces · Estándar', 'DULCES', 1, ''],
 ];

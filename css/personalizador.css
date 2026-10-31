@@ -107,6 +107,12 @@
 .figbox .grp:first-of-type{border-top:0}
 
 .del-fig{display:block;margin:4px 0 6px;color:var(--danger)}
+.fig-acc{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-top:8px}
+.fig-acc .del-fig{margin:0}
+.fmove{display:inline-flex;gap:6px}
+.fmove button{min-height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--line-2);background:var(--surface);font-size:13px;font-weight:600;color:var(--ink-2);transition:border-color .2s,background-color .2s}
+.fmove button:hover:not(:disabled){border-color:var(--ink);color:var(--ink)}
+.fmove button:disabled{opacity:.35;cursor:default}
 .c-foot{padding:16px 32px 20px;border-top:1px solid var(--line);background:var(--surface)}
 .breakdown{margin-bottom:14px}
 .breakdown[hidden]{display:none}

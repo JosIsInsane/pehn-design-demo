@@ -69,7 +69,7 @@ export function syncSecs() {
 function figListHTML(g) {
   const v = disenoActual().cfg.figs;
   return `<div class="grp figs-grp"><div class="grp-h"><span class="l">${g.label}</span><em>${v.length} de ${g.max} · ${fmt(g.pricePer)} c/u</em></div>
-    <ul class="figlist">${v.map((x, j) => `<li><button type="button" class="figrow" data-figopen="${j}"><span class="av">${headSVG(x)}</span><span class="fi"><b>Figura ${j + 1}${figName(j) ? ' · ' + esc(figName(j)) : ''}</b><small>${esc(figLab(x, 'hair'))}, ${esc(figLab(x, 'outfit'))}</small></span><span class="go" aria-hidden="true">Editar ›</span></button></li>`).join('')}</ul>
+    <ul class="figlist">${v.map((x, j) => `<li><button type="button" class="figrow" data-figopen="${j}"><span class="av">${headSVG(x)}</span><span class="fi"><b>Figura ${j + 1}${figName(j) ? ' · ' + esc(figName(j)) : ''}</b><small>${esc(figLab(x, 'hair'))}, ${esc(figLab(x, 'outfit'))}</small></span><span class="go" aria-hidden="true">Editar ›</span></button>${v.length > 1 ? `<span class="fmove v" role="group" aria-label="Lugar de la figura ${j + 1} en el cuadro"><button type="button" data-figmove="${j}:-1" ${j ? '' : 'disabled'} aria-label="Mover figura ${j + 1} a la izquierda">↑</button><button type="button" data-figmove="${j}:1" ${j < v.length - 1 ? '' : 'disabled'} aria-label="Mover figura ${j + 1} a la derecha">↓</button></span>` : ''}</li>`).join('')}</ul>
     ${v.length < g.max ? `<button type="button" class="btn btn-ghost add-fig-m" data-sc="p" data-g="${g.id}" data-d="1">+ Agregar figura</button>` : ''}</div>`;
 }
 // pantalla de una figura: estilos rápidos y sus secciones

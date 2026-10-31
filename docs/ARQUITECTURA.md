@@ -5,7 +5,7 @@ El navegador carga **módulos ES** (`import` / `export`): cada archivo dice qué
 
 ## Mapa de módulos
 ```
-raíz   piezas.js (generado)  datos-tienda.js (generado)  datos.js  dibujos.js  marco.js
+raíz   piezas.js (generado)  datos-tienda.js (generado)  datos.js  regalo.js  dibujos.js  marco.js
 js/    utiles  almacen  formato  estado  producto  carrito  whatsapp  sitio  modales  turnstile  envio
        checkout  cajon  tarjetas  movimiento  aviso  arranque  inicio  catalogo  catalogo-movil  pedidos
        personalizador-carga ─(import() al abrir un producto)─▶ personalizador  -form  -movil  -vista  -eventos  -cierre  zoom
@@ -85,3 +85,10 @@ Cloudflare Pages no construye nada: `package.json` no tiene script `build`; `_re
 4. Si lleva estado compartido, agrega sus funciones a `js/estado.js`; si lleva estilos, crea `css/tu-pagina.css` y enlázalo en el HTML.
 5. Agrégala a `MENU` en `marco.js` si debe salir en el menú, y a `pruebas/modulos.test.js` (se cuentan las páginas) si hace falta.
 6. `npm run lint && npm test`.
+
+## Regalos (ocasiones, kits y extras)
+
+- `regalo.js`: OCASIONES (filtro "Regalo para" del catálogo y sección del inicio; cada una con su regla de texto) y EXTRAS (dedicatoria, caja, dulces, tarjeta: se agregan con un toque desde el carrito y no salen en el catálogo).
+- Kits por ocasión: tarjetas de `CARDS_BASE` en `datos.js` con `ocasion: 'graduacion'` y su `cfg` ya armado.
+- `js/extras-carrito.js`: pinta "Agrega al regalo" y el aviso de plazo (texto editable en CRM › Sitio web, clave `plazo.produccion`).
+- Enlaces útiles: `catalogo.html?ocasion=cumple`, `catalogo.html?card=N&figuras=3`.

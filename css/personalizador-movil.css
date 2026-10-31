@@ -80,6 +80,10 @@
 .sec-b[hidden]{display:none}
 /* lista de figuras del cuadro */
 .figlist{list-style:none;margin:0 0 16px;padding:0;display:grid;gap:12px}
+.figlist li{display:flex;align-items:stretch;gap:8px}
+.figlist .figrow{flex:1;min-width:0}
+.fmove.v{flex-direction:column;justify-content:center}
+.fmove.v button{width:44px;min-height:38px;padding:0;font-size:16px}
 .figrow{display:flex;align-items:center;gap:14px;width:100%;min-height:80px;padding:12px 14px;border-radius:18px;border:1px solid var(--line-2);background:var(--surface);text-align:left;transition:border-color .2s,transform .25s var(--spring)}
 .figrow:active{transform:scale(.98);border-color:var(--ink)}
 .figrow .av{flex:none;width:60px;height:56px;border-radius:14px;background:var(--brand-soft);display:grid;place-items:center;overflow:hidden}

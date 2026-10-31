@@ -50,3 +50,6 @@ export function iniciarSitio() {
     fetch(CONFIG.sheetsUrl + '?api=sitio').then(r => r.json()).then(r => { if (r && r.ok && r.sitio) { aplicarSitio(r.sitio); guardar(KEY_SITIO, r.sitio); if (r.pago) guardar(KEY_PAGO, r.pago); } }).catch(() => { /* sin conexión: queda el HTML */ });
   }
 }
+
+// un texto editable para piezas que se pintan después (carrito, personalizador): lo guardado del CRM o el de siempre
+export const textoSitio = (clave, deSiempre) => String(leer(KEY_SITIO, {})[clave] || deSiempre);
