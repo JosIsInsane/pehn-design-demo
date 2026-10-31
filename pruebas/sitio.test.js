@@ -33,7 +33,10 @@ const server = http.createServer((req, res) => {
     if (/(\.html|\/[^.]*)$/.test(req.url.split('?')[0])) { res.writeHead(404, { ...CABECERAS, 'Content-Type': 'text/html' }); return fs.createReadStream(path.join(RAIZ, '404.html')).pipe(res); }
     res.writeHead(404); return res.end();
   }
-  res.writeHead(200, { ...CABECERAS, 'Content-Type': TIPOS[path.extname(f)] || 'application/octet-stream' }); fs.createReadStream(f).pipe(res);
+  res.writeHead(200, { ...CABECERAS, 'Content-Type': TIPOS[path.extname(f)] || 'application/octet-stream' });
+  // la prueba corre sin Turnstile real (la de Turnstile pone su llave de prueba encima)
+  if (f === path.join(RAIZ, 'datos.js')) return res.end(fs.readFileSync(f, 'utf8').replace(/turnstileSiteKey: '[^']*'/, "turnstileSiteKey: ''"));
+  fs.createReadStream(f).pipe(res);
 });
 
 // Abre el diseño de la tarjeta n del catálogo como lo haría una persona: tocándola.
