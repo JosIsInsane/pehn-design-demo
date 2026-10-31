@@ -253,9 +253,9 @@ function frameGeom(c) {
   return { sc, fw, gap, total, x0: 150 - total / 2, fy: base - 314 * sc };
 }
 export function frameFigBox(c, i) { const g = frameGeom(c); return { x: g.x0 + i * (g.fw + g.gap), y: g.fy, w: g.fw, h: 314 * g.sc }; }
-// foto de fondo que sube el cliente (extra "Fondo"): solo imágenes del propio navegador (data:image)
-const fondoFoto = c => (c.adds || []).includes('fondo') && /^data:image\/(png|jpeg|webp);base64,[\w+/=]+$/.test(c.bgImg || '')
-  ? `<image href="${c.bgImg}" x="32" y="32" width="236" height="236" preserveAspectRatio="xMidYMid slice" opacity=".92"/>` : '';
+// foto de fondo que sube el cliente (Fondo: Tu foto): solo imágenes del propio navegador (data:image)
+const fondoFoto = c => c.fondo === 'foto' && /^data:image\/(png|jpeg|webp);base64,[\w+/=]+$/.test(c.bgImg || '')
+  ? `<image href="${c.bgImg}" x="32" y="32" width="236" height="236" preserveAspectRatio="xMidYMid slice" opacity=".55"/>` : '';
 export function frameSVG(c) {
   const k = 'f' + (++UID);
   const figs = c.figs || [], n = figs.length;

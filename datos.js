@@ -220,6 +220,8 @@ export const PRODUCTS_BASE = [
         { v: 'amor', label: 'Definición', price: 0 }, { v: 'cumple', label: 'Happy Birthday', price: 0 },
         { v: 'calendario', label: 'Calendario', price: 0 }, { v: 'frase', label: 'Frase', price: 0 },
         { v: 'aniv', label: 'Aniversario', price: 0 }, { v: 'libre', label: 'Solo nombres', price: 0 }] },
+      { step: 1, id: 'fondo', label: 'Fondo', type: 'choice', options: [{ v: 'blanco', label: 'Blanco', price: 0 }, op('foto', 'Tu foto', 'FONDO-CAJITA')] },
+      { step: 1, id: 'bgImg', label: 'Sube tu foto de fondo', type: 'file', showIf: c => c.fondo === 'foto' },
       { step: 1, id: 'heart', label: 'Corazón en spray', type: 'swatch', options: sw(HEART) },
       { step: 1, id: 'deco', label: 'Detalle', type: 'choice', options: [
         { v: 'ninguno', label: 'Ninguno', price: 0 }, { v: 'brillos', label: 'Brillitos', price: 0 },
@@ -228,8 +230,7 @@ export const PRODUCTS_BASE = [
       { step: 1, id: 'adds', label: 'Extras', type: 'multi', options: [
         op('luces', 'Luces', 'LUCES'), op('dedicatoria', 'Dedicatoria', 'DEDICATORIA'),
         op('iniciales', 'Iniciales', 'INICIALES'), op('fotos', 'Fotos pequeñas', 'FOTOS-PEQUENAS'),
-        op('fondo', 'Fondo', 'FONDO-CAJITA'), op('dulces', 'Dulces', 'DULCES')] },
-      { step: 1, id: 'bgImg', label: 'Tu foto de fondo (opcional)', type: 'file', showIf: c => (c.adds || []).includes('fondo') },
+        op('dulces', 'Dulces', 'DULCES')] },
       { step: 1, id: 'nameFont', label: 'Letra de los nombres', type: 'choice', noStock: true, options: [
         { v: 'serif', label: 'Elegante', price: 0 }, { v: 'firma', label: 'Manuscrita', price: 0 }] },
       { step: 2, id: 'word', label: 'Palabra', type: 'text', max: 12, placeholder: 'Amor…', showIf: c => c.tpl === 'amor' },
