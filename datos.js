@@ -37,7 +37,7 @@ export const CONFIG = {
   api: '/api',
   // Cloudflare Turnstile (opcional, anti-bots): pega aquí la "site key" del widget. Vacío = sin verificación.
   // Para activarlo del todo hace falta también TURNSTILE_SECRET en Cloudflare (ver functions/api.js).
-  turnstileSiteKey: '',
+  turnstileSiteKey: '0x4AAAAAAFud9Iu_xm8op6Yn',
 };
 
 /* ---------- piezas ----------
