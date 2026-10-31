@@ -44,10 +44,29 @@ function aplicarSitio(v) {
   aplicarColores(v); aplicarTextos(v); aplicarFotos(v); aplicarContacto(v);
 }
 
+// Vista previa del editor (/admin): la página va dentro de un iframe del mismo sitio y recibe los cambios
+// mientras se escriben (solo mensajes de este mismo dominio). Nada se guarda: es solo lo que se ve.
+let enVistaPrevia = false;
+function escucharEditor() {
+  if (window.parent === window) return;
+  try { if (window.parent.location.pathname.startsWith('/admin')) document.documentElement.classList.add('en-editor'); } catch { /* otro dominio: no es el editor */ }
+  addEventListener('message', e => {
+    if (e.origin !== location.origin || e.source !== window.parent || !e.data || typeof e.data !== 'object') return;
+    if (e.data.tipo === 'pehn-vista') { enVistaPrevia = true; aplicarSitio(e.data.sitio); }
+    if (e.data.tipo === 'pehn-resaltar') {
+      const el = document.querySelector(`[data-edit="${CSS.escape(String(e.data.clave))}"],[data-edit-img="${CSS.escape(String(e.data.clave))}"]`);
+      document.querySelectorAll('.pehn-resaltado').forEach(x => x.classList.remove('pehn-resaltado'));
+      if (el) { el.classList.add('pehn-resaltado'); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    }
+  });
+  parent.postMessage({ tipo: 'pehn-lista' }, location.origin);
+}
+
 export function iniciarSitio() {
   aplicarSitio(leer(KEY_SITIO, null)); // lo guardado: la página sale con el contenido nuevo sin esperar
+  escucharEditor();
   if (CONFIG.api) {
-    fetch(CONFIG.api + '?api=sitio').then(r => r.json()).then(r => { if (r && r.ok && r.sitio) { aplicarSitio(r.sitio); guardar(KEY_SITIO, r.sitio); if (r.pago) guardar(KEY_PAGO, r.pago); } }).catch(() => { /* sin conexión: queda el HTML */ });
+    fetch(CONFIG.api + '?api=sitio').then(r => r.json()).then(r => { if (enVistaPrevia) return; if (r && r.ok && r.sitio) { aplicarSitio(r.sitio); guardar(KEY_SITIO, r.sitio); if (r.pago) guardar(KEY_PAGO, r.pago); } }).catch(() => { /* sin conexión: queda el HTML */ });
   }
 }
 

@@ -430,6 +430,35 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
     await g.close();
   }
 
+  // 12. editor del sitio en vivo (/admin): correo → código → ve la página cambiar al escribir → guarda
+  {
+    sim.run(`setConfig_('Admins', 'jefa@pehn.test')`);
+    const a = await ctx.newPage(); const errA = [];
+    a.on('pageerror', e => errA.push(e.message)); a.on('console', m => m.type() === 'error' && /Content Security Policy|Refused|frame/i.test(m.text()) && errA.push(m.text()));
+    await a.route(/fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, body: '' }));
+    await a.goto(base + 'admin.html');
+    await a.fill('#edCorreo', 'jefa@pehn.test'); await a.click('#edPaso1 button[type=submit]');
+    await a.waitForSelector('#edPaso2:not([hidden])');
+    const codigo = String(sim.mails[sim.mails.length - 1].subject).match(/(\d{6})$/)[1];
+    await a.fill('#edCodigo', '000000'); await a.click('#edPaso2 button[type=submit]'); await a.waitForTimeout(400);
+    ok(/incorrecto/.test(await a.textContent('#edError')) && await a.isHidden('#edApp'), 'Editor: código malo no entra (y el panel no se ve antes de entrar)');
+    await a.fill('#edCodigo', codigo); await a.click('#edPaso2 button[type=submit]');
+    await a.waitForSelector('#edApp:not([hidden])');
+    ok(await a.locator('.ed-campo').count() > 20, 'Editor: con el código correcto entra y ve los campos');
+    const vista = a.frameLocator('#edFrame');
+    await vista.locator('[data-edit="hero.titulo"]').waitFor({ state: 'attached' });
+    await a.fill('#f_hero_titulo', 'Hola en vivo'); await a.waitForTimeout(400);
+    ok((await vista.locator('[data-edit="hero.titulo"]').textContent()) === 'Hola en vivo' && sim.hoja('Sitio').find(x => x.Clave === 'hero.titulo').Valor !== 'Hola en vivo',
+      'Editor: la página de al lado cambia mientras escribes (sin guardar todavía)');
+    await a.fill('#f_color_marca', 'rojo'); await a.waitForTimeout(200);
+    ok(await a.isDisabled('#edGuardar') && /rojo|Revisa/.test(await a.textContent('#edEstado')), 'Editor: un color inválido no deja guardar');
+    await a.fill('#f_color_marca', '#3355AA');
+    await a.click('#edGuardar'); await a.waitForFunction(() => /Guardado/.test(document.querySelector('#edEstado').textContent), null, { timeout: 8000 });
+    ok(sim.hoja('Sitio').find(x => x.Clave === 'hero.titulo').Valor === 'Hola en vivo' && sim.hoja('Movimientos').some(m => m.Usuario === 'jefa@pehn.test'), 'Editor: "Guardar y publicar" lo guarda en la hoja y anota quién fue');
+    ok(!errA.length, 'Editor: sin errores de JavaScript ni de seguridad (el iframe del mismo sitio se permite)' + (errA.length ? ': ' + errA.join(' | ') : ''));
+    await a.close();
+  }
+
   ok(!turnstile.length, 'Sin turnstileSiteKey no se carga nada de Cloudflare Turnstile');
   ok(!(await page.evaluate(() => window.__xss)), 'Ningún texto del cliente ejecutó código');
   ok(!errores.length, 'Sin errores de JavaScript' + (errores.length ? ': ' + errores.join(' | ') : ''));

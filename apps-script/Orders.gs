@@ -40,7 +40,9 @@ function doPost(e) {
       case 'comprobante': return json_({ ok: true, pago: recibirComprobante_(data, cfg) });
       case 'verificar': return json_({ ok: true, verificacion: verificarDesdeSitio_(data, cfg) });
       case 'misPedidos': return json_({ ok: true, pedidos: misPedidos_(data) });
-      default: throw new Error('Acción desconocida.');
+      default:
+        if (EDITOR_ACCIONES[data.accion]) return json_({ ok: true, ...EDITOR_ACCIONES[data.accion](data) }); // editor del sitio (EditorSitio.gs)
+        throw new Error('Acción desconocida.');
     }
   } catch (err) {
     console.error(err); // el detalle completo queda en Ejecuciones; al sitio solo van mensajes conocidos
@@ -53,7 +55,7 @@ function doPost(e) {
 // Mismos topes que TOPES de functions/api.js (allá es un primer filtro; aquí la cuenta de verdad).
 const TOPES_IP = { pedido: [4, 600], comprobante: [8, 3600], verificar: [30, 3600], seguimiento: [30, 600], misPedidos: [30, 600] };
 function limitePorIp_(data) {
-  const ip = typeof data.ip === 'string' ? data.ip.replace(/[^0-9a-fA-F:.]/g, '').slice(0, 45) : '', tope = TOPES_IP[data.accion || 'pedido'];
+  const ip = typeof data.ip === 'string' ? data.ip.replace(/[^0-9a-fA-F:.]/g, '').slice(0, 45) : '', tope = TOPES_IP[data.accion || 'pedido'] || TOPES_EDITOR[data.accion]; // TOPES_EDITOR: EditorSitio.gs
   if (ip && tope) limite_('ip_' + (data.accion || 'pedido') + '_' + ip, tope[0], tope[1], 'Demasiados intentos. Espera unos minutos.');
 }
 
@@ -64,13 +66,14 @@ const MENSAJES_PUBLICOS = [
   'Faltan datos del cliente.', 'Revisa el número de WhatsApp.', 'Revisa el correo.', 'Pedido vacío o demasiado grande.',
   'El comprobante debe ser foto (JPG, PNG) o PDF de menos de 5 MB.', 'Sube el comprobante de tu anticipo para enviar el pedido.',
   'Demasiados pedidos seguidos. Escríbenos por WhatsApp.', 'Estamos recibiendo muchos pedidos. Intenta en unos minutos o escríbenos por WhatsApp.',
-  'Revisa el número de pedido y tu WhatsApp.', 'Demasiados intentos. Espera unos minutos.', 'No encontramos un pedido con ese número y ese WhatsApp.',
+  'Revisa el número de pedido y tu WhatsApp.', 'Código incorrecto o vencido. Pide otro.', 'Tu sesión venció. Entra otra vez.',
+  'Sube una foto JPG, PNG o WEBP de menos de 5 MB.', 'Cambios inválidos.', 'Demasiados intentos. Espera unos minutos.', 'No encontramos un pedido con ese número y ese WhatsApp.',
   'Ya recibimos varios comprobantes de este pedido. Escríbenos por WhatsApp.', 'Este pedido está cancelado. Escríbenos por WhatsApp.',
   'La hoja está ocupada con otro cambio. Espera unos segundos e intenta de nuevo.', 'Verificación fallida. Recarga la página e intenta de nuevo.',
   'El precio del pedido no coincide. Recarga la página e intenta de nuevo.',
 ];
 // también son públicos los motivos de Verificacion.gs (se leen al usarse: el orden de los archivos no importa)
-const esMensajePublico_ = msg => MENSAJES_PUBLICOS.includes(msg) || Object.values(MOTIVOS).includes(msg);
+const esMensajePublico_ = msg => MENSAJES_PUBLICOS.includes(msg) || Object.values(MOTIVOS).includes(msg) || /^No se guardaron \(formato inválido\): [\w., -]{1,300}$/.test(msg);
 
 // cuenta en caché: más de "max" en "seg" segundos = rechazo
 function limite_(clave, max, seg, msg) {

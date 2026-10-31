@@ -72,3 +72,13 @@ La web ya no habla directo con Apps Script. Todo pasa por `/api`, una Cloudflare
   token, IP, acción y portero. En JSON gana la última clave repetida: el navegador no puede colar los suyos.
 - La CSP ya no permite que el navegador se conecte a script.google.com.
 Pruebas: `pruebas/portero.test.js` (con Google simulado) y la de punta a punta (`sitio.test.js`) pasa por el portero real.
+
+## Editor del sitio en vivo (`/admin`)
+
+- `admin.html` + `js/paginas/admin.js`: campos a la izquierda y la página real en un iframe del mismo sitio a la derecha;
+  los cambios se ven al escribir (postMessage solo del mismo dominio, en `js/sitio.js`) y se guardan con "Guardar y publicar".
+- Entrada en dos pasos (`apps-script/EditorSitio.gs`): correo de Config › Admins (o Correo del negocio) → código de 6 cifras
+  por correo (10 min, 5 intentos, un solo uso) → sesión de 6 h en la caché de Apps Script. Al sitio siempre se le contesta
+  igual (no revela quién es admin). Si quitan a alguien de Admins, su sesión deja de servir. Cada guardado queda en Movimientos.
+- Por eso la CSP permite `frame-ancestors 'self'` y `frame-src 'self'` (antes 'none'): solo el mismo sitio puede meterse en un iframe.
+- `/admin` no se indexa (robots.txt y `noindex`).
