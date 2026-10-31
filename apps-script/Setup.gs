@@ -16,6 +16,7 @@ function onOpen() {
     .addItem('Probar lectura de comprobantes', 'probarLecturaComprobantes')
     .addItem('Configurar hojas', 'configurar')
     .addItem('Ver URL y token para el sitio', 'mostrarConexion')
+    .addItem('Cambiar token del sitio', 'cambiarTokenSitio')
     .addToUi();
 }
 
@@ -220,8 +221,17 @@ function revisarSistema() {
 function mostrarConexion() {
   const url = urlApp_() || '(primero publica: Implementar › Nueva implementación › App web)';
   const html = HtmlService.createHtmlOutput(`<div style="font:14px/1.6 system-ui;padding:8px">
-    <p><b>1.</b> En <code>datos.js</code> pega:</p>
-    <pre style="background:#F4EDE4;padding:12px;border-radius:10px;white-space:pre-wrap">sheetsUrl: '${url}',\nsheetsToken: '${config_()['Token del sitio']}',</pre>
-    <p><b>2.</b> La app web debe estar publicada como <i>Ejecutar como: Yo</i> y <i>Quién tiene acceso: Cualquier usuario</i>.</p></div>`).setWidth(560).setHeight(260);
+    <p><b>1.</b> En Cloudflare › Workers y Pages › pehn-design-demo › Settings › Variables and Secrets (Production y Preview):</p>
+    <pre style="background:#F4EDE4;padding:12px;border-radius:10px;white-space:pre-wrap">SITE_TOKEN = ${esc_(config_()['Token del sitio'])}   (tipo Secret)\nAPPS_SCRIPT_URL = ${esc_(url)}   (solo si cambió)</pre>
+    <p><b>2.</b> Después: Deployments › ⋯ › Retry deployment, para que tome el valor nuevo.</p>
+    <p><b>3.</b> La app web debe estar publicada como <i>Ejecutar como: Yo</i> y <i>Quién tiene acceso: Cualquier usuario</i>.</p></div>`).setWidth(600).setHeight(320);
   SpreadsheetApp.getUi().showModalDialog(html, 'Conectar el sitio');
+}
+// el token viejo deja de servir AL INSTANTE: los pedidos fallan hasta que se pega el nuevo en Cloudflare y se vuelve a publicar (~2 min)
+function cambiarTokenSitio() {
+  const ui = SpreadsheetApp.getUi();
+  const r = ui.alert('Cambiar token del sitio', 'El token actual deja de servir ya. Los pedidos fallarán hasta que pegues el nuevo en Cloudflare (SITE_TOKEN) y vuelvas a publicar (unos 2 minutos). Hazlo en un horario tranquilo. ¿Seguir?', ui.ButtonSet.YES_NO);
+  if (r !== ui.Button.YES) return;
+  setConfig_('Token del sitio', nuevaClave_(32));
+  mostrarConexion();
 }

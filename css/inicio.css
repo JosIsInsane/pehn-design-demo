@@ -66,6 +66,19 @@
 .cat-go svg{width:18px;height:18px}
 .cat-tile:hover .cat-go{transform:rotate(-45deg)}
 
+/* ---------- regala por ocasión: fila que se desliza en el celular ---------- */
+.ocs-inicio{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:16px}
+.oc-tile{position:relative;display:grid;grid-template-rows:auto 1fr;gap:12px;padding:14px 14px 16px;border-radius:var(--r-lg);background:var(--tint);transition:transform .45s var(--ease),box-shadow .45s var(--ease)}
+.oc-tile:hover{transform:translateY(-4px);box-shadow:var(--sh-2)}
+.oc-tile:focus-visible{outline:2px solid var(--ink);outline-offset:3px}
+.oc-art{aspect-ratio:1;display:grid;place-items:center}
+.oc-art svg{width:86%;height:86%;filter:drop-shadow(0 10px 14px rgba(30,22,17,.16))}
+.oc-label{padding-right:48px}
+.oc-label h3{font-size:clamp(18px,1.6vw,21px);line-height:1.15}
+.oc-label small{display:block;margin-top:4px;font-size:13px;opacity:.75}
+.oc-tile .cat-go{position:absolute;right:12px;bottom:12px;width:38px;height:38px}
+.oc-tile:hover .cat-go{transform:rotate(-45deg)}
+
 /* ---------- cómo funciona ---------- */
 .how{background:var(--surface);border-radius:var(--r-xl);padding:clamp(28px,5vw,64px);display:grid;grid-template-columns:1fr 1fr;gap:clamp(28px,5vw,72px);align-items:center;box-shadow:var(--sh-1)}
 .how-steps{display:grid;margin-top:28px}
@@ -154,6 +167,9 @@
 .hero-art{animation:rise 1.1s .2s var(--ease) both}
 
 @media (max-width:960px){
+  .ocs-inicio{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(200px,42%);overflow-x:auto;scroll-snap-type:x mandatory;margin:0 calc(-1 * var(--gutter));padding:0 var(--gutter) 6px;scrollbar-width:none}
+  .ocs-inicio::-webkit-scrollbar{display:none}
+  .oc-tile{scroll-snap-align:start}
   .hero-in{grid-template-columns:1fr}
   .hero-art{max-width:520px;margin-top:16px}
   .trust-in{grid-template-columns:1fr 1fr}
@@ -172,6 +188,7 @@
 }
 
 @media (max-width:640px){
+  .ocs-inicio{grid-auto-columns:64%}
   .hero-proof{flex-direction:column;align-items:flex-start}
   .float-chip{font-size:12px;padding:8px 10px}
   .float-chip .ico{width:28px;height:28px}

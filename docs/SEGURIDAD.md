@@ -45,3 +45,30 @@ Correr las dos antes de publicar cambios. Si alguna falla, no publicar.
 6. El límite de "1 correo por destinatario" usa la caché de Google, que guarda como máximo 6 horas: un mismo correo puede recibir otro pasado ese tiempo. Si hace falta un día exacto, habría que guardarlo en una hoja.
 7. Si una carpeta de pedido queda suelta en Drive porque un pedido falló a medias, se puede borrar sin problema.
 8. El aviso de privacidad es un modelo de buenas prácticas: que lo revise un abogado en Honduras antes de darlo por definitivo.
+
+## Privacidad, plagio y archivos públicos (31 oct 2026)
+
+- **GPC (Global Privacy Control):** si el navegador manda la señal, `js/aviso.js` elige "Solo el carrito" sin preguntar
+  y lo dice en el aviso. Se declara en `/.well-known/gpc.json`. Si algún día se agrega Pixel, Analytics o similar, se carga
+  **solo** si `permiteMedicion()` (en `js/aviso.js`) da `true`.
+- **security.txt:** `/.well-known/security.txt` dice a quién avisar de una falla. Vence cada año: cambia `Expires` antes del 31 oct 2027.
+- **Licencia:** `LICENSE` (todos los derechos reservados) y © en el pie. El repo debe ser **privado** en GitHub.
+- **Dependabot:** `.github/dependabot.yml` abre un PR al mes si hay versiones nuevas de las acciones o herramientas de prueba.
+  Three.js (en `vendor/`) se actualiza a mano.
+- **Si cambia el dominio** (de `pehn-design-demo.pages.dev` a uno propio), cambia la URL en: las etiquetas `og:` y `canonical`
+  de las 4 páginas, `robots.txt`, `sitemap.xml` y `.well-known/security.txt`.
+- **Página 404:** `404.html` (Cloudflare Pages la muestra sola). Lleva `<base href="/">` para que sus enlaces funcionen en cualquier ruta.
+
+## Portero de Cloudflare (`functions/api.js`)
+
+La web ya no habla directo con Apps Script. Todo pasa por `/api`, una Cloudflare Pages Function que:
+- guarda el **token del sitio** en secreto (`SITE_TOKEN`); el que estaba en `datos.js` quedó público en el historial,
+  por eso hay que **cambiarlo** (Pehn › Cambiar token del sitio) una vez que el portero esté publicado;
+- solo deja pasar las 5 acciones que existen y hasta 30 MB;
+- limita por **IP** (Apps Script no la ve): primer filtro en el portero y la cuenta real en Apps Script (`TOPES_IP` de Orders.gs);
+- revisa **Turnstile** antes de tocar Google si existe `TURNSTILE_SECRET` (y avisa a Apps Script con `portero: true`
+  para que no lo vuelva a revisar: un token de Turnstile sirve una sola vez);
+- no abre el pedido (con fotos pesa megas y el plan gratis da ~10 ms de CPU): lo pasa en streaming y le pega al final
+  token, IP, acción y portero. En JSON gana la última clave repetida: el navegador no puede colar los suyos.
+- La CSP ya no permite que el navegador se conecte a script.google.com.
+Pruebas: `pruebas/portero.test.js` (con Google simulado) y la de punta a punta (`sitio.test.js`) pasa por el portero real.

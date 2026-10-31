@@ -21,6 +21,8 @@
 
 import { precioDe } from './piezas.js';
 import { CATS_TIENDA, SUBS_TIENDA, TIENDA } from './datos-tienda.js';
+import { EXTRAS } from './regalo.js';
+export { EXTRAS };
 import { clone } from './js/utiles.js';
 
 export const CONFIG = {
@@ -30,11 +32,11 @@ export const CONFIG = {
   bulkPct: 10,
   ordersEnabled: true,      // false = sin carrito, cada diseño se pide directo por WhatsApp
   whatsapp: '',             // TODO: número con código de país, ej. '50498765432'
-  // Google Sheets: URL de la app web de Apps Script y el token de la hoja Config (Pehn › Ver URL y token)
-  sheetsUrl: 'https://script.google.com/macros/s/AKfycbyZ0Z1nr735rQ9tn2YSaYUtXEyDUL7fBQiMF78JuiRdUnRtzCt6BALCHgane8wpnsO5/exec',
-  sheetsToken: '5eadaaf740544df59772',
+  // Sistema de pedidos: la web habla con el portero de Cloudflare (functions/api.js), que guarda el token en secreto
+  // y pasa a Apps Script. La URL de Apps Script y el token ya NO van aquí (ver functions/api.js).
+  api: '/api',
   // Cloudflare Turnstile (opcional, anti-bots): pega aquí la "site key" del widget. Vacío = sin verificación.
-  // Para activarlo del todo hace falta también TURNSTILE_SECRET en Apps Script (ver apps-script/README.md).
+  // Para activarlo del todo hace falta también TURNSTILE_SECRET en Cloudflare (ver functions/api.js).
   turnstileSiteKey: '',
 };
 
@@ -95,7 +97,7 @@ export const FIG_GROUPS = [
   { id: 'torso', label: 'Color de ropa', type: 'swatch', options: sw(CLOTH) },
   { id: 'printText', label: 'Texto en playera', type: 'text', max: 6, placeholder: 'Ej. PAPÁ…', showIf: c => c.outfit === 'texto' },
   { id: 'legs', label: 'Color de pantalón', type: 'swatch', options: sw(PANTS), showIf: c => c.outfit !== 'vestido' },
-  // todos los accesorios del CSV (categoría Accesorios) que no son ropa ni sombrero; se dibuja una etiqueta con la inicial
+  // todos los accesorios del CSV (categoría Accesorios) que no son ropa ni sombrero; su dibujo está en accesorios.js (sin dibujo: ficha con la inicial)
   { id: 'hand', label: 'Accesorio en la mano', type: 'choice', options: [{ v: 'ninguno', label: 'Ninguno', price: 0 }].concat([
     ['bebe', 'Bebé', 'ACC-BEBE'], ['camara', 'Cámara', 'ACC-CAMARA'], ['gym', 'Gym', 'ACC-GYM'], ['varita', 'Varita mágica', 'ACC-VARITA-MAGICA'],
     ['flores', 'Flores', 'ACC-FLORES'], ['microfono', 'Micrófono', 'ACC-MICROFONO'], ['taza', 'Taza', 'ACC-TAZA'], ['bufanda', 'Bufanda', 'ACC-BUFANDA'],
@@ -218,6 +220,8 @@ export const PRODUCTS_BASE = [
         { v: 'amor', label: 'Definición', price: 0 }, { v: 'cumple', label: 'Happy Birthday', price: 0 },
         { v: 'calendario', label: 'Calendario', price: 0 }, { v: 'frase', label: 'Frase', price: 0 },
         { v: 'aniv', label: 'Aniversario', price: 0 }, { v: 'libre', label: 'Solo nombres', price: 0 }] },
+      { step: 1, id: 'fondo', label: 'Fondo', type: 'choice', options: [{ v: 'blanco', label: 'Blanco', price: 0 }, op('foto', 'Tu foto', 'FONDO-CAJITA')] },
+      { step: 1, id: 'bgImg', label: 'Sube tu foto de fondo', type: 'file', showIf: c => c.fondo === 'foto' },
       { step: 1, id: 'heart', label: 'Corazón en spray', type: 'swatch', options: sw(HEART) },
       { step: 1, id: 'deco', label: 'Detalle', type: 'choice', options: [
         { v: 'ninguno', label: 'Ninguno', price: 0 }, { v: 'brillos', label: 'Brillitos', price: 0 },
@@ -226,7 +230,7 @@ export const PRODUCTS_BASE = [
       { step: 1, id: 'adds', label: 'Extras', type: 'multi', options: [
         op('luces', 'Luces', 'LUCES'), op('dedicatoria', 'Dedicatoria', 'DEDICATORIA'),
         op('iniciales', 'Iniciales', 'INICIALES'), op('fotos', 'Fotos pequeñas', 'FOTOS-PEQUENAS'),
-        op('fondo', 'Fondo', 'FONDO-CAJITA'), op('dulces', 'Dulces', 'DULCES')] },
+        op('dulces', 'Dulces', 'DULCES')] },
       { step: 1, id: 'nameFont', label: 'Letra de los nombres', type: 'choice', noStock: true, options: [
         { v: 'serif', label: 'Elegante', price: 0 }, { v: 'firma', label: 'Manuscrita', price: 0 }] },
       { step: 2, id: 'word', label: 'Palabra', type: 'text', max: 12, placeholder: 'Amor…', showIf: c => c.tpl === 'amor' },
@@ -388,6 +392,19 @@ export const CARDS_BASE = [
     cfg: { tpl: 'amor', word: 'AMOR', body: TEXTS.amor, heart: '#F48FB1', deco: 'pride',
       figs: [{ name: '', skin: '#F6D3B3', hair: 'sombrero', hairColor: '#1F1712', face: 'feliz', outfit: 'playera', torso: '#FFFDF9', legs: '#1F1712' },
         { name: '', skin: '#F6D3B3', hair: 'sombrero', hairColor: '#1F1712', face: 'barba', outfit: 'playera', torso: '#FFFDF9', legs: '#1F1712' }] } },
+  // kits por ocasión: abren el cuadro ya armado para esa fecha (ocasion = filtro de regalo.js)
+  { id: 'cuadro', title: 'Kit Graduación', desc: 'Su figura con birrete y toga, su frase de logro y dedicatoria.', badge: 'Kit', bg: '#C9D6F2', ocasion: 'graduacion',
+    cfg: { tpl: 'frase', body: '¡Lo lograste! Estamos muy orgullosos de ti.', heart: '#8EC5F2', deco: 'estrella', adds: ['dedicatoria'],
+      figs: [{ ...FIG_PRESETS[0], name: 'Fer', hat: 'birrete' }] } },
+  { id: 'cuadro', title: 'Kit Cumpleaños', desc: 'Happy Birthday con gorrito de fiesta, luces y dulces para celebrar.', badge: 'Kit', bg: '#FBD9A7', ocasion: 'cumple',
+    cfg: { tpl: 'cumple', top: 'Happy Birthday', body: TEXTS.cumple, date: '', heart: '#F6B07A', deco: 'brillos', adds: ['luces', 'dulces'],
+      figs: [{ ...FIG_PRESETS[0], name: 'Fer', hat: 'cumple' }, { ...FIG_PRESETS[1], name: 'Clau' }] } },
+  { id: 'cuadro', title: 'Kit Día de la Madre', desc: 'Mamá y su familia con una frase de gracias, luces y dedicatoria.', badge: 'Kit', bg: '#E6D3F2', ocasion: 'mama',
+    cfg: { tpl: 'frase', body: 'Gracias por tanto, mamá. Te amamos.', heart: '#F48FB1', deco: 'corazones', adds: ['luces', 'dedicatoria'],
+      figs: [{ ...FIG_PRESETS[1], name: 'Mamá' }, { ...FIG_PRESETS[0], name: 'Fer' }] } },
+  { id: 'cuadro', title: 'Kit Navidad', desc: 'Su familia en Navidad con corazón rojo, estrella dorada y luces.', badge: 'Kit', bg: '#CDE6D2', ocasion: 'navidad',
+    cfg: { tpl: 'frase', body: 'Feliz Navidad. Que nunca falte el amor.', heart: '#D9363E', deco: 'estrella', adds: ['luces'],
+      figs: [{ ...FIG_PRESETS[0], name: '' }, { ...FIG_PRESETS[1], name: '' }] } },
   { id: 'sudadera', photo: 'fotos/sudaderas.jpg' }, { id: 'vaso', badge: 'Nuevo' }, { id: 'tote' }, { id: 'minifig' },
   { id: 'termo' }, { id: 'llavero' }, { id: 'playera' }, { id: 'taza' },
 ];
@@ -395,7 +412,7 @@ export const CARDS_BASE = [
 CARDS_BASE.forEach(c => c.cfg?.figs?.forEach(normFig));
 
 // el catálogo completo: los personalizadores de arriba + los productos sencillos de datos-tienda.js
-export const PRODUCTS = [...PRODUCTS_BASE, ...TIENDA];
+export const PRODUCTS = [...PRODUCTS_BASE, ...TIENDA, ...EXTRAS]; // EXTRAS: solo desde el carrito (no tienen tarjeta)
 export const CARDS = [...CARDS_BASE, ...TIENDA.map(p => ({ id: p.id }))];
 export const productoDe = id => PRODUCTS.find(p => p.id === id);
 

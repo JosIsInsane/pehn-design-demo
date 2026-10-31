@@ -20,7 +20,7 @@ function revisarDatos() {
   PRODUCTS.forEach(p => { if (!RENDER[p.render]) avisa(`El producto "${p.id}" usa render: '${p.render}', que no existe en RENDER (dibujos.js).`); });
   Object.entries(PORTADA).forEach(([k, l]) => l.forEach(i => { if (!CARDS[i]?.cfg || CARDS[i].id !== 'cuadro') avisa(`PORTADA.${k} usa la tarjeta ${i}, que no es un cuadro con cfg. Ajusta los números en datos.js.`); }));
   if (!CONFIG.whatsapp) avisa('Falta CONFIG.whatsapp en datos.js: los botones de WhatsApp no llevan número.');
-  if (!CONFIG.sheetsUrl) avisa('Falta CONFIG.sheetsUrl en datos.js: los pedidos no se guardan en Google Sheets.');
+  if (!CONFIG.api) avisa('Falta CONFIG.api en datos.js: los pedidos no se guardan en Google Sheets.');
 }
 
 // primero el marco: los demás módulos buscan en la página el menú, el cajón y los botones que él crea
