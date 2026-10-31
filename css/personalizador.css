@@ -209,3 +209,4 @@
 .stage3d{touch-action:none;cursor:grab}
 .stage3d:active{cursor:grabbing}
 .stage3d canvas{width:100%;height:100%;display:block}
+.stage3d.cargando::after{content:'Armando tu figura…';position:absolute;inset:0;display:grid;place-items:center;color:var(--muted,#6E6A66);font-size:15px;pointer-events:none}
