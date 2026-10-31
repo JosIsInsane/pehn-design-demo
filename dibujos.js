@@ -28,17 +28,25 @@ function figDefs(k) {
   </defs>`;
 }
 
+// pelo como pieza LEGO: casco de plástico grueso que tapa el botón de la cabeza, con volumen y brillo
+const PELOS = {
+  corto: 'M63 64C60 22 78 7 100 7C122 7 140 22 137 64L130 64C130 52 128 45 123 42C110 37 90 37 77 42C72 45 70 52 70 64Z',
+  lado: 'M62 66C58 20 80 5 103 6C126 7 141 24 138 62L131 60C131 50 128 44 122 40C112 44 96 42 84 36C80 44 72 50 70 66Z',
+  largo: 'M61 60C57 16 80 5 100 5C120 5 143 16 139 60L145 114Q134 121 122 114L125 52Q118 40 100 39Q82 40 75 52L78 114Q66 121 55 114Z',
+  ondas: 'M61 60C57 16 80 5 100 5C120 5 143 16 139 60C147 72 137 82 145 94C149 104 139 114 127 108C121 99 127 86 124 74L125 52Q118 40 100 39Q82 40 75 52L76 74C73 86 79 99 73 108C61 114 51 104 55 94C63 82 53 72 61 60Z',
+  chongo: 'M63 62C60 26 78 14 100 14C122 14 140 26 137 62L130 60C129 50 126 44 120 41C108 37 92 37 80 41C74 44 71 50 70 60Z',
+};
 function hairSVG(style, c, k) {
-  const s = shade(c, -0.35);
+  const s = shade(c, -0.38), luz = shade(c, 0.35);
   const st = `fill="${c}" stroke="${s}" stroke-width="1.6" stroke-linejoin="round"`;
-  const gloss = d => `<path d="${d}" fill="url(#${k}g)"/>`;
+  const pieza = d => `<path ${st} d="${d}"/><path d="${d}" fill="url(#${k}cy)"/><path d="${d}" fill="url(#${k}g)"/>`;
+  const brillo = `<path d="M80 18Q92 11 106 12" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="3.2" stroke-linecap="round"/>`;
   switch (style) {
-    case 'corto': { const d = 'M66 54C60 16 140 16 134 54C128 44 120 38 108 40C96 34 80 38 66 54Z'; return `<path ${st} d="${d}"/>${gloss(d)}`; }
-    case 'lado': { const d = 'M64 58C56 14 140 10 138 50C134 44 128 42 122 44C110 34 84 44 72 40C70 46 68 52 64 58Z'; return `<path ${st} d="${d}"/>${gloss(d)}`; }
-    case 'largo': { const d = 'M62 58C56 12 144 12 138 58L142 106C134 110 126 110 120 106L124 50C110 38 90 38 76 50L80 106C74 110 66 110 58 106Z'; return `<path ${st} d="${d}"/>${gloss(d)}`; }
-    case 'ondas': { const d = 'M62 58C54 10 146 10 138 58C146 70 136 80 144 92C148 102 138 110 128 106C122 98 128 84 124 72L124 50C110 38 90 38 76 50L76 72C72 84 78 98 72 106C62 110 52 102 56 92C64 80 54 70 62 58Z'; return `<path ${st} d="${d}"/>${gloss(d)}`; }
-    case 'rizos': return `<g ${st}>${[[70, 42], [82, 28], [100, 22], [118, 28], [130, 42], [66, 58], [134, 58]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="13"/>`).join('')}</g><ellipse cx="88" cy="28" rx="16" ry="9" fill="url(#${k}g)"/>`;
-    case 'chongo': return `<g ${st}><circle cx="100" cy="12" r="14"/><path d="M66 54C60 18 140 18 134 54C120 40 80 40 66 54Z"/></g>${gloss('M66 54C60 18 140 18 134 54C120 40 80 40 66 54Z')}`;
+    case 'corto': case 'lado': case 'largo': case 'ondas':
+      return pieza(PELOS[style]) + (style === 'lado' ? `<path d="M84 36Q100 26 124 22" fill="none" stroke="${s}" stroke-width="1.6" opacity=".6"/>` : `<path d="M82 40Q100 34 118 40" fill="none" stroke="${luz}" stroke-opacity=".5" stroke-width="1.6"/>`) + brillo;
+    case 'rizos': return `<g ${st}>${[[68, 46], [78, 28], [100, 20], [122, 28], [132, 46], [64, 62], [136, 62], [90, 24], [110, 24]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="13.5"/>`).join('')}</g>
+      <g fill="url(#${k}g)">${[[78, 28], [100, 20], [122, 28]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="13.5"/>`).join('')}</g>${brillo}`;
+    case 'chongo': return `<circle cx="100" cy="13" r="12.5" ${st}/><circle cx="100" cy="13" r="12.5" fill="url(#${k}g)"/><path d="M93 8Q98 4 105 6" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="2.4" stroke-linecap="round"/>${pieza(PELOS.chongo)}${brillo}`;
     default: return '';
   }
 }
@@ -54,9 +62,9 @@ function hatSVG(hat, f, k) {
     }
     case 'gorra': {
       const h = f.torso && !isLight(f.torso) ? f.torso : '#B3262E', ho = shade(h, -0.35);
-      return `<g fill="${h}" stroke="${ho}" stroke-width="1.6" stroke-linejoin="round"><path d="M66 44C64 12 136 12 134 44Z"/><path d="M60 44H152Q156 52 146 54H62Z"/></g><circle cx="100" cy="14" r="3.5" fill="${ho}"/><path d="M78 20Q96 10 110 14L108 38H78Z" fill="url(#${k}g)"/>`;
+      return `<g fill="${h}" stroke="${ho}" stroke-width="1.6" stroke-linejoin="round"><path d="M64 46C62 2 138 2 136 46Z"/><path d="M60 44H152Q156 52 146 54H62Z"/></g><circle cx="100" cy="8" r="3.5" fill="${ho}"/><path d="M78 20Q96 10 110 14L108 38H78Z" fill="url(#${k}g)"/>`;
     }
-    case 'casco': return `<g fill="#F2B705" stroke="#8A6500" stroke-width="1.6" stroke-linejoin="round"><path d="M64 46C62 12 138 12 136 46Z"/><path d="M56 46H144Q148 54 140 55H60Q52 54 56 46Z"/><path d="M94 14H106V46H94Z" fill="#FFD84D"/></g><path d="M76 22Q92 12 100 16L98 40H76Z" fill="url(#${k}g)"/>`;
+    case 'casco': return `<g fill="#F2B705" stroke="#8A6500" stroke-width="1.6" stroke-linejoin="round"><path d="M64 46C62 2 138 2 136 46Z"/><path d="M56 46H144Q148 54 140 55H60Q52 54 56 46Z"/><path d="M94 8H106V46H94Z" fill="#FFD84D"/></g><path d="M76 22Q92 12 100 16L98 40H76Z" fill="url(#${k}g)"/>`;
     case 'cumple': return `<g stroke="#8A2C5A" stroke-width="1.6" stroke-linejoin="round"><path d="M78 40L100 -8L122 40Q100 46 78 40Z" fill="#F06AA6"/></g><g fill="#FFD23F"><circle cx="96" cy="22" r="3"/><circle cx="106" cy="30" r="3"/><circle cx="92" cy="34" r="2.4"/></g><path d="M86 24L98 2" stroke="#fff" stroke-opacity=".5" stroke-width="3" stroke-linecap="round"/><circle cx="100" cy="-8" r="6" fill="#FFD23F" stroke="#B88A2A" stroke-width="1.4"/>`;
     case 'birrete': return `<g fill="#1E1A18" stroke="#000" stroke-width="1.6" stroke-linejoin="round"><path d="M76 30V44Q100 54 124 44V30Z"/><path d="M54 24L100 8L146 24L100 40Z"/></g><path d="M100 24L136 28V46" stroke="#E0B44C" stroke-width="2.4" fill="none"/><circle cx="136" cy="48" r="3.4" fill="#E0B44C"/><path d="M62 24L100 12" stroke="#fff" stroke-opacity=".25" stroke-width="2"/>`;
     case 'mono': return `<g transform="translate(124 26) rotate(18)" fill="#E45A84" stroke="#B33A63" stroke-width="1.4" stroke-linejoin="round"><path d="M0 0L-16-10V10Z"/><path d="M0 0L16-10V10Z"/><circle r="4.5"/></g>`;
@@ -130,7 +138,8 @@ function handSVG(v) {
 function piernasSVG(legs, lo, L, H, C, LG, falda) {
   const pie = shade(legs, -0.1), lado = shade(legs, -0.22);
   const pierna = x => `<rect x="${x}" y="198" width="44" height="60" rx="2" fill="${legs}" stroke="${lo}" ${L}/><rect x="${x}" y="198" width="44" height="60" rx="2" ${C}/><rect x="${x}" y="198" width="44" height="60" rx="2" ${LG}/>
-    <rect x="${x - 2}" y="254" width="48" height="16" rx="3" fill="${pie}" stroke="${lo}" ${L}/><path d="M${x} 256H${x + 44}" stroke="#fff" stroke-opacity=".25" stroke-width="2"/>`;
+    <rect x="${x}" y="246" width="44" height="24" rx="2" fill="${pie}" stroke="${lo}" ${L}/><rect x="${x}" y="246" width="44" height="24" rx="2" ${C}/>
+    <path d="M${x + 2} 246H${x + 42}" stroke="#000" stroke-opacity=".28" stroke-width="2"/><path d="M${x + 3} 249H${x + 41}" stroke="#fff" stroke-opacity=".2" stroke-width="1.6"/>`;
   return `<rect x="52" y="184" width="96" height="16" rx="2" fill="${legs}" stroke="${lo}" ${L}/><rect x="52" y="184" width="96" height="16" rx="2" ${H}/>
     <rect x="91" y="186" width="18" height="18" rx="2" fill="${lado}" stroke="${lo}" stroke-width="1.2"/>
     ${pierna(54)}${pierna(102)}
@@ -140,21 +149,29 @@ function vestidoSVG(skin, legs, so, lo, L, H) {
   return `<path d="M56 184H144L156 264H44Z" fill="${legs}" stroke="${lo}" ${L}/><path d="M56 184H144L156 264H44Z" ${H}/><path d="M80 186L74 262M120 186L126 262" stroke="${lo}" stroke-width="1.6" opacity=".55"/>
     <rect x="58" y="262" width="34" height="8" rx="3" fill="${skin}" stroke="${so}" ${L}/><rect x="108" y="262" width="34" height="8" rx="3" fill="${skin}" stroke="${so}" ${L}/>`;
 }
-// brazo: tubo que baja del hombro un poco hacia afuera (lado -1 izquierda, 1 derecha)
+// brazo: sale de debajo del hombro y baja casi pegado al torso (lado -1 izquierda, 1 derecha)
 function brazoSVG(lado, col, ao, L, C) {
-  const cx = lado < 0 ? 60 : 140, x = lado < 0 ? 46 : 132;
-  return `<g transform="rotate(${lado < 0 ? 14 : -14} ${cx} 96)"><rect x="${x}" y="94" width="22" height="64" rx="10" fill="${col}" stroke="${ao}" ${L}/><rect x="${x}" y="94" width="22" height="64" rx="10" ${C}/>
-    <ellipse cx="${x + 11}" cy="100" rx="9" ry="5" fill="#fff" opacity=".18"/></g>`;
+  const x = lado < 0 ? 50 : 128;
+  return `<g transform="rotate(${lado * -9} ${x + 11} 98)"><rect x="${x}" y="94" width="22" height="62" rx="10" fill="${col}" stroke="${ao}" ${L}/><rect x="${x}" y="94" width="22" height="62" rx="10" ${C}/>
+    <ellipse cx="${x + 9}" cy="101" rx="7" ry="5" fill="#fff" opacity=".2"/><path d="M${x + 3} 150H${x + 19}" stroke="#000" stroke-opacity=".15" stroke-width="2"/></g>`;
 }
-// mano en "C": anillo con su hueco y la abertura de la pinza hacia abajo
-function manoSVG(cx, skin, so) {
-  const hueco = shade(skin, -0.42);
-  return `<circle cx="${cx}" cy="164" r="11.5" fill="${skin}" stroke="${so}" stroke-width="1.6"/>
-    <circle cx="${cx}" cy="165.5" r="5.6" fill="${hueco}"/>
-    <path d="M${cx - 3.2} 168H${cx + 3.2}L${cx + 4} 176H${cx - 4}Z" fill="${hueco}"/>
-    <path d="M${cx - 6} 157Q${cx} 153 ${cx + 6} 157" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="2" stroke-linecap="round"/>`;
+// mano en "C" como la pieza real: muñeca corta y pinza abierta hacia abajo (lado -1 izquierda, 1 derecha)
+function manoSVG(lado, skin, so) {
+  const cx = lado < 0 ? 51 : 149, cy = 170, r = 7.6;
+  const arco = `M${(cx - r * 0.55).toFixed(1)} ${(cy + r * 0.83).toFixed(1)}A${r} ${r} 0 1 1 ${(cx + r * 0.55).toFixed(1)} ${(cy + r * 0.83).toFixed(1)}`;
+  return `<rect x="${cx - 4}" y="${cy - 14}" width="8" height="8" fill="${shade(skin, -0.12)}" stroke="${so}" stroke-width="1.2"/>
+    <path d="${arco}" fill="none" stroke="${so}" stroke-width="9.4" stroke-linecap="round"/>
+    <path d="${arco}" fill="none" stroke="${skin}" stroke-width="6.4" stroke-linecap="round"/>
+    <path d="M${cx - 5} ${cy - 4}Q${cx} ${cy - 8} ${cx + 4} ${cy - 5}" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="1.8" stroke-linecap="round"/>`;
 }
 
+// con gorra, casco o sombrero el pelo corto no se ve (en LEGO la pieza lo reemplaza); el largo asoma a los lados
+const TAPAN = ['gorra', 'casco', 'sombrero', 'vaquero', 'birrete'];
+function peloBajoSombrero(f) {
+  if (!f.hat || f.hat === 'ninguno') return f.hair;
+  if (TAPAN.includes(f.hat)) return ['largo', 'ondas'].includes(f.hair) ? f.hair : '';
+  return f.hair === 'chongo' ? 'corto' : f.hair;
+}
 function minifig(f0, opts = {}) {
   const f = normFig({ ...f0, extras: [...(f0.extras || [])] });
   const k = 'm' + (++UID);
@@ -179,17 +196,17 @@ function minifig(f0, opts = {}) {
     <path d="M66 90H134L148 186H52Z" ${H}/>
     <path d="M66 90L52 186H60L72 92Z" fill="#fff" opacity=".12"/><path d="M134 90L148 186H140L128 92Z" fill="#000" opacity=".14"/>
     <path d="M70 92H130" stroke="#fff" stroke-opacity=".35" stroke-width="2" stroke-linecap="round"/>
-    ${manoSVG(40, skin, so)}${manoSVG(160, skin, so)}
+    ${manoSVG(-1, skin, so)}${manoSVG(1, skin, so)}
     ${handSVG(f.hand)}
     <rect x="88" y="15" width="24" height="13" rx="2" fill="${skin}" stroke="${so}" ${L}/><rect x="88" y="15" width="24" height="13" rx="2" ${C}/>
     <ellipse cx="100" cy="15.5" rx="12" ry="3" fill="${shade(skin, 0.18)}" stroke="${so}" stroke-width="1.2"/>
-    <rect x="70" y="25" width="60" height="61" rx="13" fill="${skin}" stroke="${so}" ${L}/>
-    <rect x="70" y="25" width="60" height="61" rx="13" ${C}/>
+    <rect x="70" y="25" width="60" height="61" rx="17" fill="${skin}" stroke="${so}" ${L}/>
+    <rect x="70" y="25" width="60" height="61" rx="17" ${C}/>
     <path d="M74 30Q100 22 126 30" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="2.4" stroke-linecap="round"/>
     <path d="M74 81Q100 88 126 81" fill="none" stroke="#000" stroke-opacity=".12" stroke-width="2.4" stroke-linecap="round"/>
     <ellipse cx="83" cy="40" rx="6" ry="9" fill="#fff" opacity=".32"/>
     ${faceSVG(f)}
-    ${hairSVG(f.hat !== 'ninguno' && f.hair === 'chongo' ? 'corto' : f.hair, f.hairColor || '#1F1712', k)}
+    ${hairSVG(peloBajoSombrero(f), f.hairColor || '#1F1712', k)}
     ${hatSVG(f.hat, f, k)}`;
   return s;
 }
