@@ -23,6 +23,8 @@ function figDefs(k) {
     <linearGradient id="${k}h" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity=".38"/><stop offset=".35" stop-color="#fff" stop-opacity=".06"/><stop offset=".7" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".28"/></linearGradient>
     <linearGradient id="${k}v" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".18"/><stop offset=".25" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".2"/></linearGradient>
     <radialGradient id="${k}g" cx=".32" cy=".25" r=".7"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".4" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <linearGradient id="${k}cy" x1="0" x2="1"><stop offset="0" stop-color="#000" stop-opacity=".34"/><stop offset=".1" stop-color="#000" stop-opacity=".08"/><stop offset=".28" stop-color="#fff" stop-opacity=".42"/><stop offset=".42" stop-color="#fff" stop-opacity=".1"/><stop offset=".78" stop-color="#000" stop-opacity=".04"/><stop offset="1" stop-color="#000" stop-opacity=".36"/></linearGradient>
+    <linearGradient id="${k}lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity=".22"/><stop offset=".12" stop-color="#000" stop-opacity="0"/><stop offset=".85" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".18"/></linearGradient>
   </defs>`;
 }
 
@@ -123,6 +125,36 @@ function handSVG(v) {
     <text x="168" y="156" text-anchor="middle" font-family="'Inter'" font-weight="700" font-size="22" fill="#fff">${esc(g[i].label.charAt(0).toUpperCase())}</text></g>`;
 }
 
+// ---------- piezas del cuerpo (forma de minifigura: plástico con volumen, luz arriba a la izquierda) ----------
+// piernas: cadera con su pieza del centro, dos piernas en bloque con canto lateral y pie
+function piernasSVG(legs, lo, L, H, C, LG, falda) {
+  const pie = shade(legs, -0.1), lado = shade(legs, -0.22);
+  const pierna = x => `<rect x="${x}" y="198" width="44" height="60" rx="2" fill="${legs}" stroke="${lo}" ${L}/><rect x="${x}" y="198" width="44" height="60" rx="2" ${C}/><rect x="${x}" y="198" width="44" height="60" rx="2" ${LG}/>
+    <rect x="${x - 2}" y="254" width="48" height="16" rx="3" fill="${pie}" stroke="${lo}" ${L}/><path d="M${x} 256H${x + 44}" stroke="#fff" stroke-opacity=".25" stroke-width="2"/>`;
+  return `<rect x="52" y="184" width="96" height="16" rx="2" fill="${legs}" stroke="${lo}" ${L}/><rect x="52" y="184" width="96" height="16" rx="2" ${H}/>
+    <rect x="91" y="186" width="18" height="18" rx="2" fill="${lado}" stroke="${lo}" stroke-width="1.2"/>
+    ${pierna(54)}${pierna(102)}
+    ${falda ? `<path d="M48 184H152L166 236H34Z" fill="${legs}" stroke="${lo}" ${L}/><path d="M48 184H152L166 236H34Z" ${H}/><path d="M76 188L66 234M100 188V234M124 188L134 234" stroke="${lo}" stroke-width="1.4" opacity=".5"/>` : ''}`;
+}
+function vestidoSVG(skin, legs, so, lo, L, H) {
+  return `<path d="M56 184H144L156 264H44Z" fill="${legs}" stroke="${lo}" ${L}/><path d="M56 184H144L156 264H44Z" ${H}/><path d="M80 186L74 262M120 186L126 262" stroke="${lo}" stroke-width="1.6" opacity=".55"/>
+    <rect x="58" y="262" width="34" height="8" rx="3" fill="${skin}" stroke="${so}" ${L}/><rect x="108" y="262" width="34" height="8" rx="3" fill="${skin}" stroke="${so}" ${L}/>`;
+}
+// brazo: tubo que baja del hombro un poco hacia afuera (lado -1 izquierda, 1 derecha)
+function brazoSVG(lado, col, ao, L, C) {
+  const cx = lado < 0 ? 60 : 140, x = lado < 0 ? 46 : 132;
+  return `<g transform="rotate(${lado < 0 ? 14 : -14} ${cx} 96)"><rect x="${x}" y="94" width="22" height="64" rx="10" fill="${col}" stroke="${ao}" ${L}/><rect x="${x}" y="94" width="22" height="64" rx="10" ${C}/>
+    <ellipse cx="${x + 11}" cy="100" rx="9" ry="5" fill="#fff" opacity=".18"/></g>`;
+}
+// mano en "C": anillo con su hueco y la abertura de la pinza hacia abajo
+function manoSVG(cx, skin, so) {
+  const hueco = shade(skin, -0.42);
+  return `<circle cx="${cx}" cy="164" r="11.5" fill="${skin}" stroke="${so}" stroke-width="1.6"/>
+    <circle cx="${cx}" cy="165.5" r="5.6" fill="${hueco}"/>
+    <path d="M${cx - 3.2} 168H${cx + 3.2}L${cx + 4} 176H${cx - 4}Z" fill="${hueco}"/>
+    <path d="M${cx - 6} 157Q${cx} 153 ${cx + 6} 157" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="2" stroke-linecap="round"/>`;
+}
+
 function minifig(f0, opts = {}) {
   const f = normFig({ ...f0, extras: [...(f0.extras || [])] });
   const k = 'm' + (++UID);
@@ -133,34 +165,29 @@ function minifig(f0, opts = {}) {
   const so = shade(skin, -0.3), to = shade(torso, -0.32), lo = shade(legs, -0.32);
   const arm = bareArms ? skin : torso, ao = bareArms ? so : to;
   const L = 'stroke-width="1.6" stroke-linejoin="round"';
-  const H = `fill="url(#${k}h)"`, V = `fill="url(#${k}v)"`;
+  const H = `fill="url(#${k}h)"`;
+  const C = `fill="url(#${k}cy)"`, LG = `fill="url(#${k}lg)"`;
   let s = figDefs(k);
-  if (!opts.half) {
-    s += dress
-      ? `<path d="M56 184H144L156 264H44Z" fill="${legs}" stroke="${lo}" ${L}/><path d="M56 184H144L156 264H44Z" ${H}/><path d="M80 186L74 262M120 186L126 262" stroke="${lo}" stroke-width="1.6" opacity=".55"/>
-         <rect x="58" y="262" width="34" height="8" rx="3" fill="${skin}" stroke="${so}" ${L}/><rect x="108" y="262" width="34" height="8" rx="3" fill="${skin}" stroke="${so}" ${L}/>`
-      : `<rect x="52" y="184" width="96" height="16" rx="3" fill="${legs}" stroke="${lo}" ${L}/><rect x="52" y="184" width="96" height="16" rx="3" ${H}/>
-        <rect x="54" y="198" width="44" height="64" rx="4" fill="${legs}" stroke="${lo}" ${L}/><rect x="54" y="198" width="44" height="64" rx="4" ${H}/><rect x="54" y="198" width="44" height="64" rx="4" ${V}/>
-        <rect x="102" y="198" width="44" height="64" rx="4" fill="${legs}" stroke="${lo}" ${L}/><rect x="102" y="198" width="44" height="64" rx="4" ${H}/><rect x="102" y="198" width="44" height="64" rx="4" ${V}/>
-        <rect x="50" y="256" width="50" height="14" rx="4" fill="${shade(legs, -0.08)}" stroke="${lo}" ${L}/>
-        <rect x="100" y="256" width="50" height="14" rx="4" fill="${shade(legs, -0.08)}" stroke="${lo}" ${L}/>`;
-    if (f.outfit === 'falda') s += `<path d="M48 184H152L166 236H34Z" fill="${legs}" stroke="${lo}" ${L}/><path d="M48 184H152L166 236H34Z" ${H}/><path d="M76 188L66 234M100 188V234M124 188L134 234" stroke="${lo}" stroke-width="1.4" opacity=".5"/>`;
-  }
-  s += `<rect x="88" y="16" width="24" height="12" rx="3" fill="${skin}" stroke="${so}" ${L}/>
-    <rect x="90" y="80" width="20" height="12" fill="${shade(skin, -0.15)}" stroke="${so}" ${L}/>
-    <g transform="rotate(14 60 96)"><rect x="46" y="94" width="22" height="64" rx="10" fill="${arm}" stroke="${ao}" ${L}/><rect x="46" y="94" width="22" height="64" rx="10" ${H}/></g>
-    <g transform="rotate(-14 140 96)"><rect x="132" y="94" width="22" height="64" rx="10" fill="${arm}" stroke="${ao}" ${L}/><rect x="132" y="94" width="22" height="64" rx="10" ${H}/></g>
+  if (!opts.half) s += dress ? vestidoSVG(skin, legs, so, lo, L, H) : piernasSVG(legs, lo, L, H, C, LG, f.outfit === 'falda');
+  // cuello, brazos (tubos con su hombro), torso trapecio con bisel, manos en C y cabeza cilíndrica con su botón
+  s += `<rect x="90" y="80" width="20" height="12" fill="${shade(skin, -0.15)}" stroke="${so}" ${L}/>
+    ${brazoSVG(-1, arm, ao, L, C)}${brazoSVG(1, arm, ao, L, C)}
     <path d="M66 90H134L148 186H52Z" fill="${torso}" stroke="${to}" ${L}/>
     ${bareArms ? `<path d="M66 90L60 104M134 90L140 104" stroke="${to}" stroke-width="1.4"/>` : ''}
     ${f.outfit === 'traje' || bareArms ? '' : `<path d="M86 90Q100 104 114 90" fill="none" stroke="${to}" stroke-width="2"/>`}
     ${outfitSVG(f, k)}
     <path d="M66 90H134L148 186H52Z" ${H}/>
-    <g fill="${skin}" stroke="${so}" stroke-width="1.6"><circle cx="40" cy="164" r="11"/><circle cx="160" cy="164" r="11"/></g>
-    <g fill="${so}"><circle cx="40" cy="166" r="4"/><circle cx="160" cy="166" r="4"/></g>
+    <path d="M66 90L52 186H60L72 92Z" fill="#fff" opacity=".12"/><path d="M134 90L148 186H140L128 92Z" fill="#000" opacity=".14"/>
+    <path d="M70 92H130" stroke="#fff" stroke-opacity=".35" stroke-width="2" stroke-linecap="round"/>
+    ${manoSVG(40, skin, so)}${manoSVG(160, skin, so)}
     ${handSVG(f.hand)}
-    <rect x="70" y="24" width="60" height="62" rx="18" fill="${skin}" stroke="${so}" ${L}/>
-    <rect x="70" y="24" width="60" height="62" rx="18" ${H}/>
-    <ellipse cx="84" cy="36" rx="9" ry="5" fill="#fff" opacity=".45"/>
+    <rect x="88" y="15" width="24" height="13" rx="2" fill="${skin}" stroke="${so}" ${L}/><rect x="88" y="15" width="24" height="13" rx="2" ${C}/>
+    <ellipse cx="100" cy="15.5" rx="12" ry="3" fill="${shade(skin, 0.18)}" stroke="${so}" stroke-width="1.2"/>
+    <rect x="70" y="25" width="60" height="61" rx="13" fill="${skin}" stroke="${so}" ${L}/>
+    <rect x="70" y="25" width="60" height="61" rx="13" ${C}/>
+    <path d="M74 30Q100 22 126 30" fill="none" stroke="#fff" stroke-opacity=".35" stroke-width="2.4" stroke-linecap="round"/>
+    <path d="M74 81Q100 88 126 81" fill="none" stroke="#000" stroke-opacity=".12" stroke-width="2.4" stroke-linecap="round"/>
+    <ellipse cx="83" cy="40" rx="6" ry="9" fill="#fff" opacity=".32"/>
     ${faceSVG(f)}
     ${hairSVG(f.hat !== 'ninguno' && f.hair === 'chongo' ? 'corto' : f.hair, f.hairColor || '#1F1712', k)}
     ${hatSVG(f.hat, f, k)}`;
