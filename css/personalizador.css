@@ -187,3 +187,14 @@
 .leave p+p{color:var(--ink-2);font-size:14.5px;margin:4px 0 16px}
 .leave-row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 .c-panel{position:relative}
+
+/* pantalla completa del diseño (pantalla-completa.js) */
+.modal.full{z-index:95;background:var(--bg);overflow:hidden}
+.modal.full.open{animation:fade .25s var(--ease)}
+.modal.full.closing{animation:fadeOut .2s var(--ease-in) forwards}
+.full-stage{position:absolute;inset:calc(56px + env(safe-area-inset-top)) 16px calc(52px + env(safe-area-inset-bottom));display:grid;place-items:center;touch-action:pinch-zoom;transition:transform .35s var(--ease)}
+.full-stage.z2{transform:scale(2);cursor:zoom-out}
+.full-stage>svg,.full-stage>img{width:100%;height:100%;max-width:min(92vh,100%);object-fit:contain;cursor:zoom-in;filter:drop-shadow(0 30px 40px rgba(30,22,17,.25))}
+.full-x{position:absolute;top:calc(12px + env(safe-area-inset-top));right:12px;width:44px;height:44px;border-radius:50%;background:var(--surface);box-shadow:var(--sh-1);display:grid;place-items:center;font-size:16px}
+.full-tip{position:absolute;left:0;right:0;bottom:calc(16px + env(safe-area-inset-bottom));text-align:center;font-size:13px;color:var(--ink-3)}
+@media (prefers-reduced-motion:reduce){.full-stage{transition:none}}

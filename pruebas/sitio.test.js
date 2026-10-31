@@ -352,6 +352,10 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
     await r.click('[data-figmove="0:1"]'); await r.waitForTimeout(300);
     const despues = await r.locator('.ftabs [data-tab] .nm').allTextContents();
     ok(antes[0] === 'Fer' && despues[1] === 'Fer' && despues[0] !== 'Fer', `Ordenar figuras (Fer pasa a la derecha): ${antes.join('|')} -> ${despues.join('|')}`);
+    await r.click('#zFull'); await r.waitForTimeout(500);
+    ok(await r.isVisible('#cFull #fullStage > svg'), 'Pantalla completa: el diseño ocupa la pantalla');
+    await r.keyboard.press('Escape'); await r.waitForTimeout(1500);
+    ok(!(await r.evaluate(() => document.querySelector('#cFull').classList.contains('open'))) && await r.isVisible('#custom.open'), 'Pantalla completa: Escape la cierra y deja el personalizador abierto');
     // la foto del pedido real queda dentro del área de la vista previa (en iPhone se salía)
     await r.goto(base + 'catalogo.html?card=1'); await r.waitForSelector('#custom.open'); await r.waitForTimeout(600);
     if (!(await r.$('.stage-photo'))) { await r.click('#refBtn'); await r.waitForTimeout(500); }

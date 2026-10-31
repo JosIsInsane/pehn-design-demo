@@ -133,7 +133,8 @@
         <button type="button" id="zOut" aria-label="Alejar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/></svg></button>
         <output id="zVal">100%</output>
         <button type="button" id="zIn" aria-label="Acercar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
-        <button type="button" id="zReset" aria-label="Restablecer zoom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 15v5h-5M4 4l6 6M20 20l-6-6"/></svg></button>
+        <button type="button" id="zReset" aria-label="Volver al tamaño normal" title="Volver al tamaño normal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></button>
+        <button type="button" id="zFull" aria-label="Ver en pantalla completa" title="Pantalla completa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 15v5h-5M15 4h5v5M9 20H4v-5"/></svg></button>
       </div>
       <button class="ref" id="refBtn" hidden aria-label="Comparar con la foto del pedido real"><img alt=""><span>Pedido real</span></button>
           </div>
@@ -163,6 +164,11 @@
 </div>
 
 
+<div class="modal full" id="cFull" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Tu diseño en pantalla completa">
+  <div class="full-stage" id="fullStage"></div>
+  <button type="button" class="x full-x" data-fullclose aria-label="Cerrar pantalla completa">✕</button>
+  <p class="full-tip">Toca el diseño para acercar · pellizca en el teléfono</p>
+</div>
 <script type="module" src="js/paginas/catalogo.js"></script>
 </body>
 </html>

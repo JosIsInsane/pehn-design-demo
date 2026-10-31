@@ -12,6 +12,7 @@ import { MOV, cargarBorrador, buildForm, vvAjusta, iniciarPaginaMovil } from './
 import { update, olvidarPrecio } from './personalizador-vista.js';
 import { iniciarEventos } from './personalizador-eventos.js';
 import { iniciarCierre } from './personalizador-cierre.js';
+import { iniciarPantallaCompleta } from './pantalla-completa.js';
 
 // qué hay abierto: { p, cfg, qty, editIdx, fig (figura activa), step, photo, photoPos, showPhoto, mov (¿teléfono?), sub (¿pantalla de figura?), stack, open, start, draft, done }
 function nuevoDiseno(p, cfg, qty, editIdx, photo, photoPos) {
@@ -66,4 +67,5 @@ export function iniciarPersonalizador() {
   iniciarPaginaMovil();
   iniciarEventos();
   iniciarCierre();
+  iniciarPantallaCompleta();
 }
