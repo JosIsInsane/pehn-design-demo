@@ -381,6 +381,7 @@ const CATALOGO_RECETAS = [
   ['Termo grabado · Modelo · Sport 600 ml', 'TERMO-SPORT-600-ML', 1, ''],
   ['Termo grabado · Color · *', '', 1, 'Sin inventario'],
   ['Tote bag personalizada', 'TOTE-BAG', 1, ''],
+  ['Tote bag personalizada · Material · *', '', 1, 'Sin inventario'],
   ['Tote bag personalizada · Color de la bolsa · *', '', 1, 'Sin inventario'],
   ['Tote bag personalizada · Color de tinta · *', '', 1, 'Sin inventario'],
   ['Boxer', '', 1, 'Sin inventario'],

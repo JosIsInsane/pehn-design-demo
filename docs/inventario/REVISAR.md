@@ -114,4 +114,4 @@ camiseta Pepe 490, hoodie y suéter 700, collares, pulsera de mirada, llavero In
 4. Retratera "con diseño personalizado" 450 y "con nombre" 620 (incluye luces) vs. Retratera 420 en la lista.
 5. Caja Lego como personalizable (2 personajes + fondo +30, Lego adicional, camisa, accesorio): hoy se vende sin figuras.
 6. "LEGO ADICIONAL" (90) aparece en la lista nueva: se toma como la misma pieza que "Muñecos Lego".
-7. Tote bag en manta o canva (mismo precio): ¿se agrega la opción de material?
+7. ~~Tote bag en manta o canva~~ Hecho: opción "Material" (mismo precio, L300).

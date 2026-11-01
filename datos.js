@@ -355,9 +355,12 @@ export const PRODUCTS_BASE = [
   },
   {
     id: 'tote', name: 'Tote bag personalizada', cat: 'bolsas', base: precioDe('TOTE-BAG'), bg: '#E9D8B4',
-    desc: 'Manta resistente con tu frase, tus iniciales o tu propia imagen.',
+    desc: 'En manta o canva, con tu frase, tus iniciales o tu propia imagen.',
     render: 'tote', skus: ['TOTE-BAG'],
     groups: [
+      // mismo precio (menú: tote bag manta o canva L300); el taller ve cuál pidieron
+      { id: 'material', label: 'Material', type: 'choice', options: [
+        { v: 'manta', label: 'Manta', price: 0 }, { v: 'canva', label: 'Canva (más gruesa)', price: 0 }] },
       { id: 'color', label: 'Color de la bolsa', type: 'choice', options: [
         { v: '#EFE3CC', label: 'Natural', price: 0 }, { v: '#1E1611', label: 'Negra', price: 0 }, { v: '#C9D6BE', label: 'Salvia', price: 0 }] },
       { id: 'text', label: 'Texto', type: 'text', max: 18, placeholder: 'Ej. Plantas & café…' },
