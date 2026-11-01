@@ -51,6 +51,15 @@ const CSV = Object.fromEntries(filas.map(r => [r[0], Number(r[5])]));
   const precio = cambios => conSitio(page, ({ productoDe, defaults, priceOf }, c) => { const p = productoDe('cuadro'), cfg = defaults(p); Object.assign(cfg, c); return priceOf(p, cfg).unit; }, cambios);
   ok(await precio({ size: 'gra', dogs: 1, adds: ['luces'] }) === 570 + 180 + 70 + 90, 'Cuadro: Retratera 3D grande + 2 figuras + 1 perro + luces = 910');
   ok(await precio({ size: 'peq' }) === 500 + 180, 'Cuadro: Retratera 3D pequeña + 2 figuras = 680');
+  // menú real (nov 2026): cuadro 5x7 = 680 y 8x8 = 710 con 2 personajes; camisa con diseño o texto +30; llavero Lego 295 c/u (590 el par)
+  ok(await precio({ size: 'med' }) === 710, 'Cuadro 8×8 con 2 personajes = 710 (menú)');
+  const menu = await conSitio(page, ({ productoDe, defaults, priceOf }) => {
+    const c = productoDe('cuadro'), cfg = defaults(c); cfg.size = 'peq'; cfg.figs[0].outfit = 'texto';
+    const l = productoDe('llavero');
+    return { texto: priceOf(c, cfg).unit, llavero: priceOf(l, defaults(l)).unit };
+  });
+  ok(menu.texto === 680 + 30, 'Camisa con texto en la figura suma L 30 (torso con diseño)');
+  ok(menu.llavero === 295, 'Llavero minifigura: L 295 cada uno (590 el par, como el menú)');
   ok(await precio({ size: 'med', cats: 1, bunnies: 2 }) === 530 + 180 + 70 + 140, 'Cuadro: mediana + gatito + 2 conejitos');
   ok(await precio({ size: 'med', adds: ['luces', 'dedicatoria', 'iniciales', 'fotos', 'dulces'] }) === 530 + 180 + 90 + 30 + 40 + 30 + 120, 'Cuadro: los cinco extras suman sus piezas');
   ok(await precio({ size: 'med', fondo: 'foto' }) === 530 + 180 + 30 && await precio({ size: 'med', fondo: 'blanco' }) === 530 + 180, 'Cuadro: fondo con tu foto suma L 30; blanco no');
@@ -61,7 +70,7 @@ const CSV = Object.fromEntries(filas.map(r => [r[0], Number(r[5])]));
     Object.assign(cfg.figs[1], { hat: 'birrete', outfit: 'lego', hand: 'bebe' });
     return priceOf(p, cfg).unit;
   });
-  ok(conFig === 530 + 180 + (90 + 30 + 120) + (60 + 30 + 90), 'Figuras: gorrito 90 + falda 30 + moto 120 + birrete 60 + camisa Lego 30 + bebé 90 (lentes, barba y aretes a 0)');
+  ok(conFig === 530 + 180 + (90 + 30 + 120) + (80 + 30 + 90), 'Figuras: gorrito 90 + falda 30 + moto 120 + birrete 80 (menú) + camisa Lego 30 + bebé 90 (lentes, barba y aretes a 0)');
   ok(await conSitio(page, ({ FIG_GROUPS }) => { const g = FIG_GROUPS.find(x => x.id === 'hand'); return g.options.length === 24 && g.options[0].price === 0; }), 'Accesorio en la mano: Ninguno + 23 accesorios');
 
   // 2. todas las opciones con piezas cuestan lo que dice el CSV
@@ -105,7 +114,7 @@ const CSV = Object.fromEntries(filas.map(r => [r[0], Number(r[5])]));
   ok(v.sud === 1400 && v.sud1 === 700, 'Sudaderas: el par son 2 × 700, una sola 700');
   ok(v.celeste[0] === 'M' && v.celeste[1] === 1400, 'Hoodie celeste solo en M');
   ok(v.dispXL === false, 'Hoodie rojo no tiene XL');
-  ok(v.boxer === 420, 'Boxer 420');
+  ok(v.boxer === 450, 'Boxer 450 (menú)');
 
   // 3b. en pantalla: la tarjeta de la retratera mini cambia de precio al elegir color
   const tarjeta = await conSitio(page, ({ CARDS }) => CARDS.findIndex(c => c.id === 't-retratera-mini'));

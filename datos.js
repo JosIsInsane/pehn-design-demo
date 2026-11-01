@@ -92,7 +92,7 @@ export const FIG_GROUPS = [
     { v: 'playera', label: 'Playera', price: 0 }, { v: 'blusa', label: 'Blusa', price: 0 },
     { v: 'sueter', label: 'Suéter', price: 0 }, { v: 'cuadros', label: 'Camisa a cuadros', price: 0 },
     { v: 'traje', label: 'Traje', price: 0 }, { v: 'vestido', label: 'Vestido', price: 0 },
-    { v: 'texto', label: 'Con texto', price: 0 }, op('lego', 'Camisa Lego', 'CAMISA-LEGO'),
+    op('texto', 'Con texto', 'CAMISA-LEGO'), op('lego', 'Camisa Lego', 'CAMISA-LEGO'),
     op('falda', 'Falda', 'ACC-FALDA')] },
   { id: 'torso', label: 'Color de ropa', type: 'swatch', options: sw(CLOTH) },
   { id: 'printText', label: 'Texto en playera', type: 'text', max: 6, placeholder: 'Ej. PAPÁ…', showIf: c => c.outfit === 'texto' },
@@ -199,8 +199,8 @@ const sizeSw = list => list.map(t => ({ v: t, label: t, price: 0 }));
 
 // Marcos del cuadro (Retratera 3D). Para sumar una combinación nueva solo agrega una fila aquí: op(v, label, sku)
 const MARCOS_CUADRO = [
-  op('peq', 'Pequeña', 'RETRATERA-3D-PEQUENA'),
-  op('med', 'Mediana', 'RETRATERA-3D'),
+  op('peq', 'Pequeña 5×7', 'RETRATERA-3D-PEQUENA'),
+  op('med', 'Mediana 8×8', 'RETRATERA-3D'),
   op('gra', 'Grande', 'RETRATERA-3D-GRANDE'),
 ];
 
@@ -259,9 +259,9 @@ export const PRODUCTS_BASE = [
     init: c => Object.assign(c, FIG_PRESETS[4]),
   },
   {
-    id: 'llavero', name: 'Llavero minifigura', cat: 'figuras', sub: 'llaveros', base: precioDe('LLAVERO-BASE'), bg: '#8EC5F2',
+    id: 'llavero', name: 'Llavero minifigura', cat: 'figuras', sub: 'llaveros', base: precioDe('LEG-LLAVEROS-LEGOS-2'), bg: '#8EC5F2',
     desc: 'Mini tú para tus llaves. Pídelos en par para tu persona favorita.',
-    render: 'keychain', skus: ['LLAVERO-BASE'],
+    render: 'keychain', skus: ['LEG-LLAVEROS-LEGOS-2'],
     groups: [
       ...FIG_GROUPS.filter(g => g.id !== 'name' && g.id !== 'legs'),
       { id: 'tagText', label: 'Iniciales o fecha en la placa', type: 'text', max: 8, placeholder: 'Ej. F & C…' },
