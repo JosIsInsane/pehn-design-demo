@@ -83,12 +83,16 @@ function campoHTML(c) {
     txt.addEventListener('input', () => { if (VALIDO.color(txt.value)) rueda.value = txt.value; });
     control = crear('div', { className: 'ed-color' }, rueda, txt); control.campo = txt;
   } else if (c.tipo === 'imagen') {
-    const img = crear('img', { src: v, alt: '' }), archivo = crear('input', { type: 'file', accept: 'image/jpeg,image/png,image/webp', hidden: true });
-    const boton = crear('button', { type: 'button', className: 'btn btn-ghost btn-sm', textContent: 'Cambiar foto' });
-    boton.id = id;
+    const img = crear('img', { src: v, alt: '', hidden: !v }), vacia = crear('span', { className: 'ed-sin-foto', textContent: 'Sin foto', hidden: !!v });
+    const archivo = crear('input', { type: 'file', accept: 'image/jpeg,image/png,image/webp', hidden: true });
+    archivo.dataset.foto = c.clave;
+    const boton = crear('button', { type: 'button', className: 'btn btn-ghost btn-sm', textContent: v ? 'Cambiar foto' : 'Poner foto' });
+    const quitar = crear('button', { type: 'button', className: 'linkish ed-quitar', textContent: 'Quitar foto', hidden: !v });
+    boton.id = id; quitar.dataset.quitar = c.clave;
     boton.addEventListener('click', () => archivo.click());
+    quitar.addEventListener('click', () => quitarFoto(c.clave));
     archivo.addEventListener('change', () => subirFoto(c.clave, archivo, img, boton));
-    control = crear('div', { className: 'ed-foto' }, img, boton, archivo);
+    control = crear('div', { className: 'ed-foto' }, img, vacia, crear('div', { className: 'ed-foto-botones' }, boton, quitar), archivo);
   } else control = crear('input', { id, value: v, maxLength: c.tipo === 'texto' ? 160 : 200, type: c.tipo === 'enlace' ? 'url' : 'text', inputMode: c.tipo === 'whatsapp' ? 'tel' : 'text' });
   const campo = control.campo || control;
   if (campo.tagName !== 'DIV') campo.addEventListener('input', () => cambiar(c.clave, campo.value));
@@ -104,6 +108,17 @@ function pintarCampos() {
 }
 function cambiar(clave, valor) { estado.actual[clave] = valor; actualizar(); }
 
+// foto vacía = la página la esconde (Sitio.gs acepta '' para las fotos)
+function pintarFoto(clave) {
+  const caja = document.querySelector(`.ed-campo[data-clave="${CSS.escape(clave)}"]`), v = estado.actual[clave];
+  if (!caja) return;
+  const img = caja.querySelector('img');
+  img.hidden = !v; if (v) img.src = v;
+  caja.querySelector('.ed-sin-foto').hidden = !!v; caja.querySelector('.ed-quitar').hidden = !v;
+  caja.querySelector('.ed-foto-botones .btn').textContent = v ? 'Cambiar foto' : 'Poner foto';
+}
+function quitarFoto(clave) { cambiar(clave, ''); pintarFoto(clave); }
+
 async function subirFoto(clave, archivo, img, boton) {
   const f = archivo.files[0]; archivo.value = '';
   if (!f) return;
@@ -112,15 +127,37 @@ async function subirFoto(clave, archivo, img, boton) {
   try {
     const dataUrl = await shrinkImage(f, 1600);
     const r = await api('editorFoto', { sesion: estado.sesion, dataUrl });
-    img.src = r.url; cambiar(clave, r.url);
-  } catch (err) { manejarError(err); } finally { boton.disabled = false; boton.textContent = 'Cambiar foto'; }
+    cambiar(clave, r.url);
+  } catch (err) { manejarError(err); } finally { boton.disabled = false; pintarFoto(clave); }
 }
 
 // ---------- vista previa ----------
 const marco = $('#edFrame');
 const avisarVista = m => marco.contentWindow?.postMessage(m, location.origin);
 const valoresValidos = () => Object.fromEntries(estado.campos.filter(c => !VALIDO[c.tipo] || VALIDO[c.tipo](estado.actual[c.clave])).map(c => [c.clave, estado.actual[c.clave]]));
-addEventListener('message', e => { if (e.origin === location.origin && e.source === marco.contentWindow && e.data?.tipo === 'pehn-lista' && estado.sesion) avisarVista({ tipo: 'pehn-vista', sitio: valoresValidos() }); });
+const tiposDe = () => Object.fromEntries(estado.campos.map(c => [c.clave, c.tipo]));
+const campoDe = clave => document.querySelector(`.ed-campo[data-clave="${CSS.escape(clave)}"]`);
+// lo que pasa en la página (edición directa, js/editor-vista.js)
+addEventListener('message', e => {
+  if (e.origin !== location.origin || e.source !== marco.contentWindow || !estado.sesion || !e.data) return;
+  const { tipo, clave } = e.data, c = estado.campos.find(x => x.clave === clave);
+  if (tipo === 'pehn-lista') avisarVista({ tipo: 'pehn-vista', sitio: valoresValidos(), tipos: tiposDe() });
+  if (!c) return;
+  if (tipo === 'pehn-cambio' && /^(texto|largo)$/.test(c.tipo)) {
+    const valor = String(e.data.valor || '').slice(0, c.tipo === 'largo' ? 900 : 160);
+    estado.actual[clave] = valor;
+    const campo = campoDe(clave)?.querySelector('input,textarea'); if (campo) campo.value = valor;
+    actualizar(false);
+  }
+  if (tipo === 'pehn-foco') {
+    document.querySelectorAll('.ed-campo.activo').forEach(x => x.classList.remove('activo'));
+    const caja = campoDe(clave); caja?.classList.add('activo'); caja?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  if (tipo === 'pehn-foto' && c.tipo === 'imagen') {
+    if (e.data.accion === 'quitar') quitarFoto(clave);
+    else document.querySelector(`input[data-foto="${CSS.escape(clave)}"]`)?.click();
+  }
+});
 document.querySelectorAll('[data-ver]').forEach(b => b.addEventListener('click', () => {
   document.querySelectorAll('[data-ver]').forEach(x => x.classList.toggle('on', x === b)); marco.src = b.dataset.ver;
 }));
@@ -130,7 +167,7 @@ document.querySelectorAll('[data-ancho]').forEach(b => b.addEventListener('click
 
 // ---------- pie: estado, deshacer y guardar ----------
 function estadoPie(texto, clase = '') { const s = $('#edEstado'); s.textContent = texto; s.className = clase; }
-function actualizar() {
+function actualizar(aVista = true) {
   let malos = 0, cambios = 0;
   document.querySelectorAll('.ed-campo').forEach(caja => {
     const c = estado.campos.find(x => x.clave === caja.dataset.clave), v = estado.actual[c.clave];
@@ -140,7 +177,7 @@ function actualizar() {
   });
   $('#edGuardar').disabled = !cambios || malos > 0; $('#edDeshacer').disabled = !cambios;
   estadoPie(malos ? `Revisa ${malos} campo${malos > 1 ? 's' : ''} en rojo` : cambios ? `${cambios} cambio${cambios > 1 ? 's' : ''} sin guardar` : 'Sin cambios', malos ? 'mal' : '');
-  avisarVista({ tipo: 'pehn-vista', sitio: valoresValidos() });
+  if (aVista) avisarVista({ tipo: 'pehn-vista', sitio: valoresValidos(), tipos: tiposDe() });
 }
 $('#edDeshacer').addEventListener('click', () => { estado.actual = { ...estado.original }; pintarCampos(); actualizar(); });
 $('#edGuardar').addEventListener('click', async () => {

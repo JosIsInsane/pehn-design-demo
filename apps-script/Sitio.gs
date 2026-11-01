@@ -73,7 +73,7 @@ function valorSitio_(tipo, v) {
     case 'color': return /^#[0-9a-f]{6}$/i.test(v) ? v.toUpperCase() : null;
     case 'whatsapp': { const d = v.replace(/\D/g, ''); return !d || (d.length >= 8 && d.length <= 15) ? d : null; }
     case 'enlace': return !v || /^https:\/\/[\w.-]+\.[a-z]{2,}(\/[^\s"'<>]*)?$/i.test(v) ? v : null;
-    case 'imagen': return /^(fotos\/[\w.-]+\.(jpe?g|png|webp)|https:\/\/(lh3\.googleusercontent\.com|drive\.google\.com)\/[\w/=?.-]+)$/i.test(v) ? v : null;
+    case 'imagen': return v === '' ? '' : /^(fotos\/[\w.-]+\.(jpe?g|png|webp)|https:\/\/(lh3\.googleusercontent\.com|drive\.google\.com)\/[\w/=?.-]+)$/i.test(v) ? v : null;
     case 'largo': return texto_(v, 900);
     default: return linea_(v, 160);
   }

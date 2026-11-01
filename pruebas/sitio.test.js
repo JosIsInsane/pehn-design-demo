@@ -450,10 +450,17 @@ const ok = (c, m) => { console.log(c ? '✓' : '✗', m); if (!c) fallas++; };
     await a.fill('#f_hero_titulo', 'Hola en vivo'); await a.waitForTimeout(400);
     ok((await vista.locator('[data-edit="hero.titulo"]').textContent()) === 'Hola en vivo' && sim.hoja('Sitio').find(x => x.Clave === 'hero.titulo').Valor !== 'Hola en vivo',
       'Editor: la página de al lado cambia mientras escribes (sin guardar todavía)');
+    // edición directa (estilo Wix): tocar el texto en la página y escribir encima
+    const titulo = vista.locator('[data-edit="hero.resaltado"]');
+    await titulo.click(); await a.keyboard.press('Control+A'); await a.keyboard.type('mini tú'); await a.waitForTimeout(300);
+    ok(await a.inputValue('#f_hero_resaltado') === 'mini tú' && (await titulo.textContent()) === 'mini tú', 'Editor: tocar un texto de la página y escribir encima lo cambia (y el panel lo sigue)');
+    await vista.locator('[data-edit-img="hero.foto"]').click(); await vista.locator('.ed-menu-foto button:has-text("Quitar foto")').click(); await a.waitForTimeout(300);
+    ok(await vista.locator('[data-edit-img="hero.foto"]').isHidden() && await a.isVisible('.ed-campo[data-clave="hero.foto"] .ed-sin-foto'), 'Editor: tocar una foto → Quitar foto la esconde de la página');
     await a.fill('#f_color_marca', 'rojo'); await a.waitForTimeout(200);
     ok(await a.isDisabled('#edGuardar') && /rojo|Revisa/.test(await a.textContent('#edEstado')), 'Editor: un color inválido no deja guardar');
     await a.fill('#f_color_marca', '#3355AA');
     await a.click('#edGuardar'); await a.waitForFunction(() => /Guardado/.test(document.querySelector('#edEstado').textContent), null, { timeout: 8000 });
+    ok(sim.hoja('Sitio').find(x => x.Clave === 'hero.resaltado').Valor === 'mini tú' && sim.hoja('Sitio').find(x => x.Clave === 'hero.foto').Valor === '', 'Editor: guarda lo escrito encima y la foto quitada');
     ok(sim.hoja('Sitio').find(x => x.Clave === 'hero.titulo').Valor === 'Hola en vivo' && sim.hoja('Movimientos').some(m => m.Usuario === 'jefa@pehn.test'), 'Editor: "Guardar y publicar" lo guarda en la hoja y anota quién fue');
     ok(!errA.length, 'Editor: sin errores de JavaScript ni de seguridad (el iframe del mismo sitio se permite)' + (errA.length ? ': ' + errA.join(' | ') : ''));
     await a.close();
