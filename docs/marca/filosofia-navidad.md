@@ -19,3 +19,9 @@ la izquierda, para que el círculo gire en vez de pesar hacia un lado. El texto 
 
 Todo se revisa como trabajo de oficio: márgenes iguales, curvas sin quiebres, cada gota de nieve con su propio largo,
 cada elemento dentro de su sitio. Debe sentirse hecho a mano, pieza por pieza, con horas de paciencia detrás.
+
+## Versión final: la esfera
+
+Una sola idea en vez de muchos adornos: el círculo de la marca ES una esfera del árbol. Tapa dorada con estrías,
+aro, cinta con moño y una ramita de acebo, como el adorno clásico. Un brillo de vidrio plano, color crema, arriba a la
+izquierda. El logo no se tapa con nada. (La versión con nieve quedó como alternativa: `pehn-navidad-nieve.png`.)
