@@ -30,7 +30,9 @@ function aplicarTextos(v) {
 }
 function aplicarFotos(v) {
   document.querySelectorAll('[data-edit-img]').forEach(el => {
-    const u = String(v[el.dataset.editImg] || '');
+    if (!(el.dataset.editImg in v)) return;
+    const u = String(v[el.dataset.editImg] || ''), caja = el.closest('figure') || el;
+    caja.hidden = !u; // "Quitar foto" en el editor: la foto (y su leyenda) desaparecen
     if (/^(fotos\/[\w.-]+|https:\/\/(lh3\.googleusercontent\.com|drive\.google\.com)\/\S+)$/.test(u) && el.getAttribute('src') !== u) el.src = u;
   });
 }
@@ -44,22 +46,14 @@ function aplicarSitio(v) {
   aplicarColores(v); aplicarTextos(v); aplicarFotos(v); aplicarContacto(v);
 }
 
-// Vista previa del editor (/admin): la página va dentro de un iframe del mismo sitio y recibe los cambios
-// mientras se escriben (solo mensajes de este mismo dominio). Nada se guarda: es solo lo que se ve.
+// Vista previa del editor (/admin): la página va dentro de un iframe del mismo sitio. Ahí se carga
+// js/editor-vista.js (edición directa: tocar un texto y escribir, tocar una foto). La página normal no lo descarga.
 let enVistaPrevia = false;
 function escucharEditor() {
   if (window.parent === window) return;
-  try { if (window.parent.location.pathname.startsWith('/admin')) document.documentElement.classList.add('en-editor'); } catch { /* otro dominio: no es el editor */ }
-  addEventListener('message', e => {
-    if (e.origin !== location.origin || e.source !== window.parent || !e.data || typeof e.data !== 'object') return;
-    if (e.data.tipo === 'pehn-vista') { enVistaPrevia = true; aplicarSitio(e.data.sitio); }
-    if (e.data.tipo === 'pehn-resaltar') {
-      const el = document.querySelector(`[data-edit="${CSS.escape(String(e.data.clave))}"],[data-edit-img="${CSS.escape(String(e.data.clave))}"]`);
-      document.querySelectorAll('.pehn-resaltado').forEach(x => x.classList.remove('pehn-resaltado'));
-      if (el) { el.classList.add('pehn-resaltado'); el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
-    }
-  });
-  parent.postMessage({ tipo: 'pehn-lista' }, location.origin);
+  try { if (!window.parent.location.pathname.startsWith('/admin')) return; } catch { return; } // otro dominio: no es el editor
+  document.documentElement.classList.add('en-editor');
+  import('./editor-vista.js').then(m => m.iniciarVistaEditor(aplicarSitio, () => { enVistaPrevia = true; }));
 }
 
 export function iniciarSitio() {
