@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="robots" content="noindex, nofollow">
+<title>Editor del sitio · Pehn Design</title>
+<meta name="description" content="Editor del sitio de Pehn Design (solo dueños).">
+<meta name="theme-color" content="#FBF7F2">
+<link rel="icon" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/admin.css">
+</head>
+<body data-page="admin" class="ed">
+<!-- 1. entrar: correo → código de 6 cifras (EditorSitio.gs) -->
+<main class="ed-entrar" id="edEntrar">
+  <div class="ed-tarjeta">
+    <img src="logo.png" alt="" width="56" height="56">
+    <h1>Editor del sitio</h1>
+    <form id="edPaso1" class="ed-form">
+      <p>Escribe tu correo de administrador. Te mandamos un código para entrar.</p>
+      <label for="edCorreo">Correo</label>
+      <input id="edCorreo" type="email" autocomplete="email" required maxlength="120" placeholder="tu@correo.com">
+      <button class="btn btn-dark" type="submit">Mandarme el código</button>
+    </form>
+    <form id="edPaso2" class="ed-form" hidden>
+      <p id="edAviso">Si ese correo es de un administrador, te llegó un código de 6 cifras. Vale 10 minutos.</p>
+      <label for="edCodigo">Código</label>
+      <input id="edCodigo" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required placeholder="000000" class="ed-codigo">
+      <button class="btn btn-dark" type="submit">Entrar</button>
+      <button class="linkish" type="button" id="edOtro">Usar otro correo</button>
+    </form>
+    <p class="ed-error" id="edError" role="alert"></p>
+  </div>
+</main>
+
+<!-- 2. editar: campos a la izquierda, la página real a la derecha -->
+<div class="ed-app" id="edApp" hidden>
+  <aside class="ed-panel" aria-label="Campos del sitio">
+    <header class="ed-cab">
+      <div><b>Editor del sitio</b><small id="edQuien"></small></div>
+      <button class="linkish" type="button" id="edSalir">Salir</button>
+    </header>
+    <div class="ed-campos" id="edCampos"></div>
+    <footer class="ed-pie">
+      <span id="edEstado" aria-live="polite">Sin cambios</span>
+      <button class="btn btn-ghost btn-sm" type="button" id="edDeshacer" disabled>Deshacer</button>
+      <button class="btn btn-primary btn-sm" type="button" id="edGuardar" disabled>Guardar y publicar</button>
+    </footer>
+  </aside>
+  <section class="ed-vista" aria-label="Vista previa">
+    <div class="ed-barra">
+      <div class="ed-paginas" role="tablist">
+        <button type="button" data-ver="index.html" class="on">Inicio</button><button type="button" data-ver="catalogo.html">Catálogo</button><button type="button" data-ver="pedido.html">Mis pedidos</button>
+      </div>
+      <div class="ed-tamanos"><button type="button" data-ancho="" class="on">Computadora</button><button type="button" data-ancho="390">Celular</button></div>
+    </div>
+    <div class="ed-marco"><iframe id="edFrame" title="Vista previa del sitio" src="index.html"></iframe></div>
+  </section>
+</div>
+
+<script type="module" src="js/paginas/admin.js"></script>
+</body>
+</html>

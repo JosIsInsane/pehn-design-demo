@@ -233,3 +233,7 @@ html{scroll-padding-top:calc(var(--nav-h) + 16px)}
 .ne-acciones{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
 @keyframes ne-mece{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
 @media (prefers-reduced-motion:reduce){.no-encontrada .ne-fig{animation:none}}
+
+/* editor del sitio (/admin): lo que se está editando, resaltado en la vista previa */
+.en-editor .aviso,.en-editor .wa-float,.en-editor .cart-fab{display:none!important} /* dentro del editor estorban */
+.pehn-resaltado{outline:3px dashed var(--brand);outline-offset:6px;border-radius:6px;transition:outline-color .3s}

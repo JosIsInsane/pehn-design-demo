@@ -628,6 +628,46 @@ prueba('Portero: límite por IP aunque cambien de WhatsApp (5º pedido en 10 min
   ok(desde('<script>', 7).ok && desde('', 8).ok, 'IP rara o vacía no rompe nada');
 });
 
+// ---------- editor del sitio en vivo (/admin, EditorSitio.gs) ----------
+const editor = (s, accion, extra = {}) => s.post({ token: s.config('Token del sitio'), accion, ...extra });
+const conAdmin = () => { const s = nuevo(); s.run(`setConfig_('Admins', 'jefa@pehn.test, otro@pehn.test')`); return s; };
+const codigoDe = s => (String(s.mails[s.mails.length - 1]?.subject || '').match(/(\d{6})$/) || [])[1];
+
+prueba('Editor: el código solo llega a correos de Admins; a otros se les contesta igual y no se manda nada', () => {
+  const s = conAdmin();
+  const r1 = editor(s, 'editorCodigo', { correo: 'intruso@mal.test' });
+  ok(r1.ok && r1.enviado && s.mails.length === 0, JSON.stringify(r1));
+  const r2 = editor(s, 'editorCodigo', { correo: ' Jefa@PEHN.test ' });
+  ok(r2.ok && s.mails.length === 1 && s.mails[0].to === 'jefa@pehn.test' && /^\d{6}$/.test(codigoDe(s)), JSON.stringify(s.mails[0]));
+  ok(!editor(s, 'editorCodigo', { correo: 'no-es-correo' }).ok);
+});
+
+prueba('Editor: código malo 5 veces lo quema; el bueno abre sesión una sola vez', () => {
+  const s = conAdmin(); editor(s, 'editorCodigo', { correo: 'jefa@pehn.test' }); const c = codigoDe(s);
+  const malo = String((Number(c) + 1) % 1e6).padStart(6, '1');
+  for (let i = 0; i < 5; i++) ok(!editor(s, 'editorEntrar', { correo: 'jefa@pehn.test', codigo: malo }).ok);
+  ok(!editor(s, 'editorEntrar', { correo: 'jefa@pehn.test', codigo: c }).ok, 'tras 5 fallas ni el bueno sirve');
+  editor(s, 'editorCodigo', { correo: 'jefa@pehn.test' }); const c2 = codigoDe(s);
+  const r = editor(s, 'editorEntrar', { correo: 'jefa@pehn.test', codigo: c2 });
+  ok(r.ok && r.sesion.length === 32 && r.campos.some(x => x.clave === 'hero.titulo'), JSON.stringify(r).slice(0, 200));
+  ok(!editor(s, 'editorEntrar', { correo: 'jefa@pehn.test', codigo: c2 }).ok, 'el código sirve una sola vez');
+  ok(!editor(s, 'editorEntrar', { correo: 'otro@pehn.test', codigo: c2 }).ok, 'el código es de ese correo');
+});
+
+prueba('Editor: guardar exige sesión, valida y anota quién cambió qué en Movimientos', () => {
+  const s = conAdmin(); editor(s, 'editorCodigo', { correo: 'jefa@pehn.test' });
+  const { sesion } = editor(s, 'editorEntrar', { correo: 'jefa@pehn.test', codigo: codigoDe(s) });
+  const cambio = [{ clave: 'hero.titulo', valor: 'Hola mundo' }];
+  ok(!editor(s, 'editorGuardar', { cambios: cambio }).ok && !editor(s, 'editorGuardar', { sesion: 'x'.repeat(32), cambios: cambio }).ok, 'sin sesión no guarda');
+  const r = editor(s, 'editorGuardar', { sesion, cambios: cambio });
+  ok(r.ok && s.hoja('Sitio').find(f => f.Clave === 'hero.titulo').Valor === 'Hola mundo', JSON.stringify(r).slice(0, 200));
+  ok(s.hoja('Movimientos').some(m => /Sitio web: hero\.titulo/.test(m.Motivo) && m.Usuario === 'jefa@pehn.test'), 'queda registro');
+  const malo = editor(s, 'editorGuardar', { sesion, cambios: [{ clave: 'color.marca', valor: 'rojo' }] });
+  ok(!malo.ok && /formato inválido/.test(malo.error), JSON.stringify(malo));
+  s.run(`setConfig_('Admins', 'otro@pehn.test')`);
+  ok(!editor(s, 'editorDatos', { sesion }).ok, 'si lo quitan de Admins, su sesión deja de servir');
+});
+
 // ---------- Turnstile (opcional) ----------
 prueba('Turnstile: sin TURNSTILE_SECRET todo sigue como hoy (no se consulta a Cloudflare)', () => {
   const s = nuevo(); const r = s.post(pedido(s)); ok(r.ok, JSON.stringify(r));

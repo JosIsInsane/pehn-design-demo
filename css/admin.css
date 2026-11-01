@@ -1,0 +1,56 @@
+/* Pehn Design — EDITOR DEL SITIO (/admin): entrar con código y editar con la página real al lado. */
+.ed [hidden]{display:none!important} /* el panel y la pantalla de entrar se esconden con hidden */
+.ed{background:var(--bg-2);min-height:100vh}
+.ed-entrar{min-height:100vh;display:grid;place-items:center;padding:24px}
+.ed-tarjeta{width:min(420px,100%);background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:36px 32px;box-shadow:0 20px 60px rgba(30,22,17,.08);text-align:center}
+.ed-tarjeta img{border-radius:50%;margin:0 auto 12px}
+.ed-tarjeta h1{font-size:28px;margin-bottom:8px}
+.ed-form{display:grid;gap:10px;text-align:left}
+.ed-form p{color:var(--ink-2);margin:4px 0 8px;text-align:center}
+.ed-form label{font-weight:600;font-size:14px}
+.ed-form input,.ed-campo input,.ed-campo textarea{width:100%;font:inherit;padding:12px 14px;border:1px solid var(--line-2);border-radius:12px;background:var(--surface-2);color:var(--ink)}
+.ed-form input:focus,.ed-campo input:focus,.ed-campo textarea:focus{outline:2px solid var(--brand);outline-offset:1px;border-color:transparent}
+.ed-codigo{font-size:28px!important;letter-spacing:10px;text-align:center}
+.ed-form .btn{width:100%;justify-content:center;margin-top:6px}
+.ed-form .linkish{justify-self:center;margin-top:4px}
+.ed-error{color:#B3262E;min-height:1.4em;margin:12px 0 0;font-size:14px}
+
+.ed-app{display:grid;grid-template-columns:400px 1fr;height:100vh}
+.ed-panel{display:flex;flex-direction:column;min-height:0;background:var(--surface);border-right:1px solid var(--line)}
+.ed-cab{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line)}
+.ed-cab small{display:block;color:var(--ink-3);font-size:12.5px}
+.ed-campos{flex:1;overflow:auto;padding:8px 20px 24px}
+.ed-grupo{margin-top:18px}
+.ed-grupo>h2{font-family:var(--sans);font-size:12.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--brand-ink);margin:0 0 8px}
+.ed-campo{display:grid;gap:6px;padding:10px 12px;margin:0 -12px;border-radius:12px}
+.ed-campo:focus-within{background:var(--brand-soft)}
+.ed-campo label{font-weight:600;font-size:14px}
+.ed-campo small{color:var(--ink-3);font-size:12px}
+.ed-campo textarea{min-height:84px;resize:vertical}
+.ed-campo.cambio label::after{content:" ●";color:var(--brand)}
+.ed-campo.malo input,.ed-campo.malo textarea{border-color:#B3262E}
+.ed-color{display:flex;gap:10px;align-items:center}
+.ed-color input[type=color]{width:48px;height:42px;padding:2px;flex:none}
+.ed-foto{display:flex;gap:12px;align-items:center}
+.ed-foto img{width:72px;height:90px;object-fit:cover;border-radius:10px;border:1px solid var(--line)}
+.ed-pie{display:flex;gap:8px;align-items:center;padding:14px 20px;border-top:1px solid var(--line);background:var(--surface-2)}
+.ed-pie span{flex:1;font-size:13.5px;color:var(--ink-3)}
+.ed-pie span.ok{color:#2F8F5B;font-weight:600}
+.ed-pie span.mal{color:#B3262E;font-weight:600}
+
+.ed-vista{display:flex;flex-direction:column;min-width:0}
+.ed-barra{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--surface)}
+.ed-paginas,.ed-tamanos{display:flex;gap:4px;background:var(--bg-2);padding:4px;border-radius:999px}
+.ed-barra button{border:0;background:none;font:inherit;font-size:13.5px;padding:7px 14px;border-radius:999px;cursor:pointer;color:var(--ink-2)}
+.ed-barra button.on{background:var(--surface);color:var(--ink);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.ed-marco{flex:1;display:grid;place-items:stretch center;padding:16px;min-height:0;overflow:auto}
+.ed-marco iframe{width:100%;height:100%;border:1px solid var(--line);border-radius:14px;background:#fff;transition:width .25s}
+.ed-marco.cel iframe{width:390px;max-width:100%}
+
+@media (max-width:900px){
+  .ed-app{grid-template-columns:1fr;grid-template-rows:auto 1fr;height:auto}
+  .ed-panel{border-right:0;border-bottom:1px solid var(--line);max-height:none}
+  .ed-campos{max-height:55vh}
+  .ed-vista{height:80vh}
+  .ed-pie{position:sticky;bottom:0}
+}

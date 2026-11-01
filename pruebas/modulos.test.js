@@ -69,7 +69,7 @@ const mal = paginas.filter(p => {
   const scripts = [...fuente(p).matchAll(/<script\b[^>]*>/g)].map(m => m[0]);
   return scripts.length !== 1 || !/type="module"\s+src="\/?js\/paginas\/[\w-]+\.js"/.test(scripts[0]);
 });
-ok(paginas.length === 5 && !mal.length, `Cada página (${paginas.join(', ')}) carga un solo <script type="module"> de js/paginas/` + (mal.length ? ': revisa ' + mal.join(', ') : ''));
+ok(paginas.length === 6 && !mal.length, `Cada página (${paginas.join(', ')}) carga un solo <script type="module"> de js/paginas/` + (mal.length ? ': revisa ' + mal.join(', ') : ''));
 
 console.log(fallas ? `\n${fallas} fallaron` : '\nTodo pasó');
 process.exit(fallas ? 1 : 0);

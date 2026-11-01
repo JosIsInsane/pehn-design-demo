@@ -130,7 +130,10 @@ export function cargar(opts = {}) {
   if (opts.ocr !== false) ctx.Drive = { Files: { create: () => ({ id: nid('D') }) } }; // respaldo de Ocr.gs
   vm.createContext(ctx);
   const dir = path.join(import.meta.dirname, '..', 'apps-script');
-  const code = ['Config', 'Catalogo', 'Setup', 'Orders', 'Inventory', 'Pagos', 'Ocr', 'Verificacion', 'Sitio', 'Admin'].map(f => fs.readFileSync(path.join(dir, f + '.gs'), 'utf8')).join('\n;\n');
+  // primero en este orden (como los carga Apps Script hoy); después cualquier .gs nuevo, para que nunca quede fuera
+  const orden = ['Config', 'Catalogo', 'Setup', 'Orders', 'Inventory', 'Pagos', 'Ocr', 'Verificacion', 'Sitio', 'Admin'];
+  const todos = [...orden, ...fs.readdirSync(dir).filter(f => f.endsWith('.gs')).map(f => f.slice(0, -3)).filter(f => !orden.includes(f)).sort()];
+  const code = todos.map(f => fs.readFileSync(path.join(dir, f + '.gs'), 'utf8')).join('\n;\n');
   // las const de arriba quedan visibles para las pruebas
   vm.runInContext(code + '\n;globalThis.__x = { COL, HEADERS, LIMITS, telKey_, celda_, montosEn_, elegirMonto_, numeroDe_ };', ctx);
 

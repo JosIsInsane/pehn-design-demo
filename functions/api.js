@@ -18,7 +18,8 @@
 
 const APPS_SCRIPT = 'https://script.google.com/macros/s/AKfycbyZ0Z1nr735rQ9tn2YSaYUtXEyDUL7fBQiMF78JuiRdUnRtzCt6BALCHgane8wpnsO5/exec';
 // acción → [máximo por IP, en cuántos segundos]. Apps Script lleva los mismos topes con su caché (aguanta varias instancias).
-export const TOPES = { pedido: [4, 600], comprobante: [8, 3600], verificar: [30, 3600], seguimiento: [30, 600], misPedidos: [30, 600] };
+export const TOPES = { pedido: [4, 600], comprobante: [8, 3600], verificar: [30, 3600], seguimiento: [30, 600], misPedidos: [30, 600],
+  editorCodigo: [5, 600], editorEntrar: [10, 600], editorDatos: [60, 600], editorGuardar: [60, 600], editorFoto: [20, 600] }; // editor del sitio (/admin)
 const MAX_BYTES = 30e6; // igual que LIMITS.body de Orders.gs
 const ERROR = 'No se pudo procesar. Intenta de nuevo o escríbenos por WhatsApp.';
 
