@@ -96,3 +96,22 @@ Origen: `pehn.xlsx`, hoja "Hoja 1", filas 3 a 234 (232 filas). Suma de precios: 
 - Las pijamas Grinch (680) y cuadros rojos (650) tienen tallas; las demás no. ¿Se venden en tallas?
 - ¿Qué significan "RM" en Termo lata RM y "CAM" en Camisa Pepe (CAM)? Se dejaron tal cual.
 - "Pieza llavero Lego" y "Llavero corazón Lego" (fila 152), ¿son productos o componentes?
+
+## Menú real (piezas.xlsx, nov 2026): qué se aplicó y qué falta decidir
+
+**Se aplicó (gana el precio del menú):** birrete y toga 60→80 · tarjeta de cumpleaños 290→350 · boxer 420→450 ·
+mini photobooth 690→710 · pulsera de inicial 355→360 · llaveros relicario (óvalo y corazón) 450→550 ·
+llaveros Gwen / Spiderman / Batman / Batgirl 225→300 (el par Spiderman-Gwen o Batman-Batgirl = 600) ·
+llavero minifigura 150→295 (usaba la base de iniciales; el menú dice 590 el par) · figura con camisa "Con texto" +30
+(torso con diseño) · el cuadro muestra las medidas del menú: pequeña 5×7 (680 con 2 personajes), mediana 8×8 (710).
+Ya coincidían: muñeco 90, falda +30, camisa Lego +30, accesorios +60, mascotas +70, gorrito 90, luces 90, tote 300,
+camiseta Pepe 490, hoodie y suéter 700, collares, pulsera de mirada, llavero Instax 250, Hot Wheel 280, caja Lego 620 (440 + 2 personajes).
+
+**Falta que el dueño decida:**
+1. Cajas con dedicatoria: el menú tiene Básica 150 / Premium 280 / Plus 380 (+ luces 90); la lista solo "Cajas" 120. ¿Se crean las tres?
+2. Llavero de iniciales: base 150 + 40 por inicial. ¿Se agrega como producto personalizable?
+3. Camiseta de fútbol en llaveros Lego (+90): no hay pieza en la lista. ¿Cuál es su código y precio?
+4. Retratera "con diseño personalizado" 450 y "con nombre" 620 (incluye luces) vs. Retratera 420 en la lista.
+5. Caja Lego como personalizable (2 personajes + fondo +30, Lego adicional, camisa, accesorio): hoy se vende sin figuras.
+6. "LEGO ADICIONAL" (90) aparece en la lista nueva: se toma como la misma pieza que "Muñecos Lego".
+7. ~~Tote bag en manta o canva~~ Hecho: opción "Material" (mismo precio, L300).
